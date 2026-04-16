@@ -59,4 +59,5 @@ spec:
       kind: CustomResourceDefinition
       jqPathExpressions:
         - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.preserveUnknownFields
         - .status
