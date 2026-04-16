@@ -1,0 +1,13 @@
+creation_rules:
+  # Talos configs - only encrypt the actual secrets, leave config readable
+  - path_regex: clusters/homelab/talos/.*\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$"
+
+  # Kubernetes secret manifests - encrypt the whole thing
+  - path_regex: clusters/homelab/apps/.*secret.*\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+
+  # ArgoCD bootstrap secrets
+  - path_regex: clusters/homelab/bootstrap/.*secret.*\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm

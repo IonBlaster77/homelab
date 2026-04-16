@@ -1,0 +1,18 @@
+# Cluster credentials - never in repo
+talosconfig
+kubeconfig
+kubeconfig*.yaml
+
+# Binaries and installers
+argocd
+argocd-linux-amd64
+*.exe
+*.zst
+*.zip
+
+# Credential files
+*PAT*
+*token*
+*.key
+*.private.yaml
+*.dec.yaml

@@ -1,0 +1,19 @@
+# argocd-values.yaml
+global:
+  domain: ""  # can leave empty for now
+
+server:
+  # Turn on the UI + API service
+  service:
+    type: NodePort
+    nodePortHttp: null     # we won't use HTTP
+    nodePortHttps: 32080   # you can pick any free port in NodePort range
+
+  ingress:
+    enabled: false         # we'll keep it simple and skip ingress for now
+
+configs:
+  secret:
+    argocdServerAdminPassword: $2y$10$AKZu3z0B3Wyhg2Ku6Na0EO2t9tnsFqKj3rUWEeX3fVs1e/5o3TuWm%
+  params:
+    server.insecure: "true"  # allow HTTP if you later flip to HTTP/NodePort

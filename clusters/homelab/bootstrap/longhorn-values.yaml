@@ -1,0 +1,43 @@
+defaultSettings:
+  defaultReplicaCount: 3
+  taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule;node-role.kubernetes.io/master:NoSchedule"
+
+
+longhornManager:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+longhornDriver:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+      deployer:
+        enabled: false
+        
+longhornUI:
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+csi:
+  kubeletRootDir: /var/lib/kubelet
+  attacherReplicaCount: 0
+  provisionerReplicaCount: 0
+  resizerReplicaCount: 0
+  snapshotterReplicaCount: 0
+
+ingress:
+  enabled: false

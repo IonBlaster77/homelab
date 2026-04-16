@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      volumes:
+        - name: sops-age
+          secret:
+            secretName: sops-age
+        - name: custom-tools
+          emptyDir: {}
+      initContainers:
+        - name: install-sops
+          image: alpine:3.19
+          command:
+            - sh
+            - -c
+            - |
+              wget -qO /custom-tools/sops \
+                https://github.com/getsops/sops/releases/download/v3.12.1/sops-v3.12.1.linux.amd64 && \
+              chmod +x /custom-tools/sops
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 999
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: custom-tools
+              mountPath: /custom-tools
+      containers:
+        - name: repo-server
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /home/argocd/.config/sops/age/keys.txt
+            - name: PATH
+              value: /custom-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          volumeMounts:
+            - name: sops-age
+              mountPath: /home/argocd/.config/sops/age
+              readOnly: true
+            - name: custom-tools
+              mountPath: /custom-tools
