@@ -13,7 +13,7 @@ server:
     enabled: false         # we'll keep it simple and skip ingress for now
 
 configs:
-  secret:
-    argocdServerAdminPassword: $2y$10$AKZu3z0B3Wyhg2Ku6Na0EO2t9tnsFqKj3rUWEeX3fVs1e/5o3TuWm%
   params:
     server.insecure: "true"  # allow HTTP if you later flip to HTTP/NodePort
+  cm:
+    application.resourceTrackingMethod: annotation
