@@ -20,8 +20,6 @@ longhornDriver:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
       effect: "NoSchedule"
-      deployer:
-        enabled: false
         
 longhornUI:
   tolerations:

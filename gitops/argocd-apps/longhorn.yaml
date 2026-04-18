@@ -47,10 +47,6 @@ spec:
               effect: "NoSchedule"
         csi:
           kubeletRootDir: /var/lib/kubelet
-          attacherReplicaCount: 0
-          provisionerReplicaCount: 0
-          resizerReplicaCount: 0
-          snapshotterReplicaCount: 0
         service:
           ui:
             type: LoadBalancer
@@ -69,6 +65,7 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
   ignoreDifferences:
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
