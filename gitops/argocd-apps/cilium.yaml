@@ -91,3 +91,7 @@ spec:
       namespace: kube-system
       jsonPointers:
         - /data/ipam-multi-pool-pre-allocation
+    - group: ""
+      kind: Service
+      jqPathExpressions:
+        - .spec.ports[].nodePort
