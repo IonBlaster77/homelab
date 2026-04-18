@@ -32,6 +32,7 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
     # Manual sync — contains secrets and issuer config. Review before applying.
   ignoreDifferences:
     # The cloudflare-api-token Secret is SOPS-encrypted in git. ArgoCD does not
