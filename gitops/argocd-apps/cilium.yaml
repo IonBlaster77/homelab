@@ -91,6 +91,8 @@ spec:
     # DaemonSet: kubectl.kubernetes.io/restartedAt annotation is added by manual
     # restarts (kubectl rollout restart) and is not part of the chart template.
     # startupProbe.timeoutSeconds is a kubelet-defaulted field (defaults to 1).
+    # deprecated.daemonset.template.generation is added by the DaemonSet controller
+    # to the DaemonSet metadata when the pod template spec changes — not in template.
     - group: apps
       kind: DaemonSet
       name: cilium
@@ -98,15 +100,19 @@ spec:
       jsonPointers:
         - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
         - /spec/template/spec/containers/0/startupProbe/timeoutSeconds
+        - /metadata/annotations/deprecated.daemonset.template.generation
 
-    # GatewayClass: Helm adds app.kubernetes.io/managed-by=Helm at install time
-    # but the chart template has no labels. Use JSON pointer with ~1 to encode
-    # the literal "/" in the label key name.
+    # GatewayClass: the chart template has NO labels (only optional commonLabels).
+    # Helm adds app.kubernetes.io/managed-by=Helm post-install, so the live
+    # GatewayClass has a non-empty labels map while the template produces none.
+    # After removing the managed-by key, live has labels:{} while desired has
+    # no labels key at all — these differ as {} != absent.
+    # Solution: ignore the entire labels map (the template never sets labels here).
     - group: gateway.networking.k8s.io
       kind: GatewayClass
       name: cilium
-      jsonPointers:
-        - /metadata/labels/app.kubernetes.io~1managed-by
+      jqPathExpressions:
+        - .metadata.labels
 
     # Roles/RoleBindings for gateway secrets: same Helm-added label pattern.
     # All four gateway/operator-gateway roles and bindings in cilium-secrets ns.
