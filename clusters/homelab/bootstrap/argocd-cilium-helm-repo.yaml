@@ -1,0 +1,26 @@
+# ArgoCD Repository Secret — Cilium Helm chart repo
+#
+# Without this, ArgoCD tries to auto-detect https://helm.cilium.io/ and hits
+# a semver bug: "improper constraint: HEAD" during Helm chart version resolution.
+#
+# Registering the repo explicitly with type=helm bypasses the auto-detection
+# code path that triggers the bug, allowing ArgoCD to correctly resolve
+# targetRevision: 1.17.0 and compute the diff against the live Cilium state.
+#
+# Apply during bootstrap AFTER ArgoCD is running:
+#   kubectl apply -f clusters/homelab/bootstrap/argocd-cilium-helm-repo.yaml
+#
+# This is a plain (non-sensitive) Secret — no SOPS encryption needed since
+# helm.cilium.io is a public repo requiring no credentials.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-repo-cilium-helm
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  name: cilium
+  url: https://helm.cilium.io/
