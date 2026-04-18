@@ -54,7 +54,14 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - RespectIgnoreDifferences=true
+      - ServerSideApply=true
     # No automated sync — Cilium upgrades are high-risk and should be manual.
+    # ServerSideApply=true: ArgoCD manages only the fields in the Helm template
+    # (its "argocd" field manager). Fields owned by other managers — Helm's
+    # app.kubernetes.io/managed-by label, controller-added annotations like
+    # deprecated.daemonset.template.generation, kubectl rollout restart's
+    # restartedAt — are never part of ArgoCD's diff. This eliminates all
+    # "empty-object vs absent" false-positive OutOfSync diffs.
   ignoreDifferences:
     # cilium-config has runtime IPAM fields not in the chart values
     - group: ""
