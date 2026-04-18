@@ -78,7 +78,7 @@ machine:
         # The disk used for installations.
         disk: /dev/sda
         # Allows for supplying the image used to perform the installation.
-        image: ghcr.io/siderolabs/installer:v1.12.2
+        image: factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.6
         # Indicates if the installation disk should be wiped at installation time.
         wipe: false
         # Indicates if legacy GRUB bootloader should use kernel cmdline from the UKI instead of building it on the host.

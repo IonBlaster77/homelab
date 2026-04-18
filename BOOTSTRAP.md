@@ -30,14 +30,20 @@ sops -d clusters/homelab/talos/talos1.yaml | head -3
 
 ## Phase 1 — Boot Nodes from Talos Image Factory
 
-The cluster uses a custom Talos image with `iscsi-tools` and `util-linux-tools` baked in
-(required for Longhorn). Boot each node from the Image Factory ISO, **not** the generic
-Talos ISO.
+The cluster uses a custom Talos image with `iscsi-tools`, `util-linux-tools`, and `nfs-utils`
+baked in (required for Longhorn). Boot each node from the Image Factory ISO, **not** the
+generic Talos ISO.
 
 **Image Factory ISO URL:**
 ```
-https://factory.talos.dev/image/613e1592b2da41ae5e265e8789429f22e121aab91cb4deb6bc3c0b6262961245/v1.12.2/metal-amd64.iso
+https://factory.talos.dev/image/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b/v1.12.6/metal-amd64.iso
 ```
+
+> **⚠️ USB enumeration warning:** If booting from a USB stick, ensure the USB is **not**
+> plugged in when Talos installs to disk and reboots — or use a different boot method
+> (iDRAC/iLO/IPMI). With USB plugged in, the USB becomes `/dev/sda` and Talos will install
+> itself onto the USB instead of the internal SSD. The configs use `install.disk: /dev/sda`
+> which assumes no USB is present at install time.
 
 1. Write the ISO to a USB drive or mount it via iDRAC/iLO/IPMI on each node
 2. Boot all four nodes — they will enter **maintenance mode** and sit waiting for config
