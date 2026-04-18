@@ -1,0 +1,33 @@
+# CiliumLoadBalancerIPPool
+#
+# Defines the range of IP addresses Cilium is allowed to assign to
+# Services of type LoadBalancer. When you create a LoadBalancer Service,
+# Cilium picks the next free IP from this pool and assigns it as the
+# EXTERNAL-IP — unless the Service has a lbipam.cilium.io/ips annotation,
+# in which case Cilium honours that specific IP instead.
+#
+# No DHCP on VLAN 20, so the full 10.77.20.0/24 is statically controlled.
+# The pool sits well away from node addresses to avoid future conflicts.
+#
+# Address map for VLAN 20 (10.77.20.0/24):
+#   10.77.20.1        — gateway (router)
+#   10.77.20.10       — Talos VIP (control-plane virtual IP)
+#   10.77.20.11–13    — talos1, talos2, talos3 (node static IPs)
+#   10.77.20.14–49    — reserved for future nodes / infra
+#   ─────────────────────── LoadBalancer pool ────────────────────────
+#   10.77.20.50       — ArgoCD server       (pinned via annotation)
+#   10.77.20.51       — Longhorn UI         (pinned via annotation)
+#   10.77.20.52       — Cilium ingress      (pinned via annotation)
+#   10.77.20.53–99    — free pool for future LoadBalancer services
+#   ──────────────────────────────────────────────────────────────────
+#
+# Applied by: gitops/argocd-apps/cilium-config.yaml (sync AFTER cilium app)
+
+apiVersion: cilium.io/v2alpha1
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: homelab-pool
+spec:
+  blocks:
+    - start: "10.77.20.50"
+      stop: "10.77.20.99"

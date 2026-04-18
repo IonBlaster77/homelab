@@ -1,0 +1,34 @@
+# StorageClass: longhorn-ssd
+#
+# Routes volumes onto the SSD pool (sda4 EPHEMERAL, ~200 GB usable per node).
+# This is the general-purpose storage class for workloads that don't need
+# maximum IOPS:
+#   - Media files, backups
+#   - App config / state that isn't latency-sensitive
+#   - Development workloads
+#
+# How it works:
+#   diskSelector: ["ssd"] targets /var/lib/longhorn on each node's sda4
+#   partition. That partition is shared with Talos container runtime data,
+#   with 40 GB reserved for Talos (container images, logs, kubelet state).
+#   Longhorn uses the remaining ~200 GB.
+#
+# Usage in a PVC:
+#   storageClassName: longhorn-ssd
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-ssd
+  annotations:
+    # longhorn-ssd is the default for any PVC that doesn't specify a class.
+    # The built-in "longhorn" StorageClass is replaced by this one as default.
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "3"
+  staleReplicaTimeout: "30"
+  diskSelector: "ssd"

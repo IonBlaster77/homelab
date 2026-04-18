@@ -1,0 +1,37 @@
+# ArgoCD Application — Cilium network configuration (CRDs)
+#
+# Manages the Cilium custom resources that configure L2 announcements:
+#   - CiliumLoadBalancerIPPool  (which IPs to assign to LoadBalancer services)
+#   - CiliumL2AnnouncementPolicy (which interface to ARP-announce them on)
+#
+# WHY this is a separate Application from cilium.yaml:
+#   These CRD resources only exist after the Cilium Helm chart is installed
+#   (Cilium's install creates the CRD definitions). Keeping them separate lets
+#   you sync the Helm chart first, wait for Cilium pods to be Ready, then sync
+#   this Application — avoiding "CRD not found" errors.
+#
+# Sync order:
+#   1. Sync "cilium" Application  →  Cilium pods Running
+#   2. Sync "cilium-config" Application  →  IP pool + L2 policy created
+#   3. Sync "longhorn" Application  →  Longhorn gets a LoadBalancer IP
+#   4. ArgoCD server service updated to LoadBalancer  →  ArgoCD gets its own IP
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cilium-config
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/cilium
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    # No automated sync — changes to IP pools and L2 policies affect
+    # live traffic routing. Always review before syncing.
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,33 @@
+# CiliumL2AnnouncementPolicy
+#
+# Tells Cilium HOW to announce LoadBalancer IPs on the local network.
+# Without this policy, IPs are assigned from the pool but never advertised —
+# so your router/devices wouldn't know which node to send traffic to.
+#
+# How L2 announcements work:
+#   1. A Service gets an IP from the pool (e.g. 10.77.20.50)
+#   2. One Cilium node "wins" a lease for that IP (avoids duplicate ARP)
+#   3. That node broadcasts a Gratuitous ARP: "I have 10.77.20.50"
+#   4. Your home network's ARP table maps 10.77.20.50 → that node's MAC
+#   5. Traffic arrives at that node; Cilium routes it to the correct pod
+#      (even if the pod is on a different node)
+#   6. If the node goes down, another node takes over the lease and
+#      re-announces — failover in ~15s based on the lease settings above
+#
+# Applied by: gitops/argocd-apps/cilium-config.yaml (after Cilium is running)
+
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: homelab-l2-policy
+spec:
+  # Which network interface to send ARP announcements on.
+  # enp0s31f6 is the primary NIC on all nodes (the 10.77.20.x interface).
+  interfaces:
+    - enp0s31f6
+
+  # externalIPs: true — announce the LoadBalancer EXTERNAL-IP (from the pool).
+  # loadBalancerIPs: true — also needed for the pool IPs to be announced.
+  # Both should be true; externalIPs alone won't announce pool-allocated IPs.
+  externalIPs: true
+  loadBalancerIPs: true

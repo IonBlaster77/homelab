@@ -14,6 +14,13 @@ spec:
         defaultSettings:
           defaultReplicaCount: 3
           taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule;node-role.kubernetes.io/master:NoSchedule"
+          # createDefaultDiskLabeledNodes: true tells Longhorn to read the
+          # node.longhorn.io/default-disks-config annotation on each node
+          # (set in the Talos machineconfig) instead of auto-discovering disks.
+          # This gives us two tagged disk pools per node:
+          #   ssd  → /var/lib/longhorn        (sda4 EPHEMERAL, ~200 GB usable)
+          #   nvme → /var/lib/longhorn-nvme   (nvme0n1p1, ~246 GB usable)
+          createDefaultDiskLabeledNodes: true
         longhornManager:
           tolerations:
             - key: "node-role.kubernetes.io/control-plane"
@@ -44,6 +51,14 @@ spec:
           provisionerReplicaCount: 0
           resizerReplicaCount: 0
           snapshotterReplicaCount: 0
+        service:
+          ui:
+            type: LoadBalancer
+            annotations:
+              # Pins the Longhorn UI to 10.77.20.51 permanently.
+              # Reach the storage dashboard at http://10.77.20.51 from any
+              # device on VLAN 20 — stable across cluster rebuilds.
+              lbipam.cilium.io/ips: "10.77.20.51"
         ingress:
           enabled: false
         preUpgradeChecker:

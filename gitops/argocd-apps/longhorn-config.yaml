@@ -1,0 +1,34 @@
+# ArgoCD Application — Longhorn storage configuration
+#
+# Manages the custom StorageClasses for the two disk pools:
+#   longhorn-ssd   → sda4 EPHEMERAL (~200 GB usable, default class)
+#   longhorn-nvme  → nvme0n1p1 (~246 GB usable, opt-in for fast storage)
+#
+# Sync order on a fresh cluster:
+#   1. Sync "longhorn"        — installs Longhorn, creates disk pools from
+#                               node annotations (set in Talos machineconfig)
+#   2. Sync "longhorn-config" — creates the two StorageClasses
+#
+# The default "longhorn" StorageClass created by the Helm chart continues
+# to exist but has no diskSelector — it will use any available disk. The
+# longhorn-ssd class is set as the cluster default instead.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn-config
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/longhorn
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    # Manual sync — storage class changes affect all future PVC provisioning.
+    # Review before applying.

@@ -1,0 +1,33 @@
+# StorageClass: longhorn-nvme
+#
+# Routes volumes onto the NVMe disk pool (nvme0n1p1, ~246 GB per node).
+# Use this for workloads that benefit from lower latency:
+#   - Databases (PostgreSQL, MySQL, etc.)
+#   - Message queues (RabbitMQ, etc.)
+#   - Any app where disk speed is a bottleneck
+#
+# How it works:
+#   diskSelector: ["nvme"] tells Longhorn to only place replicas on disks
+#   tagged "nvme" — which is /var/lib/longhorn-nvme on each node.
+#   Each volume gets 3 replicas (one per node) across all 3 NVMe disks.
+#
+# Usage in a PVC:
+#   storageClassName: longhorn-nvme
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-nvme
+  annotations:
+    # Not the cluster default — use longhorn-ssd for general workloads,
+    # longhorn-nvme only when you explicitly need fast storage.
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "3"
+  staleReplicaTimeout: "30"
+  diskSelector: "nvme"
+  # fsType defaults to ext4; override per-PVC if you need xfs

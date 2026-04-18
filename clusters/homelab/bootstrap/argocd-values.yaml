@@ -3,17 +3,24 @@ global:
   domain: ""  # can leave empty for now
 
 server:
-  # Turn on the UI + API service
   service:
-    type: NodePort
-    nodePortHttp: null     # we won't use HTTP
-    nodePortHttps: 32080   # you can pick any free port in NodePort range
+    type: LoadBalancer
+    annotations:
+      # lbipam.cilium.io/ips pins this service to exactly 10.77.20.50 every time.
+      # Without this annotation, Cilium picks the next free IP from the pool —
+      # fine functionally, but the IP would change after a cluster wipe.
+      # With the pin you can bookmark http://10.77.20.50 and it never moves.
+      lbipam.cilium.io/ips: "10.77.20.50"
 
   ingress:
-    enabled: false         # we'll keep it simple and skip ingress for now
+    enabled: false
 
 configs:
   params:
-    server.insecure: "true"  # allow HTTP if you later flip to HTTP/NodePort
+    # server.insecure: true — ArgoCD serves plain HTTP.
+    # This is fine because traffic stays on your local network and the
+    # LoadBalancer IP is only reachable inside 10.77.20.0/24.
+    # If you later add TLS (cert-manager + Let's Encrypt), set this to false.
+    server.insecure: "true"
   cm:
     application.resourceTrackingMethod: annotation

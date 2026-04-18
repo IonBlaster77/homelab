@@ -1,0 +1,151 @@
+# Cilium bootstrap Helm values
+#
+# Used during the manual bootstrap step BEFORE ArgoCD is running:
+#   helm repo add cilium https://helm.cilium.io/
+#   helm install cilium cilium/cilium \
+#     --namespace kube-system \
+#     --version 1.17.0 \
+#     --values clusters/homelab/bootstrap/cilium-values.yaml
+#
+# After ArgoCD is up, the cilium ArgoCD Application (gitops/argocd-apps/cilium.yaml)
+# takes over management of this release using the same values.
+# Check latest version: helm search repo cilium/cilium
+
+# =============================================================================
+# KUBE-PROXY REPLACEMENT
+# =============================================================================
+# kube-proxy is disabled in the Talos machineconfig (cluster.proxy.disabled: true).
+# Cilium must fully replace it — handling ClusterIP routing, NodePort, and
+# LoadBalancer traffic entirely in eBPF rather than iptables.
+kubeProxyReplacement: true
+
+# Where to find the Kubernetes API server.
+# Must be the cluster VIP (10.77.20.10) so this works regardless of which
+# control-plane node is currently active. Without this, Cilium would try
+# to reach the API via the in-cluster Service (which it hasn't set up yet
+# at boot time — chicken-and-egg).
+k8sServiceHost: 10.77.20.10
+k8sServicePort: 6443
+
+# =============================================================================
+# L2 ANNOUNCEMENTS  (makes LoadBalancer IPs reachable on your home network)
+# =============================================================================
+# When a Service of type LoadBalancer is created, Cilium will:
+#   1. Assign it an IP from the CiliumLoadBalancerIPPool (or the pinned IP
+#      from the lbipam.cilium.io/ips annotation on the Service)
+#   2. ARP-announce that IP on enp0s31f6 so your home network knows which
+#      node's MAC address owns that IP
+#
+# One node "wins" a lease for each IP and is the sole announcer. If that
+# node goes down, another node claims the lease and re-announces — failover
+# happens within ~15 seconds based on the timing values below.
+#
+# NOTE: This is an L2 (same-subnet) mechanism. It works perfectly on VLAN 20
+# because all nodes share the 10.77.20.0/24 segment. When you later add BGP
+# (see bgpControlPlane below), you can run L2 and BGP side-by-side during the
+# transition, then remove L2 — NO cluster wipe required.
+l2announcements:
+  enabled: true
+  leaseDuration: 15s
+  renewDeadline: 5s
+  retryPeriod: 2s
+
+# =============================================================================
+# BGP CONTROL PLANE  (future-proofing — does nothing until you add a BGPPolicy)
+# =============================================================================
+# Enabling this now costs nothing — it starts the BGP daemon but it stays idle
+# until you create a CiliumBGPPeeringPolicy pointing at your router.
+#
+# Why enable it now rather than later?
+#   Adding it later requires a Cilium Helm upgrade which restarts all Cilium
+#   pods simultaneously — brief network interruption across the cluster.
+#   Enabling it now during the bootstrap avoids that future disruption.
+#
+# When you're ready for BGP:
+#   1. Configure your router (pfSense/OPNsense/Mikrotik) with an ASN and
+#      accept peering from the node IPs
+#   2. Create a CiliumBGPPeeringPolicy in clusters/homelab/cilium/
+#   3. Verify routes appear on the router
+#   4. Delete the CiliumL2AnnouncementPolicy (l2-policy.yaml) — done
+#   NO WIPE, NO REINSTALL, just a config change.
+bgpControlPlane:
+  enabled: true
+
+# =============================================================================
+# INGRESS CONTROLLER
+# =============================================================================
+# Cilium acts as the cluster ingress controller — no separate nginx/Traefik needed.
+#
+# loadbalancerMode: shared
+#   All Ingress resources share ONE LoadBalancer IP (10.77.20.52, pinned below).
+#   Cilium routes to the right backend using the HTTP Host header / path.
+#   One IP handles unlimited apps — no IP-per-app waste.
+#
+# default: true
+#   Makes "cilium" the default IngressClass. Any Ingress resource without an
+#   explicit ingressClassName: field is automatically handled by Cilium.
+#
+# service.annotations: lbipam.cilium.io/ips
+#   Pins the shared ingress LoadBalancer to exactly 10.77.20.52 so it's always
+#   at the same address. You can point DNS (or a hosts file entry) at it and
+#   it won't change between cluster rebuilds as long as this value stays.
+ingressController:
+  enabled: true
+  loadbalancerMode: shared
+  default: true
+  service:
+    annotations:
+      lbipam.cilium.io/ips: "10.77.20.52"
+
+# =============================================================================
+# OPERATOR
+# =============================================================================
+# The Cilium operator handles IPAM, CRD management, and node cleanup.
+# 1 replica is enough for a homelab — no need for HA here.
+operator:
+  replicas: 1
+
+# =============================================================================
+# TALOS-SPECIFIC SETTINGS
+# =============================================================================
+# Talos runs with a hardened, immutable OS. These settings are required
+# for Cilium to function correctly on Talos nodes.
+
+# autoMount: false — Talos already mounts cgroupv2 at /sys/fs/cgroup.
+# If Cilium tries to mount it again it will fail. Tell Cilium to use
+# the already-mounted path instead.
+cgroup:
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup
+
+# The Linux capabilities Cilium's agent container needs.
+# Talos enforces strict seccomp/AppArmor profiles, so these must be
+# explicitly declared rather than relying on privileged mode.
+#
+# NET_ADMIN    — manage network interfaces, routes, iptables rules
+# NET_RAW      — create raw sockets (required for BPF programs)
+# SYS_ADMIN    — load BPF programs, manage namespaces
+# SYS_RESOURCE — set rlimits (BPF map memory size limits)
+# IPC_LOCK     — lock memory pages (BPF maps must not be swapped out)
+# CHOWN/FOWNER/SETGID/SETUID — file ownership for Cilium's runtime files
+# DAC_OVERRIDE — bypass file permission checks for the BPF filesystem
+# KILL         — send signals to processes in other network namespaces
+securityContext:
+  capabilities:
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
