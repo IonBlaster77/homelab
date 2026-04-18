@@ -1,9 +1,15 @@
 # ArgoCD Application — cert-manager configuration
 #
 # Applies the cert-manager runtime config after the Helm chart is running:
-#   - cloudflare-secret.yaml  — Cloudflare API token (SOPS encrypted)
 #   - clusterissuer-staging.yaml — Let's Encrypt staging (for testing)
 #   - clusterissuer-prod.yaml    — Let's Encrypt production (real certs)
+#
+# Bootstrap note:
+#   The cloudflare-api-token Secret is NOT managed by ArgoCD (no SOPS CMP
+#   is configured, so ArgoCD would apply the SOPS ciphertext as the literal
+#   secret value). Apply it manually once during bootstrap:
+#     cd clusters/homelab/bootstrap
+#     sops -d cloudflare-secret.yaml | kubectl apply -f -
 #
 # The wildcard Certificate for *.jupitertech.net lives in the "gateway"
 # Application (clusters/homelab/gateway/certificate.yaml) because the
@@ -13,7 +19,9 @@
 # Sync order:
 #   1. cert-manager must be Running before syncing this
 #      (ClusterIssuer CRD won't exist until cert-manager is up)
-#   2. Sync this before syncing "gateway"
+#   2. Apply cloudflare-secret manually (see above)
+#   3. Sync this (applies ClusterIssuers)
+#   4. Sync "gateway" (applies Certificate, routes)
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -32,17 +40,4 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
-      - RespectIgnoreDifferences=true
-    # Manual sync — contains secrets and issuer config. Review before applying.
-  ignoreDifferences:
-    # The cloudflare-api-token Secret is SOPS-encrypted in git. ArgoCD does not
-    # have a SOPS CMP configured, so it cannot decrypt before apply. We apply
-    # this secret manually (sops -d | kubectl apply) and tell ArgoCD to ignore
-    # the data field so it doesn't overwrite the live decrypted value with the
-    # encrypted ciphertext on each sync.
-    - group: ""
-      kind: Secret
-      name: cloudflare-api-token
-      namespace: cert-manager
-      jsonPointers:
-        - /data
+    # Manual sync — ClusterIssuers require cert-manager Running first.
