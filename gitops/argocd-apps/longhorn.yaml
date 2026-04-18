@@ -73,3 +73,7 @@ spec:
         - .spec.conversion.webhook.clientConfig.caBundle
         - .spec.preserveUnknownFields
         - .status
+    - group: ""
+      kind: Service
+      jqPathExpressions:
+        - .spec.ports[].nodePort
