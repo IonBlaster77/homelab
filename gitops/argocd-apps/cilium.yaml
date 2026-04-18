@@ -126,25 +126,24 @@ spec:
         - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
         - /spec/template/spec/containers/0/startupProbe/timeoutSeconds
 
-    # GatewayClass: status.conditions are set by the Cilium operator at runtime,
-    # not by the Helm chart template. ArgoCD ignores .status by default but
-    # the GatewayClass diff may include condition fields.
+    # GatewayClass: Helm adds app.kubernetes.io/managed-by=Helm at install time
+    # but the chart template has no labels. Use JSON pointer with ~1 to encode
+    # the literal "/" in the label key name.
     - group: gateway.networking.k8s.io
       kind: GatewayClass
       name: cilium
-      jqPathExpressions:
-        - .status.conditions[]
+      jsonPointers:
+        - /metadata/labels/app.kubernetes.io~1managed-by
 
-    # Roles/RoleBindings for gateway secrets: Helm adds app.kubernetes.io/managed-by
-    # label during helm install/upgrade but the chart template only includes
-    # app.kubernetes.io/part-of. ArgoCD sees the extra live label as a diff.
+    # Roles/RoleBindings for gateway secrets: same Helm-added label pattern.
+    # All four gateway/operator-gateway roles and bindings in cilium-secrets ns.
     - group: rbac.authorization.k8s.io
       kind: Role
       namespace: cilium-secrets
-      jqPathExpressions:
-        - .metadata.labels["app.kubernetes.io/managed-by"]
+      jsonPointers:
+        - /metadata/labels/app.kubernetes.io~1managed-by
     - group: rbac.authorization.k8s.io
       kind: RoleBinding
       namespace: cilium-secrets
-      jqPathExpressions:
-        - .metadata.labels["app.kubernetes.io/managed-by"]
+      jsonPointers:
+        - /metadata/labels/app.kubernetes.io~1managed-by
