@@ -33,3 +33,15 @@ spec:
     syncOptions:
       - CreateNamespace=true
     # Manual sync — contains secrets and issuer config. Review before applying.
+  ignoreDifferences:
+    # The cloudflare-api-token Secret is SOPS-encrypted in git. ArgoCD does not
+    # have a SOPS CMP configured, so it cannot decrypt before apply. We apply
+    # this secret manually (sops -d | kubectl apply) and tell ArgoCD to ignore
+    # the data field so it doesn't overwrite the live decrypted value with the
+    # encrypted ciphertext on each sync.
+    - group: ""
+      kind: Secret
+      name: cloudflare-api-token
+      namespace: cert-manager
+      jsonPointers:
+        - /data
