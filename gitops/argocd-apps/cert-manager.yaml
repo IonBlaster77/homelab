@@ -1,0 +1,54 @@
+# ArgoCD Application — cert-manager
+#
+# Deploys cert-manager via the official Helm chart.
+# cert-manager watches Certificate resources and automatically requests,
+# renews, and stores TLS certificates as Kubernetes Secrets.
+#
+# installCRDs: true — installs cert-manager's own CRDs (Certificate,
+# ClusterIssuer, etc.) as part of the Helm release. This is the
+# recommended approach for ArgoCD-managed releases.
+#
+# After this syncs, apply cert-manager-config (ClusterIssuers + Cloudflare
+# secret + wildcard Certificate) before syncing the gateway Application.
+#
+# Check latest version: helm search repo cert-manager/cert-manager
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.16.3
+    helm:
+      values: |
+        installCRDs: true
+        # Tolerate control-plane taints so cert-manager can run on all nodes
+        tolerations:
+          - key: "node-role.kubernetes.io/control-plane"
+            operator: "Exists"
+            effect: "NoSchedule"
+        webhook:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: "Exists"
+              effect: "NoSchedule"
+        cainjector:
+          tolerations:
+            - key: "node-role.kubernetes.io/control-plane"
+              operator: "Exists"
+              effect: "NoSchedule"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

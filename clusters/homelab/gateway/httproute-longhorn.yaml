@@ -1,0 +1,24 @@
+# HTTPRoute — Longhorn storage UI
+#
+# Routes https://longhorn.jupitertech.net → longhorn-system/longhorn-frontend:80
+#
+# Cross-namespace backend: HTTPRoute is in "networking", Service is in "longhorn-system".
+# referencegrant-longhorn.yaml in the longhorn-system namespace authorises this.
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: longhorn
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - "longhorn.jupitertech.net"
+  rules:
+    - backendRefs:
+        - name: longhorn-frontend
+          namespace: longhorn-system
+          port: 80

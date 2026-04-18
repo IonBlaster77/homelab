@@ -1,0 +1,30 @@
+# Wildcard TLS certificate for *.jupitertech.net
+#
+# cert-manager requests this from Let's Encrypt using Cloudflare DNS-01.
+# The resulting secret (jupitertech-wildcard-tls) is referenced by the Gateway.
+#
+# TESTING WORKFLOW:
+#   1. Sync cert-manager-config first (creates ClusterIssuers + this Certificate)
+#   2. Watch cert issue: kubectl get certificate -n networking -w
+#   3. Once Ready=True, sync gateway — TLS will be live immediately
+#
+# STAGING vs PROD:
+#   - letsencrypt-staging: fake CA, no rate limits, browser will warn — use for testing
+#   - letsencrypt-prod:    real cert, 50 certs/week limit — use once DNS-01 is confirmed working
+#   Switch by changing issuerRef.name below.
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: jupitertech-wildcard
+  namespace: networking
+spec:
+  secretName: jupitertech-wildcard-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "jupitertech.net"
+    - "*.jupitertech.net"
+  # Renew 30 days before expiry (Let's Encrypt certs are 90 days)
+  renewBefore: 720h

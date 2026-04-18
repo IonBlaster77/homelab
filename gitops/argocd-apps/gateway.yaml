@@ -1,0 +1,44 @@
+# ArgoCD Application — shared Gateway and routing rules
+#
+# Manages all Gateway API resources:
+#   namespace.yaml               — "networking" namespace
+#   gateway.yaml                 — Gateway pinned to 10.77.20.60
+#   certificate.yaml             — wildcard TLS cert for *.jupitertech.net
+#   httproute-redirect.yaml      — HTTP → HTTPS redirect (port 80)
+#   httproute-argocd.yaml        — argocd.jupitertech.net
+#   httproute-longhorn.yaml      — longhorn.jupitertech.net
+#   referencegrant-argocd.yaml   — cross-namespace auth (networking → argocd)
+#   referencegrant-longhorn.yaml — cross-namespace auth (networking → longhorn-system)
+#
+# Adding a new app behind the gateway:
+#   1. Add httproute-<appname>.yaml to clusters/homelab/gateway/
+#   2. Add referencegrant-<appname>.yaml to the same directory
+#      (namespace: the app's namespace, from: networking)
+#   3. Create a Cloudflare A record: appname.jupitertech.net → 10.77.20.60
+#   4. Sync this Application
+#
+# Sync order on a fresh cluster:
+#   gateway-api-crds → cert-manager → cert-manager-config → THIS
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/gateway
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: networking
+  syncPolicy:
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: baseline
+        pod-security.kubernetes.io/enforce-version: latest
+    syncOptions:
+      - CreateNamespace=true
+    # Manual sync — controls what is exposed externally. Review before applying.

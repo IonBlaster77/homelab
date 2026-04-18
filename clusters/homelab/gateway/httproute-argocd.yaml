@@ -1,0 +1,27 @@
+# HTTPRoute — ArgoCD UI
+#
+# Routes https://argocd.jupitertech.net → argocd/argocd-server:80
+#
+# ArgoCD runs in insecure mode (server.insecure: true in argocd-values.yaml)
+# so it serves plain HTTP on port 80. TLS is terminated at the Gateway.
+#
+# Cross-namespace backend: HTTPRoute is in "networking", Service is in "argocd".
+# referencegrant-argocd.yaml in the argocd namespace authorises this.
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - "argocd.jupitertech.net"
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          namespace: argocd
+          port: 80

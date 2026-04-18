@@ -1,0 +1,23 @@
+# Let's Encrypt PRODUCTION ClusterIssuer
+#
+# Issues real, browser-trusted certificates. Rate limited to 50 certs/week
+# per domain — test with letsencrypt-staging first.
+#
+# DNS-01 challenge via Cloudflare — see clusterissuer-staging.yaml for details.
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: Krishna.Moorthy77@icloud.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token

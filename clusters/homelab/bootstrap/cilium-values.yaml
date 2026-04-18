@@ -72,30 +72,24 @@ bgpControlPlane:
   enabled: true
 
 # =============================================================================
-# INGRESS CONTROLLER
+# GATEWAY API
 # =============================================================================
-# Cilium acts as the cluster ingress controller — no separate nginx/Traefik needed.
+# Cilium implements the Kubernetes Gateway API natively — no separate ingress
+# controller (nginx, Traefik) needed.
 #
-# loadbalancerMode: shared
-#   All Ingress resources share ONE LoadBalancer IP (10.77.20.52, pinned below).
-#   Cilium routes to the right backend using the HTTP Host header / path.
-#   One IP handles unlimited apps — no IP-per-app waste.
+# Gateway API replaces the older Ingress resource with a richer model:
+#   GatewayClass  — cluster-wide: "cilium" is the implementation
+#   Gateway       — a load balancer with named listeners (HTTP on 80, HTTPS on 443)
+#   HTTPRoute     — per-app routing rules attached to the Gateway
 #
-# default: true
-#   Makes "cilium" the default IngressClass. Any Ingress resource without an
-#   explicit ingressClassName: field is automatically handled by Cilium.
+# The Gateway resource (clusters/homelab/gateway/gateway.yaml) pins the shared
+# LoadBalancer to 10.77.20.60 via lbipam.cilium.io/ips annotation — all app
+# traffic enters the cluster through that single IP.
 #
-# service.annotations: lbipam.cilium.io/ips
-#   Pins the shared ingress LoadBalancer to exactly 10.77.20.52 so it's always
-#   at the same address. You can point DNS (or a hosts file entry) at it and
-#   it won't change between cluster rebuilds as long as this value stays.
-ingressController:
+# Prerequisites: Gateway API CRDs must be installed before Cilium is upgraded
+# with this setting (handled by the gateway-api-crds ArgoCD Application).
+gatewayAPI:
   enabled: true
-  loadbalancerMode: shared
-  default: true
-  service:
-    annotations:
-      lbipam.cilium.io/ips: "10.77.20.52"
 
 # =============================================================================
 # OPERATOR

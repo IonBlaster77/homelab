@@ -17,8 +17,9 @@
 #   ─────────────────────── LoadBalancer pool ────────────────────────
 #   10.77.20.50       — ArgoCD server       (pinned via annotation)
 #   10.77.20.51       — Longhorn UI         (pinned via annotation)
-#   10.77.20.52       — Cilium ingress      (pinned via annotation)
-#   10.77.20.53–99    — free pool for future LoadBalancer services
+#   10.77.20.52–59    — free pool
+#   10.77.20.60       — shared Gateway      (all app traffic, pinned via annotation)
+#   10.77.20.61–99    — free pool for future LoadBalancer services
 #   ──────────────────────────────────────────────────────────────────
 #
 # Applied by: gitops/argocd-apps/cilium-config.yaml (sync AFTER cilium app)

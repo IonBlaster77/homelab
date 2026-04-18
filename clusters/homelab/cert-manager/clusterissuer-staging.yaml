@@ -1,0 +1,30 @@
+# Let's Encrypt STAGING ClusterIssuer
+#
+# Use this issuer first when testing. Staging has much higher rate limits
+# but issues certs signed by a fake CA (browsers will warn — that's expected).
+# Once the full chain works end-to-end, switch routes to letsencrypt-prod.
+#
+# DNS-01 challenge via Cloudflare:
+#   cert-manager creates a _acme-challenge TXT record in Cloudflare,
+#   Let's Encrypt verifies it, then cert-manager deletes it.
+#   This works for internal clusters (no inbound HTTP required).
+#
+# The Cloudflare API token is in clusters/homelab/cert-manager/cloudflare-secret.yaml
+# (SOPS encrypted, applied by the cert-manager-config ArgoCD Application).
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: Krishna.Moorthy77@icloud.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token

@@ -1,0 +1,47 @@
+# Shared Cilium Gateway — the single entry point for all app traffic
+#
+# All services behind this gateway are reachable via *.jupitertech.net.
+# Traffic flow:
+#   Client → 10.77.20.60:443 → Gateway (TLS terminated) → HTTPRoute → backend pod
+#
+# IP assignment:
+#   lbipam.cilium.io/ips pins the LoadBalancer to 10.77.20.60 permanently.
+#   Set your Cloudflare wildcard DNS record: *.jupitertech.net → 10.77.20.60
+#
+# TLS:
+#   cert-manager issues a wildcard cert for *.jupitertech.net from Let's Encrypt
+#   via Cloudflare DNS-01 challenge (see clusters/homelab/gateway/certificate.yaml).
+#   The cert is stored as secret "jupitertech-wildcard-tls" in this namespace.
+#
+# Listeners:
+#   http  (80)  — accepts all routes, used only for HTTP→HTTPS redirect
+#   https (443) — TLS terminated with wildcard cert, routes to app backends
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: homelab-gateway
+  namespace: networking
+  annotations:
+    lbipam.cilium.io/ips: "10.77.20.60"
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: All
+
+    - name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: jupitertech-wildcard-tls
+            namespace: networking
+      allowedRoutes:
+        namespaces:
+          from: All

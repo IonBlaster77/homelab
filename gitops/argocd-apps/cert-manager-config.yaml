@@ -1,0 +1,35 @@
+# ArgoCD Application — cert-manager configuration
+#
+# Applies the cert-manager runtime config after the Helm chart is running:
+#   - cloudflare-secret.yaml  — Cloudflare API token (SOPS encrypted)
+#   - clusterissuer-staging.yaml — Let's Encrypt staging (for testing)
+#   - clusterissuer-prod.yaml    — Let's Encrypt production (real certs)
+#
+# The wildcard Certificate for *.jupitertech.net lives in the "gateway"
+# Application (clusters/homelab/gateway/certificate.yaml) because the
+# resulting TLS secret must be in the "networking" namespace alongside
+# the Gateway resource.
+#
+# Sync order:
+#   1. cert-manager must be Running before syncing this
+#      (ClusterIssuer CRD won't exist until cert-manager is up)
+#   2. Sync this before syncing "gateway"
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-config
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/cert-manager
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    # Manual sync — contains secrets and issuer config. Review before applying.

@@ -11,3 +11,7 @@ creation_rules:
   # ArgoCD bootstrap secrets
   - path_regex: clusters/homelab/bootstrap/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+
+  # cert-manager secrets (Cloudflare API token etc.)
+  - path_regex: clusters/homelab/cert-manager/.*secret.*\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
