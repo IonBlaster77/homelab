@@ -1,15 +1,30 @@
-# ArgoCD Application — Cilium CNI (Helm chart)
+# ArgoCD Application — Cilium CNI (umbrella Helm chart, git-path source)
+#
+# Source is now clusters/homelab/cilium-chart/ in this git repo — an umbrella
+# chart that declares cilium v1.17.0 as a dependency.  The chart tarball is
+# vendored in cilium-chart/charts/cilium-1.17.0.tgz so ArgoCD never reaches
+# out to helm.cilium.io at sync time.
+#
+# Why umbrella chart instead of direct Helm repo source?
+#   ArgoCD v3 has a semver bug: when repoURL is a Helm HTTP index, the
+#   GenerateManifest RPC fails with "improper constraint: HEAD" even when
+#   targetRevision is a valid semver like 1.17.0.  The git-path code path
+#   is unaffected — ArgoCD runs `helm dependency build` using Chart.lock
+#   (which has the exact version + digest) and skips all version resolution.
 #
 # This Application takes over management of the Cilium Helm release that was
-# installed manually during bootstrap. ArgoCD "adopts" the existing release
-# because the chart name, namespace, and release name all match the manual install.
+# installed manually during bootstrap (clusters/homelab/bootstrap/cilium-values.yaml).
+# ArgoCD "adopts" the existing release because the release name (cilium),
+# namespace (kube-system), and all resource names match.
 #
 # Sync is MANUAL — you control when Cilium upgrades happen. This is intentional:
 # a bad Cilium upgrade breaks all cluster networking instantly.
 #
-# project: default is used (not homelab) because the homelab AppProject only
-# allows sources from github.com/IonBlaster77/homelab.git, but this chart
-# comes from helm.cilium.io. Same reason longhorn uses project: default.
+# To upgrade Cilium:
+#   1. Edit clusters/homelab/cilium-chart/Chart.yaml — bump the dependency version
+#   2. Run: helm dependency update clusters/homelab/cilium-chart
+#   3. Commit Chart.lock and charts/cilium-X.Y.Z.tgz, delete the old .tgz
+#   4. Manually sync this Application in ArgoCD
 #
 # IP assignments on VLAN 20 (10.77.20.0/24):
 #   10.77.20.50  — ArgoCD server      (pinned in clusters/homelab/bootstrap/argocd-values.yaml)
@@ -23,57 +38,15 @@ metadata:
   name: cilium
   namespace: argocd
 spec:
-  project: default
+  project: homelab
   source:
-    repoURL: https://helm.cilium.io/
-    chart: cilium
-    # Pin to the exact version used during bootstrap so ArgoCD doesn't
-    # try to "fix" a version drift on first sync.
-    # Check available versions: helm search repo cilium/cilium --versions
-    targetRevision: 1.17.0
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/cilium-chart
     helm:
-      # These values must stay in sync with clusters/homelab/bootstrap/cilium-values.yaml.
-      # If they drift, ArgoCD will show OutOfSync and overwrite the live config on next sync.
-      values: |
-        kubeProxyReplacement: true
-        k8sServiceHost: 10.77.20.10
-        k8sServicePort: 6443
-        routingMode: native
-        autoDirectNodeRoutes: true
-        ipv4NativeRoutingCIDR: 10.0.0.0/8
-        l2announcements:
-          enabled: true
-          leaseDuration: 15s
-          renewDeadline: 5s
-          retryPeriod: 2s
-        bgpControlPlane:
-          enabled: true
-        gatewayAPI:
-          enabled: true
-        operator:
-          replicas: 1
-        cgroup:
-          autoMount:
-            enabled: false
-          hostRoot: /sys/fs/cgroup
-        securityContext:
-          capabilities:
-            ciliumAgent:
-              - CHOWN
-              - KILL
-              - NET_ADMIN
-              - NET_RAW
-              - IPC_LOCK
-              - SYS_ADMIN
-              - SYS_RESOURCE
-              - DAC_OVERRIDE
-              - FOWNER
-              - SETGID
-              - SETUID
-            cleanCiliumState:
-              - NET_ADMIN
-              - SYS_ADMIN
-              - SYS_RESOURCE
+      # releaseName must match the existing Helm release so ArgoCD adopts it
+      # rather than creating a duplicate release alongside the bootstrapped one.
+      releaseName: cilium
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -147,3 +120,53 @@ spec:
       namespace: cilium-secrets
       jsonPointers:
         - /metadata/labels/app.kubernetes.io~1managed-by
+
+    # helm.sh/chart label: umbrella chart renders "cilium-wrapper-0.1.0" but
+    # the live resources show "cilium-1.17.0" (set at bootstrap time).
+    # Ignore across all resource types to keep status clean.
+    - group: ""
+      kind: ConfigMap
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: apps
+      kind: DaemonSet
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+        - /spec/template/metadata/labels/helm.sh~1chart
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+        - /spec/template/metadata/labels/helm.sh~1chart
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: Role
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart

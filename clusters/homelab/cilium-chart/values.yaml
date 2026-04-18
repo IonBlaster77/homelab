@@ -1,0 +1,51 @@
+# Cilium values — nested under "cilium:" because this is an umbrella chart.
+# The subchart name in Chart.yaml is "cilium", so Helm requires all values
+# to live under that key.  These must stay in sync with:
+#   clusters/homelab/bootstrap/cilium-values.yaml  (used for manual bootstrap)
+#
+# To upgrade Cilium:
+#   1. Bump version in Chart.yaml dependencies + Chart.lock
+#   2. Run: helm dependency update clusters/homelab/cilium-chart
+#   3. Commit Chart.lock (and the updated .tgz in charts/ if vendored)
+#   4. Manually sync the "cilium" ArgoCD Application
+
+cilium:
+  kubeProxyReplacement: true
+  k8sServiceHost: 10.77.20.10
+  k8sServicePort: 6443
+  routingMode: native
+  autoDirectNodeRoutes: true
+  ipv4NativeRoutingCIDR: 10.0.0.0/8
+  l2announcements:
+    enabled: true
+    leaseDuration: 15s
+    renewDeadline: 5s
+    retryPeriod: 2s
+  bgpControlPlane:
+    enabled: true
+  gatewayAPI:
+    enabled: true
+  operator:
+    replicas: 1
+  cgroup:
+    autoMount:
+      enabled: false
+    hostRoot: /sys/fs/cgroup
+  securityContext:
+    capabilities:
+      ciliumAgent:
+        - CHOWN
+        - KILL
+        - NET_ADMIN
+        - NET_RAW
+        - IPC_LOCK
+        - SYS_ADMIN
+        - SYS_RESOURCE
+        - DAC_OVERRIDE
+        - FOWNER
+        - SETGID
+        - SETUID
+      cleanCiliumState:
+        - NET_ADMIN
+        - SYS_ADMIN
+        - SYS_RESOURCE

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: cilium-wrapper
+description: >
+  Umbrella chart wrapping the upstream Cilium CNI Helm chart.
+  Using a git-path source instead of a direct Helm repo source avoids
+  the ArgoCD v3 semver bug ("improper constraint: HEAD") that fires
+  on GenerateManifest when the repoURL is a Helm HTTP index.
+  ArgoCD runs `helm dependency build` against Chart.lock, which fetches
+  the exact cilium-1.17.0.tgz — no version resolution, no HEAD lookup.
+type: application
+version: 0.1.0
+dependencies:
+  - name: cilium
+    version: 1.17.0
+    repository: https://helm.cilium.io/
