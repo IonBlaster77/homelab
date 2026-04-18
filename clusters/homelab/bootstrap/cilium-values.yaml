@@ -92,6 +92,27 @@ gatewayAPI:
   enabled: true
 
 # =============================================================================
+# NATIVE ROUTING MODE  (replaces the default VXLAN overlay)
+# =============================================================================
+# All nodes share the same physical L2 segment (10.77.20.0/24).
+# Native routing eliminates the VXLAN tunnel device entirely:
+#   - No cilium_vxlan kernel device → no dead loop kernel crash
+#   - Nodes register with their real physical IPs (10.77.20.x) in Kubernetes
+#   - kubectl logs / exec / port-forward work reliably
+#   - Simpler network path, easier to debug
+#
+# autoDirectNodeRoutes: Cilium programs a host route on each node for every
+#   other node's pod CIDR, pointing at that node's physical IP.
+#   Requires all nodes to be on the same L2 broadcast domain — which they are.
+#
+# ipv4NativeRoutingCIDR: Tells Cilium NOT to masquerade pod-to-pod traffic
+#   within this range. Without it, cross-node pod traffic would be SNATed to
+#   the node IP and lose the pod source address — wrong for NetworkPolicy.
+routingMode: native
+autoDirectNodeRoutes: true
+ipv4NativeRoutingCIDR: 10.0.0.0/8
+
+# =============================================================================
 # OPERATOR
 # =============================================================================
 # The Cilium operator handles IPAM, CRD management, and node cleanup.
