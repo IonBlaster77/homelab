@@ -76,6 +76,57 @@ sops -d clusters/homelab/talos/talos4.yaml | \
   talosctl apply-config --insecure --nodes 10.77.20.14 --file /dev/stdin
 ```
 
+> **⚠️ talos4 NVMe pre-requisite:** The NVMe drive (`/dev/nvme0n1`) in talos4 previously
+> contained a Windows installation. Talos does **not** automatically wipe user disks —
+> if the NVMe has existing partitions, the `mountUserDisks` startup phase will block
+> forever and kubelet will never start (`/etc/kubernetes` becomes read-only).
+>
+> Before applying talos4's config, check whether the NVMe is clean:
+> ```bash
+> talosctl --nodes 10.77.20.14 get discoveredvolumes --insecure 2>&1 | grep nvme
+> # Safe to proceed if nvme0n1 shows no partitions, or partitions already labelled XFS
+> # Needs wipe if you see: EFI system partition / Microsoft basic data
+> ```
+>
+> If the NVMe has foreign partitions, apply talos4.yaml without the `disks:` section
+> first (comment it out in `/tmp/talos4_plain.yaml`, re-encrypt), get the node into
+> the cluster, then run the wipe pod:
+> ```bash
+> # Wipe pod — runs once on talos4, deletes itself
+> kubectl apply -f - <<'EOF'
+> apiVersion: v1
+> kind: Pod
+> metadata:
+>   name: nvme-wipe
+>   namespace: kube-system
+> spec:
+>   nodeName: talos4
+>   tolerations:
+>     - operator: Exists
+>   containers:
+>   - name: wipe
+>     image: alpine
+>     securityContext:
+>       privileged: true
+>     command: ["sh", "-c", "apk add sgdisk util-linux -q && sgdisk --zap-all /dev/nvme0n1 && wipefs -a /dev/nvme0n1 && echo NVMe wiped"]
+>     volumeMounts:
+>     - name: dev
+>       mountPath: /dev
+>   volumes:
+>   - name: dev
+>     hostPath:
+>       path: /dev
+>   restartPolicy: Never
+> EOF
+> kubectl wait pod/nvme-wipe -n kube-system --for=condition=Ready --timeout=60s
+> kubectl logs nvme-wipe -n kube-system   # should end with "NVMe wiped"
+> kubectl delete pod nvme-wipe -n kube-system
+>
+> # Then re-apply talos4.yaml with the disks section restored
+> sops -d clusters/homelab/talos/talos4.yaml | \
+>   talosctl apply-config --nodes 10.77.20.14 --file /dev/stdin --mode=auto
+> ```
+
 Each node will reboot and install Talos to disk. Wait for them to come back up
 (~2–3 minutes). The nodes will re-enter a ready-but-not-yet-clustered state.
 
@@ -398,6 +449,14 @@ The node annotation may not have been applied. Verify:
 `kubectl get node talos1 -o jsonpath='{.metadata.annotations}'`  
 Look for `node.longhorn.io/default-disks-config`. If missing, the Talos machineconfig  
 didn't apply — run `talosctl apply-config` for that node again.
+
+**talos4 kubelet won't start — `/etc/kubernetes/bootstrap-kubeconfig: read-only file system`**  
+Root cause: the NVMe (`/dev/nvme0n1`) has foreign partitions (Windows, old OS etc). The
+`mountUserDisks` startup phase blocks forever, so the `/etc/kubernetes` overlay is never
+mounted, making the path read-only from the squashfs.  
+Fix: follow the NVMe wipe procedure in Phase 2 above.  
+Quick confirmation: `talosctl --nodes 10.77.20.14 dmesg | grep "filesystem type mismatch"`
+— if you see `vfat != xfs` you hit this issue.
 
 **LoadBalancer IPs stuck Pending after cilium-config sync**  
 Verify the L2 policy interface name matches the actual NIC:
