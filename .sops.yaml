@@ -4,14 +4,18 @@ creation_rules:
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$"
 
-  # Kubernetes secret manifests - encrypt the whole thing
+  # Kubernetes secret manifests - only encrypt secret values, keep metadata readable
+  # encrypted_regex restricts SOPS to data/stringData so ArgoCD can see apiVersion/kind/metadata
   - path_regex: clusters/homelab/apps/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(data|stringData)$"
 
   # ArgoCD bootstrap secrets
   - path_regex: clusters/homelab/bootstrap/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(data|stringData)$"
 
   # cert-manager secrets (Cloudflare API token etc.)
   - path_regex: clusters/homelab/cert-manager/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(data|stringData)$"
