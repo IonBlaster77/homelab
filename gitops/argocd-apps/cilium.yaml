@@ -82,4 +82,12 @@ spec:
   syncPolicy:
     syncOptions:
       - CreateNamespace=true
+      - RespectIgnoreDifferences=true
     # No automated sync — Cilium upgrades are high-risk and should be manual.
+  ignoreDifferences:
+    - group: ""
+      kind: ConfigMap
+      name: cilium-config
+      namespace: kube-system
+      jsonPointers:
+        - /data/ipam-multi-pool-pre-allocation
