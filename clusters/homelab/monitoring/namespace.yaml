@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    # node-exporter requires hostNetwork, hostPID, and hostPath volumes.
+    # Without privileged enforcement, pods are blocked by the cluster-wide baseline PSA default.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/audit: privileged
