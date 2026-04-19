@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: adguard-dns-rewrites
+  namespace: adguard
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: apply-rewrites
+          image: curlimages/curl:8.7.1
+          env:
+            - name: ADGUARD_USER
+              valueFrom:
+                secretKeyRef:
+                  name: adguard-api-credentials
+                  key: username
+            - name: ADGUARD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: adguard-api-credentials
+                  key: password
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              API="http://adguard-primary:3000"
+
+              add_rewrite() {
+                domain=$1
+                answer=$2
+                LIST=$(curl -sf -u "$ADGUARD_USER:$ADGUARD_PASSWORD" "$API/control/rewrite/list")
+                if echo "$LIST" | grep -q "\"domain\":\"$domain\""; then
+                  echo "rewrite $domain already exists, skipping"
+                else
+                  curl -sf -u "$ADGUARD_USER:$ADGUARD_PASSWORD" \
+                    -H 'Content-Type: application/json' \
+                    -d "{\"domain\":\"$domain\",\"answer\":\"$answer\"}" \
+                    "$API/control/rewrite/add"
+                  echo "added $domain -> $answer"
+                fi
+              }
+
+              add_rewrite "nas.jupitertech.net"      "10.77.10.20"
+              add_rewrite "argocd.jupitertech.net"   "10.77.20.60"
+              add_rewrite "grafana.jupitertech.net"  "10.77.20.60"
+              add_rewrite "longhorn.jupitertech.net" "10.77.20.60"
+              add_rewrite "adguard.jupitertech.net"  "10.77.20.60"
+              add_rewrite "home.jupitertech.net"     "10.77.20.60"
