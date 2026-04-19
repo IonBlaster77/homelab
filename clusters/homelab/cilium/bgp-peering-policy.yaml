@@ -13,7 +13,7 @@ spec:
 
   virtualRouters:
     - localASN: 65531
-      exportPodCIDR: false
+      exportPodCIDR: true
 
       # Advertise all LoadBalancer external IPs — the /32 routes for
       # 10.77.20.50 (ArgoCD), .51 (Longhorn), .53 (AdGuard), .60 (Gateway)
