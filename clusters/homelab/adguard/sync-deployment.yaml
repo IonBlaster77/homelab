@@ -13,18 +13,13 @@ spec:
       labels:
         app: adguard-sync
     spec:
-      imagePullSecrets:
-        - name: ghcr-pull-secret
       containers:
         - name: sync
-          image: ghcr.io/bakito/adguard-home-sync:latest
-          args:
-            - run
-            - --config
-            - /config/config.yaml
+          image: lscr.io/linuxserver/adguardhome-sync:latest
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /config/adguardhome-sync.yaml
+              subPath: config.yaml
               readOnly: true
       volumes:
         - name: config
