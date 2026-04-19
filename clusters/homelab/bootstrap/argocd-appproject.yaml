@@ -7,6 +7,7 @@ spec:
   description: HomeLab production cluster
   sourceRepos:
     - https://github.com/IonBlaster77/homelab.git
+    - https://charts.goauthentik.io
   destinations:
     - namespace: '*'
       server: https://kubernetes.default.svc
