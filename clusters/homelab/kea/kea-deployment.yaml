@@ -15,7 +15,7 @@ spec:
     spec:
       initContainers:
         - name: db-init
-          image: jonasal/kea-dhcp4:2.6.5
+          image: jonasal/kea-dhcp4:2.6.3
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -33,7 +33,7 @@ spec:
                   key: password
       containers:
         - name: kea-dhcp4
-          image: jonasal/kea-dhcp4:2.6.5
+          image: jonasal/kea-dhcp4:2.6.3
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -60,7 +60,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
         - name: kea-ctrl-agent
-          image: jonasal/kea-ctrl-agent:2.6.5
+          image: jonasal/kea-ctrl-agent:2.6.3
           command: ["kea-ctrl-agent", "-c", "/etc/kea/kea-ctrl-agent.conf"]
           ports:
             - name: api
