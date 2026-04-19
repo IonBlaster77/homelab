@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://kubernetes-sigs.github.io/metrics-server/
+    chart: metrics-server
+    targetRevision: 3.13.0
+    helm:
+      releaseName: metrics-server
+      values: |
+        args:
+          # Talos kubelets present self-signed serving certs — skip TLS verification.
+          - --kubelet-insecure-tls
+          # Use node IPs rather than hostnames; Talos nodes don't register with
+          # resolvable DNS names inside the cluster.
+          - --kubelet-preferred-address-types=InternalIP
+
+        tolerations:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
