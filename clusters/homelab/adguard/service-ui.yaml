@@ -1,0 +1,17 @@
+# ClusterIP for the AdGuard web UI — accessed via the shared Gateway,
+# not exposed directly. HTTPRoute in clusters/homelab/gateway/ routes
+# adguard.jupitertech.net → this service on port 3000.
+apiVersion: v1
+kind: Service
+metadata:
+  name: adguard-ui
+  namespace: adguard
+spec:
+  type: ClusterIP
+  selector:
+    app: adguard
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP

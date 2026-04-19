@@ -1,0 +1,35 @@
+apiVersion: cilium.io/v2alpha1
+kind: CiliumBGPPeeringPolicy
+metadata:
+  name: homelab-bgp
+spec:
+  # Apply to all nodes — each establishes its own BGP session to the MikroTik.
+  # The MikroTik receives /32 routes for every LoadBalancer VIP and installs
+  # them pointing at whichever node currently holds the VIP. On failover,
+  # Cilium withdraws the route from the dead node and re-announces from a
+  # surviving node; the MikroTik updates in <1s.
+  nodeSelector:
+    matchLabels: {}
+
+  virtualRouters:
+    - localASN: 65531
+      exportPodCIDR: false
+
+      # Advertise all LoadBalancer external IPs — the /32 routes for
+      # 10.77.20.50 (ArgoCD), .51 (Longhorn), .53 (AdGuard), .60 (Gateway)
+      # etc. are pushed to the MikroTik as they are allocated.
+      serviceSelector:
+        matchLabels: {}
+      serviceAdvertisements:
+        - LoadBalancerIP
+
+      neighbors:
+        - peerAddress: "10.77.20.1/32"
+          peerASN: 65530
+          # Aggressive timers — detect dead peer in 30s rather than the
+          # default 90s. Keepalive fires every 10s (hold / 3).
+          holdTimeSeconds: 30
+          keepAliveTimeSeconds: 10
+          gracefulRestart:
+            enabled: true
+            restartTimeSeconds: 15

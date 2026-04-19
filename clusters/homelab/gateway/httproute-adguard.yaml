@@ -1,0 +1,23 @@
+# HTTPRoute — AdGuard Home UI
+#
+# Routes https://adguard.jupitertech.net → adguard/adguard-ui:3000
+# TLS terminated at the Gateway using the *.jupitertech.net wildcard cert.
+# Cross-namespace backend authorised by referencegrant-adguard.yaml.
+
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: adguard
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - "adguard.jupitertech.net"
+  rules:
+    - backendRefs:
+        - name: adguard-ui
+          namespace: adguard
+          port: 3000

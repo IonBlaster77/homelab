@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adguard
+  namespace: adguard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: adguard
+  template:
+    metadata:
+      labels:
+        app: adguard
+    spec:
+      # Hard anti-affinity — guarantees the two replicas land on different
+      # nodes so a single node failure never takes out both DNS instances.
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: adguard
+              topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: adguard
+          image: adguard/adguardhome:v0.107.52
+          args:
+            - --config
+            - /opt/adguardhome/conf/AdGuardHome.yaml
+            - --work-dir
+            - /opt/adguardhome/work
+            - --no-check-update
+          ports:
+            - name: dns-udp
+              containerPort: 53
+              protocol: UDP
+            - name: dns-tcp
+              containerPort: 53
+              protocol: TCP
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /opt/adguardhome/conf
+            # Per-pod ephemeral work dir — avoids SQLite lock conflicts
+            # between replicas. Query logs and stats don't persist across
+            # pod restarts; use AdGuard's remote logging if you need retention.
+            - name: work
+              mountPath: /opt/adguardhome/work
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: adguard-config
+        - name: work
+          emptyDir: {}

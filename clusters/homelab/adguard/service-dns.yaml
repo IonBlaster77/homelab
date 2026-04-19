@@ -1,0 +1,24 @@
+# DNS LoadBalancer — pinned to 10.77.20.53.
+# Point your router/clients at this IP as their DNS server.
+# Both UDP and TCP on port 53 are required: UDP for normal queries,
+# TCP for large responses (DNSSEC, long TXT records) and retries.
+apiVersion: v1
+kind: Service
+metadata:
+  name: adguard-dns
+  namespace: adguard
+  annotations:
+    lbipam.cilium.io/ips: "10.77.20.53"
+spec:
+  type: LoadBalancer
+  selector:
+    app: adguard
+  ports:
+    - name: dns-udp
+      port: 53
+      targetPort: 53
+      protocol: UDP
+    - name: dns-tcp
+      port: 53
+      targetPort: 53
+      protocol: TCP

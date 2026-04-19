@@ -1,0 +1,15 @@
+# Shared config volume — ReadWriteMany so both replicas mount the same
+# AdGuardHome.yaml. The work directory (query logs, stats) is emptyDir
+# per-pod to avoid SQLite write conflicts between replicas.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adguard-config
+  namespace: adguard
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi

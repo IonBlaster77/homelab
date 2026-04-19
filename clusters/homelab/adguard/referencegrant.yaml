@@ -1,0 +1,17 @@
+# Authorises the Gateway (in the networking namespace) to forward traffic
+# to the adguard-ui Service in this namespace.
+# Without this, the HTTPRoute cross-namespace backend reference is rejected.
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: adguard-gateway
+  namespace: adguard
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: networking
+  to:
+    - group: ""
+      kind: Service
+      name: adguard-ui
