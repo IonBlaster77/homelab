@@ -8,6 +8,7 @@ spec:
   sourceRepos:
     - https://github.com/IonBlaster77/homelab.git
     - https://charts.goauthentik.io
+    - https://helm.runix.net
   destinations:
     - namespace: '*'
       server: https://kubernetes.default.svc

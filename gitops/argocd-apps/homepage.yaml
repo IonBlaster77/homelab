@@ -37,7 +37,7 @@ spec:
             layout:
               Cluster Management:
                 style: row
-                columns: 3
+                columns: 4
               Network & Security:
                 style: row
                 columns: 3
@@ -54,6 +54,13 @@ spec:
 
           services:
             - Cluster Management:
+                - pgAdmin:
+                    href: https://pgadmin.jupitertech.net
+                    description: PostgreSQL database administration
+                    icon: pgadmin.png
+                    siteMonitor: https://pgadmin.jupitertech.net
+                    namespace: pgadmin
+                    app: pgadmin4
                 - ArgoCD:
                     href: https://argocd.jupitertech.net
                     description: GitOps continuous delivery

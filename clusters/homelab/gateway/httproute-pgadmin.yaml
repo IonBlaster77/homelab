@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pgadmin
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - "pgadmin.jupitertech.net"
+  rules:
+    - backendRefs:
+        - name: pgadmin4
+          namespace: pgadmin
+          port: 80
