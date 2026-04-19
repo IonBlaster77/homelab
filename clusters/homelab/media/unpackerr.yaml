@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unpackerr
+  namespace: media
+  labels:
+    app: unpackerr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unpackerr
+  template:
+    metadata:
+      labels:
+        app: unpackerr
+    spec:
+      containers:
+        - name: unpackerr
+          image: golift/unpackerr:latest
+          env:
+            - name: TZ
+              value: Australia/Adelaide
+            - name: UN_FOLDER_0_PATH
+              value: /data/torrents
+            - name: UN_FOLDER_0_DELETE_AFTER
+              value: "0"
+            - name: UN_FOLDER_0_DELETE_FILES
+              value: "false"
+            - name: UN_FOLDER_0_MOVE_BACK
+              value: "false"
+            - name: UN_SONARR_0_URL
+              value: http://sonarr:8989
+            - name: UN_SONARR_0_API_KEY
+              value: CHANGEME
+            - name: UN_RADARR_0_URL
+              value: http://radarr:7878
+            - name: UN_RADARR_0_API_KEY
+              value: CHANGEME
+          volumeMounts:
+            - name: media
+              mountPath: /data
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 25m
+            limits:
+              memory: 256Mi
+              cpu: 250m
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: media-nfs

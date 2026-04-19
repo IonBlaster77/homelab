@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: recyclarr-config
+  namespace: media
+data:
+  recyclarr.yml: |
+    # Recyclarr configuration
+    # Fill in the api_key fields before deploying.
+    # Retrieve API keys from each app's Settings > General > Security.
+
+    radarr:
+      main-radarr:
+        base_url: http://radarr:7878
+        api_key: CHANGEME  # Replace with Radarr API key
+
+        quality_profiles:
+          - name: SQP-1 (1080p)
+            reset_unmatched_scores:
+              enabled: true
+            upgrade:
+              allowed: true
+              until_quality: Bluray-1080p
+              until_score: 10000
+            min_format_score: 0
+            quality_sort: top
+            qualities:
+              - name: Bluray-1080p
+              - name: WEB 1080p
+                qualities:
+                  - WEBDL-1080p
+                  - WEBRip-1080p
+              - name: HDTV-1080p
+
+        custom_formats:
+          - trash_ids:
+              # Unwanted
+              - ed38b889b31be83fda192888e2286d83  # BR-DISK
+              - 90cedc1fea7ea5d11298bebd3d1d3223  # EVO (no WEBDL)
+              - 90a6f9a284dff5103f6346090e6280c8  # LQ
+              - b8cd450cbfa689c0259a01d9e29ba3d6  # LQ (Release Title)
+            assign_scores_to:
+              - name: SQP-1 (1080p)
+                score: -10000
+
+          - trash_ids:
+              # HDR Formats
+              - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
+            assign_scores_to:
+              - name: SQP-1 (1080p)
+                score: 10
+
+          - trash_ids:
+              - e61e28db917a7f8927dd2fc372970a79  # DV
+            assign_scores_to:
+              - name: SQP-1 (1080p)
+                score: 15
+
+          - trash_ids:
+              - 9170d55c319f4fe40da8711ba9d8050d  # x265 (HD)
+            assign_scores_to:
+              - name: SQP-1 (1080p)
+                score: -10
+
+    sonarr:
+      main-sonarr:
+        base_url: http://sonarr:8989
+        api_key: CHANGEME  # Replace with Sonarr API key
+
+        quality_profiles:
+          - name: WEB-1080p
+            reset_unmatched_scores:
+              enabled: true
+            upgrade:
+              allowed: true
+              until_quality: WEB 1080p
+              until_score: 10000
+            min_format_score: 0
+            quality_sort: top
+            qualities:
+              - name: WEB 1080p
+                qualities:
+                  - WEBDL-1080p
+                  - WEBRip-1080p
+              - name: HDTV-1080p
+
+        custom_formats:
+          - trash_ids:
+              # Unwanted
+              - 85c61753df5da1fb2aab6f2a47426b09  # BR-DISK
+              - 9c11cd3f07101cdba90a2d81cf0e56b4  # x265 (HD)
+              - 47435ece6b99a0b477caf360e79ba0bb  # x265 (no HDR/DV)
+            assign_scores_to:
+              - name: WEB-1080p
+                score: -10000
+
+          - trash_ids:
+              # Streaming services
+              - d660701077794679fd59e8bdf4ce3a5b  # AMZN
+              - f67c9ca88f463a48346062e8ad07713f  # ATVP
+              - 77a7b25585c18af08f60b1547bb9b4fb  # CC
+              - 36b72f59f4ea20aad9316f475f2d9fbb  # NF
+              - 1656adc036ab352571bb4c03e4f25e8d  # PCOK
+              - c2863d2a50c9acad1fb50e53ece60817  # PMTP
+            assign_scores_to:
+              - name: WEB-1080p
+                score: 15
+
+          - trash_ids:
+              # HDR
+              - 418f50b10f1907201b6cfdf881f467b7  # HDR10
+            assign_scores_to:
+              - name: WEB-1080p
+                score: 10
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: recyclarr
+  namespace: media
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: recyclarr
+              image: ghcr.io/recyclarr/recyclarr:latest
+              args:
+                - sync
+              env:
+                - name: TZ
+                  value: Australia/Adelaide
+              volumeMounts:
+                - name: config
+                  mountPath: /config
+          volumes:
+            - name: config
+              configMap:
+                name: recyclarr-config
+                items:
+                  - key: recyclarr.yml
+                    path: recyclarr.yml
