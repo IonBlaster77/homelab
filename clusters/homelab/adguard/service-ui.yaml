@@ -9,7 +9,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: adguard
+    app: adguard-primary
   ports:
     - name: http
       port: 3000

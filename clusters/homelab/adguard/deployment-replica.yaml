@@ -1,28 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: adguard
+  name: adguard-replica
   namespace: adguard
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: adguard
+      app: adguard-replica
   template:
     metadata:
       labels:
-        app: adguard
+        app: adguard-replica
+        app.kubernetes.io/name: adguard
     spec:
-      # Hard anti-affinity — guarantees the two replicas land on different
-      # nodes so a single node failure never takes out both DNS instances.
+      # Keep primary and replica on different nodes.
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
-                  app: adguard
+                  app.kubernetes.io/name: adguard
               topologyKey: kubernetes.io/hostname
-
       containers:
         - name: adguard
           image: adguard/adguardhome:v0.107.52
@@ -45,9 +44,6 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /opt/adguardhome/conf
-            # Per-pod ephemeral work dir — avoids SQLite lock conflicts
-            # between replicas. Query logs and stats don't persist across
-            # pod restarts; use AdGuard's remote logging if you need retention.
             - name: work
               mountPath: /opt/adguardhome/work
           livenessProbe:
@@ -62,7 +58,6 @@ spec:
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 5
-
       volumes:
         - name: config
           persistentVolumeClaim:

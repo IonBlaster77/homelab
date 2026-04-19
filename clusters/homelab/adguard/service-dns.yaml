@@ -12,7 +12,7 @@ metadata:
 spec:
   type: LoadBalancer
   selector:
-    app: adguard
+    app.kubernetes.io/name: adguard
   ports:
     - name: dns-udp
       port: 53
