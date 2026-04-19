@@ -1,5 +1,6 @@
-# LoadBalancer VIP at 10.77.20.61 for LDAP and RADIUS outposts.
-# Both services share this IP — TCP (LDAP) and UDP (RADIUS) ports don't conflict.
+# LDAP outpost VIP: 10.77.20.61 (TCP 389/636)
+# RADIUS outpost VIP: 10.77.20.62 (UDP 1812/1813)
+# Cilium allocates one IP per LoadBalancer service — separate IPs required.
 #
 # IMPORTANT — selector configuration after initial Authentik setup:
 #   1. In the Authentik UI, create an LDAP outpost named exactly "ldap"
@@ -38,7 +39,7 @@ metadata:
   name: authentik-radius
   namespace: authentik
   annotations:
-    lbipam.cilium.io/ips: "10.77.20.61"
+    lbipam.cilium.io/ips: "10.77.20.62"
 spec:
   type: LoadBalancer
   selector:
