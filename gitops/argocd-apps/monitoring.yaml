@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 83.6.0
+    helm:
+      releaseName: monitoring
+      values: |
+        # Disable components that Talos doesn't expose externally
+        kubeProxy:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeControllerManager:
+          enabled: false
+
+        # node-exporter must run on control-plane nodes too
+        prometheus-node-exporter:
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+
+        prometheus:
+          prometheusSpec:
+            retention: 60d
+            retentionSize: 45GB
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn-ssd
+                  accessModes:
+                    - ReadWriteOnce
+                  resources:
+                    requests:
+                      storage: 50Gi
+
+        grafana:
+          admin:
+            existingSecret: grafana-admin-secret
+            userKey: admin-user
+            passwordKey: admin-password
+          persistence:
+            enabled: false
+          envValueFrom:
+            GF_DATABASE_PASSWORD:
+              secretKeyRef:
+                name: grafana-db-credentials
+                key: password
+          "grafana.ini":
+            database:
+              type: postgres
+              host: grafana-db-rw.monitoring.svc.cluster.local:5432
+              name: grafana
+              user: grafana
+              password: $__env{GF_DATABASE_PASSWORD}
+          service:
+            type: ClusterIP
+
+        alertmanager:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

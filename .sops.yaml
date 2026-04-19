@@ -24,3 +24,8 @@ creation_rules:
   - path_regex: clusters/homelab/adguard/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(data|stringData)$"
+
+  # Monitoring secrets (Grafana DB credentials, admin password)
+  - path_regex: clusters/homelab/monitoring/.*secret.*\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(data|stringData)$"

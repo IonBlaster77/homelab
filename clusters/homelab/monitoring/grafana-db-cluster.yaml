@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: grafana-db
+  namespace: monitoring
+spec:
+  instances: 2
+  storage:
+    storageClass: longhorn-ssd
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: grafana
+      owner: grafana
+      secret:
+        name: grafana-db-credentials
