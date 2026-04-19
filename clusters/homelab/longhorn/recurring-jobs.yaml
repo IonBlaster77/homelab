@@ -1,0 +1,77 @@
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: hourly-backup
+  namespace: longhorn-system
+spec:
+  cron: "0 * * * *"
+  task: backup
+  groups:
+    - default
+  retain: 24
+  concurrency: 2
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: daily-backup
+  namespace: longhorn-system
+spec:
+  cron: "0 2 * * *"
+  task: backup
+  groups:
+    - default
+  retain: 30
+  concurrency: 2
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: longhorn-volume-labeler
+  namespace: longhorn-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: longhorn-volume-labeler
+rules:
+  - apiGroups: ["longhorn.io"]
+    resources: ["volumes"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: longhorn-volume-labeler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: longhorn-volume-labeler
+subjects:
+  - kind: ServiceAccount
+    name: longhorn-volume-labeler
+    namespace: longhorn-system
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: enable-recurring-jobs
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      serviceAccountName: longhorn-volume-labeler
+      restartPolicy: OnFailure
+      containers:
+        - name: labeler
+          image: bitnami/kubectl:1.31
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              kubectl get volumes -n longhorn-system -o name | \
+                xargs -I{} kubectl label {} \
+                  recurring-job-group.longhorn.io/default=enabled \
+                  -n longhorn-system --overwrite
