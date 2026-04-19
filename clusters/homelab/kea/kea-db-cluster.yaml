@@ -19,6 +19,8 @@ spec:
       - name: grafana_ro
         ensure: present
         login: true
+        inherit: true
+        connectionLimit: -1
         comment: "Read-only Grafana datasource user"
         passwordSecret:
           name: kea-db-grafana-credentials
