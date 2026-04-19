@@ -1,15 +1,10 @@
 # ArgoCD Application — cert-manager configuration
 #
 # Applies the cert-manager runtime config after the Helm chart is running:
-#   - clusterissuer-staging.yaml — Let's Encrypt staging (for testing)
-#   - clusterissuer-prod.yaml    — Let's Encrypt production (real certs)
-#
-# Bootstrap note:
-#   The cloudflare-api-token Secret is NOT managed by ArgoCD (no SOPS CMP
-#   is configured, so ArgoCD would apply the SOPS ciphertext as the literal
-#   secret value). Apply it manually once during bootstrap:
-#     cd clusters/homelab/bootstrap
-#     sops -d cloudflare-secret.yaml | kubectl apply -f -
+#   - clusterissuer-staging.yaml  — Let's Encrypt staging (for testing)
+#   - clusterissuer-prod.yaml     — Let's Encrypt production (real certs)
+#   - cloudflare-secret.yaml      — SOPS-encrypted Cloudflare API token
+#                                   (decrypted in-memory by the SOPS CMP sidecar)
 #
 # The wildcard Certificate for *.jupitertech.net lives in the "gateway"
 # Application (clusters/homelab/gateway/certificate.yaml) because the
@@ -17,11 +12,11 @@
 # the Gateway resource.
 #
 # Sync order:
-#   1. cert-manager must be Running before syncing this
-#      (ClusterIssuer CRD won't exist until cert-manager is up)
-#   2. Apply cloudflare-secret manually (see above)
-#   3. Sync this (applies ClusterIssuers)
-#   4. Sync "gateway" (applies Certificate, routes)
+#   1. Apply bootstrap/argocd-cmp-configmap.yaml (once, before helm upgrade)
+#   2. helm upgrade argo-cd with updated argocd-values.yaml
+#   3. cert-manager must be Running before syncing this
+#   4. Sync this (applies ClusterIssuers + cloudflare-secret)
+#   5. Sync "gateway" (applies Certificate, routes)
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
