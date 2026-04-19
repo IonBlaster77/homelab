@@ -51,3 +51,5 @@ spec:
               add_rewrite "longhorn.jupitertech.net" "10.77.20.60"
               add_rewrite "adguard.jupitertech.net"  "10.77.20.60"
               add_rewrite "home.jupitertech.net"     "10.77.20.60"
+              add_rewrite "auth.jupitertech.net"     "10.77.20.60"
+              add_rewrite "pgadmin.jupitertech.net"  "10.77.20.60"
