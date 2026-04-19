@@ -24,6 +24,11 @@ configs:
     server.insecure: "true"
   cm:
     application.resourceTrackingMethod: annotation
+    # Kubernetes 1.35 adds terminatingReplicas to StatefulSet status but the field
+    # is not yet in the schema ArgoCD uses for structured merge diff — suppress globally.
+    resource.customizations.ignoreDifferences.apps_StatefulSet: |
+      jsonPointers:
+        - /status/terminatingReplicas
     # Custom Lua health checks for CRDs ArgoCD doesn't understand natively.
     resource.customizations.health.monitoring.coreos.com_Prometheus: |
       hs = {}
