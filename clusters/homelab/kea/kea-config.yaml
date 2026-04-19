@@ -22,10 +22,7 @@ data:
           "user": "kea",
           "password": "__DB_PASSWORD__"
         },
-        "hooks-libraries": [
-          {"library": "/usr/lib/x86_64-linux-gnu/kea/hooks/libdhcp_lease_cmds.so"},
-          {"library": "/usr/lib/x86_64-linux-gnu/kea/hooks/libdhcp_host_cmds.so"}
-        ],
+        "hooks-libraries": [],
         "host-reservation-identifiers": ["hw-address", "client-id"],
         "reservations-global": false,
         "reservations-in-subnet": true,
