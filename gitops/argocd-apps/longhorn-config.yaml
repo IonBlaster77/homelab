@@ -28,7 +28,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: longhorn-system
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
-    # Manual sync — storage class changes affect all future PVC provisioning.
-    # Review before applying.
