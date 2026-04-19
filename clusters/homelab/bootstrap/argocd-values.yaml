@@ -24,6 +24,21 @@ configs:
     server.insecure: "true"
   cm:
     application.resourceTrackingMethod: annotation
+    # Custom Lua health checks for CRDs ArgoCD doesn't understand natively.
+    resource.customizations.health.monitoring.coreos.com_Prometheus: |
+      hs = {}
+      if obj.status ~= nil and obj.status.conditions ~= nil then
+        for _, condition in pairs(obj.status.conditions) do
+          if condition.type == "Available" and condition.status == "True" then
+            hs.status = "Healthy"
+            hs.message = "Prometheus is available"
+            return hs
+          end
+        end
+      end
+      hs.status = "Progressing"
+      hs.message = "Waiting for Prometheus to become available"
+      return hs
 
 repoServer:
   # Volumes shared between the init container and the CMP sidecar.
