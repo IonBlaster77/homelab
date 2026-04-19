@@ -1,0 +1,63 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://charts.goauthentik.io
+    chart: authentik
+    targetRevision: 2026.2.2
+    helm:
+      releaseName: authentik
+      values: |
+        authentik:
+          postgresql:
+            host: authentik-db-rw.authentik.svc.cluster.local
+            name: authentik
+            user: authentik
+            password: ""
+
+        global:
+          env:
+            - name: AUTHENTIK_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-secret
+                  key: secret-key
+            - name: AUTHENTIK_POSTGRESQL__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: authentik-db-credentials
+                  key: password
+
+        server:
+          replicas: 2
+          affinity:
+            podAntiAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app.kubernetes.io/name: authentik
+                        app.kubernetes.io/component: server
+                    topologyKey: kubernetes.io/hostname
+
+        worker:
+          replicas: 1
+
+        postgresql:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -40,7 +40,7 @@ spec:
                 columns: 3
               Network & Security:
                 style: row
-                columns: 2
+                columns: 3
               Network Hardware:
                 style: row
                 columns: 4
@@ -77,6 +77,13 @@ spec:
                     app: longhorn-ui
 
             - Network & Security:
+                - Authentik:
+                    href: https://auth.jupitertech.net
+                    description: Identity provider — SSO, LDAP, RADIUS
+                    icon: authentik.png
+                    siteMonitor: https://auth.jupitertech.net
+                    namespace: authentik
+                    app: authentik-server
                 - AdGuard Home:
                     href: https://adguard.jupitertech.net
                     description: Network-wide DNS filtering & ad blocking

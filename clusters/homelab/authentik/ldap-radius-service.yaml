@@ -1,0 +1,54 @@
+# LoadBalancer VIP at 10.77.20.61 for LDAP and RADIUS outposts.
+# Both services share this IP — TCP (LDAP) and UDP (RADIUS) ports don't conflict.
+#
+# IMPORTANT — selector configuration after initial Authentik setup:
+#   1. In the Authentik UI, create an LDAP outpost named exactly "ldap"
+#      and a RADIUS outpost named exactly "radius".
+#   2. The k8s provider will create pods with label:
+#        app.kubernetes.io/managed-by: goauthentik.io
+#        app.kubernetes.io/name: ak-outpost-ldap  (or ak-outpost-radius)
+#   3. Update each service selector below to match the specific outpost pods
+#      to avoid cross-routing LDAP requests to RADIUS pods or vice versa.
+#   4. commit + push — ArgoCD will apply the updated selectors.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-ldap
+  namespace: authentik
+  annotations:
+    lbipam.cilium.io/ips: "10.77.20.61"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: ak-outpost-ldap
+  ports:
+    - name: ldap
+      port: 389
+      protocol: TCP
+      targetPort: 3389
+    - name: ldaps
+      port: 636
+      protocol: TCP
+      targetPort: 6636
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authentik-radius
+  namespace: authentik
+  annotations:
+    lbipam.cilium.io/ips: "10.77.20.61"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: ak-outpost-radius
+  ports:
+    - name: radius
+      port: 1812
+      protocol: UDP
+      targetPort: 1812
+    - name: radius-acct
+      port: 1813
+      protocol: UDP
+      targetPort: 1813
