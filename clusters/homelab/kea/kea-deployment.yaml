@@ -59,10 +59,10 @@ spec:
             - name: kea-config
               mountPath: /etc/kea
             - name: ctrl-socket
-              mountPath: /tmp
+              mountPath: /kea/sockets
           readinessProbe:
             exec:
-              command: ["/bin/sh", "-c", "test -S /tmp/kea4-ctrl-socket"]
+              command: ["/bin/sh", "-c", "test -S /kea/sockets/kea4-ctrl-socket"]
             initialDelaySeconds: 10
             periodSeconds: 5
         - name: kea-ctrl-agent
@@ -76,7 +76,7 @@ spec:
             - name: kea-config
               mountPath: /etc/kea
             - name: ctrl-socket
-              mountPath: /tmp
+              mountPath: /kea/sockets
           readinessProbe:
             httpGet:
               path: /

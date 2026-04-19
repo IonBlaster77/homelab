@@ -13,7 +13,7 @@ data:
         },
         "control-socket": {
           "socket-type": "unix",
-          "socket-name": "/tmp/kea4-ctrl-socket"
+          "socket-name": "/kea/sockets/kea4-ctrl-socket"
         },
         "lease-database": {
           "type": "postgresql",
@@ -114,7 +114,7 @@ data:
         "control-sockets": {
           "dhcp4": {
             "socket-type": "unix",
-            "socket-name": "/tmp/kea4-ctrl-socket"
+            "socket-name": "/kea/sockets/kea4-ctrl-socket"
           }
         },
         "loggers": [
