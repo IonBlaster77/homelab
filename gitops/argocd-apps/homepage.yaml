@@ -18,7 +18,8 @@ spec:
           create: true
 
         env:
-          HOMEPAGE_ALLOWED_HOSTS: "home.jupitertech.net"
+          - name: HOMEPAGE_ALLOWED_HOSTS
+            value: "home.jupitertech.net"
 
         service:
           main:
