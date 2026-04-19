@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kea-config
+  namespace: kea
+data:
+  kea-dhcp4.conf.tmpl: |
+    {
+      "Dhcp4": {
+        "interfaces-config": {
+          "interfaces": ["*"],
+          "dhcp-socket-type": "udp"
+        },
+        "control-socket": {
+          "socket-type": "unix",
+          "socket-name": "/tmp/kea4-ctrl-socket"
+        },
+        "lease-database": {
+          "type": "postgresql",
+          "host": "kea-db-rw.kea.svc.cluster.local",
+          "name": "kea",
+          "user": "kea",
+          "password": "__DB_PASSWORD__"
+        },
+        "hooks-libraries": [
+          {"library": "/usr/lib/x86_64-linux-gnu/kea/hooks/libdhcp_lease_cmds.so"},
+          {"library": "/usr/lib/x86_64-linux-gnu/kea/hooks/libdhcp_host_cmds.so"}
+        ],
+        "host-reservation-identifiers": ["hw-address", "client-id"],
+        "reservations-global": false,
+        "reservations-in-subnet": true,
+        "valid-lifetime": 86400,
+        "renew-timer": 43200,
+        "rebind-timer": 75600,
+        "option-data": [
+          {"name": "domain-name-servers", "data": "10.77.20.53"},
+          {"name": "domain-name", "data": "jupitertech.net"}
+        ],
+        "subnet4": [
+          {
+            "id": 1,
+            "comment": "CONFIGURE: update subnet, relay IP, pool, and gateway for each VLAN",
+            "subnet": "10.77.30.0/24",
+            "relay": {
+              "ip-addresses": ["10.77.30.1"]
+            },
+            "pools": [
+              {"pool": "10.77.30.100 - 10.77.30.200"}
+            ],
+            "option-data": [
+              {"name": "routers", "data": "10.77.30.1"}
+            ],
+            "reservations": []
+          }
+        ],
+        "loggers": [
+          {
+            "name": "kea-dhcp4",
+            "output_options": [{"output": "stdout"}],
+            "severity": "INFO",
+            "debuglevel": 0
+          }
+        ]
+      }
+    }
+
+  kea-ctrl-agent.conf: |
+    {
+      "Control-agent": {
+        "http-host": "0.0.0.0",
+        "http-port": 8000,
+        "control-sockets": {
+          "dhcp4": {
+            "socket-type": "unix",
+            "socket-name": "/tmp/kea4-ctrl-socket"
+          }
+        },
+        "loggers": [
+          {
+            "name": "kea-ctrl-agent",
+            "output_options": [{"output": "stdout"}],
+            "severity": "INFO"
+          }
+        ]
+      }
+    }

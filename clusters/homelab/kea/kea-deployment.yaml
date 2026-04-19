@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kea-dhcp4
+  namespace: kea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kea-dhcp4
+  template:
+    metadata:
+      labels:
+        app: kea-dhcp4
+    spec:
+      initContainers:
+        - name: db-init
+          image: internetsystemsconsortium/kea-dhcp4:2.6
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              kea-admin db-version pgsql \
+                -h kea-db-rw.kea.svc.cluster.local \
+                -u kea -p "$DB_PASSWORD" -n kea \
+              || kea-admin db-init pgsql \
+                -h kea-db-rw.kea.svc.cluster.local \
+                -u kea -p "$DB_PASSWORD" -n kea
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kea-db-credentials
+                  key: password
+      containers:
+        - name: kea-dhcp4
+          image: internetsystemsconsortium/kea-dhcp4:2.6
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              sed "s|__DB_PASSWORD__|${DB_PASSWORD}|g" /etc/kea/kea-dhcp4.conf.tmpl > /tmp/kea-dhcp4.conf
+              exec kea-dhcp4 -c /tmp/kea-dhcp4.conf
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kea-db-credentials
+                  key: password
+          ports:
+            - name: dhcp
+              containerPort: 67
+              protocol: UDP
+          volumeMounts:
+            - name: kea-config
+              mountPath: /etc/kea
+            - name: ctrl-socket
+              mountPath: /tmp
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-c", "test -S /tmp/kea4-ctrl-socket"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+        - name: kea-ctrl-agent
+          image: internetsystemsconsortium/kea-ctrl-agent:2.6
+          command: ["kea-ctrl-agent", "-c", "/etc/kea/kea-ctrl-agent.conf"]
+          ports:
+            - name: api
+              containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - name: kea-config
+              mountPath: /etc/kea
+            - name: ctrl-socket
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+      volumes:
+        - name: kea-config
+          configMap:
+            name: kea-config
+        - name: ctrl-socket
+          emptyDir: {}

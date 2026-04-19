@@ -1,0 +1,24 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: kea-db
+  namespace: kea
+spec:
+  instances: 2
+  storage:
+    storageClass: longhorn-ssd
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: kea
+      owner: kea
+      secret:
+        name: kea-db-credentials
+  managed:
+    roles:
+      - name: grafana_ro
+        ensure: present
+        login: true
+        comment: "Read-only Grafana datasource user"
+        passwordSecret:
+          name: kea-db-grafana-credentials

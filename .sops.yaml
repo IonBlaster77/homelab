@@ -39,3 +39,8 @@ creation_rules:
   - path_regex: clusters/homelab/pgadmin/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(data|stringData)$"
+
+  # Kea DHCP secrets (DB credentials, Grafana read-only user)
+  - path_regex: clusters/homelab/kea/.*secret.*\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(data|stringData)$"

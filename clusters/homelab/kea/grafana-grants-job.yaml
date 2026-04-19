@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kea-grafana-grants
+  namespace: kea
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: grants
+          image: postgres:16
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              PGPASSWORD=$DB_PASSWORD psql \
+                -h kea-db-rw.kea.svc.cluster.local \
+                -U kea -d kea -c "
+                  GRANT USAGE ON SCHEMA public TO grafana_ro;
+                  GRANT SELECT ON ALL TABLES IN SCHEMA public TO grafana_ro;
+                  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO grafana_ro;
+                "
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kea-db-credentials
+                  key: password
