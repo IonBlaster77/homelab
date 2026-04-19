@@ -37,6 +37,9 @@ spec:
               Network & Security:
                 style: row
                 columns: 2
+              Network Hardware:
+                style: row
+                columns: 4
 
           bookmarks:
             - Quick Links:
@@ -77,6 +80,28 @@ spec:
                     siteMonitor: https://adguard.jupitertech.net
                     namespace: adguard
                     app: adguard-primary
+
+            - Network Hardware:
+                - MikroTik CCR1036:
+                    href: http://10.77.110.1
+                    description: Core router — AS 65530
+                    icon: mikrotik.png
+                    siteMonitor: http://10.77.110.1
+                - Dell N1148P-ON:
+                    href: http://10.77.10.2
+                    description: Core switch
+                    icon: dell.png
+                    siteMonitor: http://10.77.10.2
+                - HP 1930 Instant On:
+                    href: http://10.77.10.5
+                    description: PoE access switch
+                    icon: hp.png
+                    siteMonitor: http://10.77.10.5
+                - rack01:
+                    href: http://10.77.10.20
+                    description: NAS
+                    icon: nas.png
+                    siteMonitor: http://10.77.10.20
 
           widgets:
             - kubernetes:
