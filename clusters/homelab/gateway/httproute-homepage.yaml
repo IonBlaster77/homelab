@@ -1,0 +1,17 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: homepage
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - "home.jupitertech.net"
+  rules:
+    - backendRefs:
+        - name: homepage
+          namespace: homepage
+          port: 3000

@@ -1,0 +1,126 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homepage
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://jameswynn.github.io/helm-charts
+    chart: homepage
+    targetRevision: 2.1.0
+    helm:
+      releaseName: homepage
+      values: |
+        enableRbac: true
+        serviceAccount:
+          name: homepage
+          create: true
+
+        service:
+          main:
+            ports:
+              http:
+                port: 3000
+
+        config:
+          settings:
+            title: Jupiter Tech
+            theme: dark
+            color: zinc
+            headerStyle: clean
+            cardBlur: sm
+            layout:
+              Cluster Management:
+                style: row
+                columns: 3
+              Network & Security:
+                style: row
+                columns: 2
+
+          bookmarks:
+            - Quick Links:
+                - GitHub:
+                    - abbr: GH
+                      href: https://github.com/IonBlaster77/homelab
+                      icon: github.png
+
+          services:
+            - Cluster Management:
+                - ArgoCD:
+                    href: https://argocd.jupitertech.net
+                    description: GitOps continuous delivery
+                    icon: argocd.png
+                    siteMonitor: https://argocd.jupitertech.net
+                    namespace: argocd
+                    app: argocd-server
+                - Grafana:
+                    href: https://grafana.jupitertech.net
+                    description: Metrics & dashboards
+                    icon: grafana.png
+                    siteMonitor: https://grafana.jupitertech.net
+                    namespace: monitoring
+                    app: grafana
+                - Longhorn:
+                    href: https://longhorn.jupitertech.net
+                    description: Distributed block storage
+                    icon: longhorn.png
+                    siteMonitor: https://longhorn.jupitertech.net
+                    namespace: longhorn-system
+                    app: longhorn-ui
+
+            - Network & Security:
+                - AdGuard Home:
+                    href: https://adguard.jupitertech.net
+                    description: Network-wide DNS filtering & ad blocking
+                    icon: adguard-home.png
+                    siteMonitor: https://adguard.jupitertech.net
+                    namespace: adguard
+                    app: adguard-primary
+
+          widgets:
+            - kubernetes:
+                cluster:
+                  show: true
+                  cpu: true
+                  memory: true
+                  showLabel: true
+                  label: homelab
+                nodes:
+                  show: true
+                  cpu: true
+                  memory: true
+                  showLabel: true
+
+            - datetime:
+                text_size: l
+                format:
+                  timeStyle: short
+                  dateStyle: medium
+                  hourCycle: h23
+
+            - search:
+                provider: google
+                target: _blank
+
+          kubernetes:
+            mode: cluster
+
+          custom.css: |
+            body {
+              background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+              background-attachment: fixed;
+            }
+            :root {
+              --color-text-primary: rgba(255,255,255,0.9);
+            }
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homepage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
