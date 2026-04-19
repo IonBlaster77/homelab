@@ -19,10 +19,11 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              kea-admin db-version pgsql \
+              KA=$(find /usr -name kea-admin 2>/dev/null | head -1)
+              $KA db-version pgsql \
                 -h kea-db-rw.kea.svc.cluster.local \
                 -u kea -p "$DB_PASSWORD" -n kea \
-              || kea-admin db-init pgsql \
+              || $KA db-init pgsql \
                 -h kea-db-rw.kea.svc.cluster.local \
                 -u kea -p "$DB_PASSWORD" -n kea
           env:
