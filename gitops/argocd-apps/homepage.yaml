@@ -17,6 +17,9 @@ spec:
           name: homepage
           create: true
 
+        env:
+          HOMEPAGE_ALLOWED_HOSTS: "home.jupitertech.net"
+
         service:
           main:
             ports:
