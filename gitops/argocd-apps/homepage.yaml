@@ -98,10 +98,10 @@ spec:
                     icon: hp.png
                     siteMonitor: http://10.77.10.5
                 - rack01:
-                    href: http://10.77.10.20
-                    description: NAS
-                    icon: nas.png
-                    siteMonitor: http://10.77.10.20
+                    href: http://10.77.10.20:5000
+                    description: Synology DiskStation
+                    icon: synology.png
+                    siteMonitor: http://10.77.10.20:5000
 
           widgets:
             - kubernetes:
