@@ -38,17 +38,62 @@ data:
         ],
         "subnet4": [
           {
-            "id": 1,
-            "comment": "CONFIGURE: update subnet, relay IP, pool, and gateway for each VLAN",
-            "subnet": "10.77.30.0/24",
-            "relay": {
-              "ip-addresses": ["10.77.30.1"]
-            },
-            "pools": [
-              {"pool": "10.77.30.100 - 10.77.30.200"}
+            "id": 10,
+            "comment": "VLAN 10 — Management",
+            "subnet": "10.77.10.0/24",
+            "relay": {"ip-addresses": ["10.77.10.1"]},
+            "pools": [{"pool": "10.77.10.100 - 10.77.10.200"}],
+            "option-data": [
+              {"name": "routers", "data": "10.77.10.1"}
             ],
+            "reservations": []
+          },
+          {
+            "id": 20,
+            "comment": "VLAN 20 — Server (small pool; nodes are statically assigned)",
+            "subnet": "10.77.20.0/24",
+            "relay": {"ip-addresses": ["10.77.20.1"]},
+            "pools": [{"pool": "10.77.20.200 - 10.77.20.250"}],
+            "option-data": [
+              {"name": "routers", "data": "10.77.20.1"}
+            ],
+            "reservations": []
+          },
+          {
+            "id": 30,
+            "comment": "VLAN 30 — IoT",
+            "subnet": "10.77.30.0/24",
+            "relay": {"ip-addresses": ["10.77.30.1"]},
+            "pools": [{"pool": "10.77.30.100 - 10.77.30.200"}],
             "option-data": [
               {"name": "routers", "data": "10.77.30.1"}
+            ],
+            "reservations": []
+          },
+          {
+            "id": 110,
+            "comment": "VLAN 110 — Trusted",
+            "subnet": "10.77.110.0/24",
+            "relay": {"ip-addresses": ["10.77.110.1"]},
+            "pools": [{"pool": "10.77.110.100 - 10.77.110.200"}],
+            "option-data": [
+              {"name": "routers", "data": "10.77.110.1"}
+            ],
+            "reservations": []
+          },
+          {
+            "id": 120,
+            "comment": "VLAN 120 — Guest (4h lease)",
+            "subnet": "10.77.120.0/24",
+            "relay": {"ip-addresses": ["10.77.120.1"]},
+            "pools": [{"pool": "10.77.120.100 - 10.77.120.200"}],
+            "valid-lifetime": 14400,
+            "renew-timer": 7200,
+            "rebind-timer": 12600,
+            "option-data": [
+              {"name": "routers", "data": "10.77.120.1"},
+              {"name": "domain-name-servers", "data": "10.77.20.53"},
+              {"name": "domain-name", "data": "guest.jupitertech.net"}
             ],
             "reservations": []
           }
