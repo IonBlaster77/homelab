@@ -11,6 +11,7 @@ metadata:
     lbipam.cilium.io/ips: "10.77.20.53"
 spec:
   type: LoadBalancer
+  externalTrafficPolicy: Local
   selector:
     app.kubernetes.io/name: adguard
   ports:
