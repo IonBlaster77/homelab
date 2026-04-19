@@ -15,23 +15,28 @@ spec:
     spec:
       initContainers:
         - name: db-init
-          image: jonasal/kea-dhcp4:2.6.3
+          image: postgres:16
           command: ["/bin/sh", "-c"]
           args:
             - |
-              KA=$(find /usr -name kea-admin 2>/dev/null | head -1)
-              $KA db-version pgsql \
+              PGPASSWORD=$DB_PASSWORD psql \
                 -h kea-db-rw.kea.svc.cluster.local \
-                -u kea -p "$DB_PASSWORD" -n kea \
-              || $KA db-init pgsql \
+                -U kea -d kea \
+                -c "SELECT version FROM schema_version LIMIT 1" \
+              && echo "schema already initialised, skipping" \
+              || PGPASSWORD=$DB_PASSWORD psql \
                 -h kea-db-rw.kea.svc.cluster.local \
-                -u kea -p "$DB_PASSWORD" -n kea
+                -U kea -d kea \
+                -f /schema/dhcpdb_create.pgsql
           env:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: kea-db-credentials
                   key: password
+          volumeMounts:
+            - name: kea-db-schema
+              mountPath: /schema
       containers:
         - name: kea-dhcp4
           image: jonasal/kea-dhcp4:2.6.3
@@ -82,5 +87,8 @@ spec:
         - name: kea-config
           configMap:
             name: kea-config
+        - name: kea-db-schema
+          configMap:
+            name: kea-db-schema
         - name: ctrl-socket
           emptyDir: {}
