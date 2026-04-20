@@ -19,7 +19,7 @@ spec:
 
         env:
           - name: HOMEPAGE_ALLOWED_HOSTS
-            value: "home.jupitertech.net"
+            value: "home.jupitertech.net,home.jupitertech.net:443,home.jupitertech.net:80"
 
         envFrom:
           - secretRef:

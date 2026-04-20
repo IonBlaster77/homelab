@@ -12,44 +12,44 @@ data:
       --color-text-primary: rgba(255,255,255,0.95);
     }
 
-    /* Full section card colour — Disclosure wrapper divs */
+    /* Section wrapper base */
     #layout-groups > div {
       border-radius: 14px;
       padding: 8px;
       margin-bottom: 12px;
     }
 
-    /* Section 1: orange (Cluster Management / Media / Quick Links) */
+    /* Section 1: orange */
     #layout-groups > div:nth-child(1) {
-      background: rgba(249,115,22,0.12) !important;
-      border: 1px solid rgba(249,115,22,0.45) !important;
+      background: rgba(249,115,22,0.20) !important;
+      border: 2px solid rgba(249,115,22,0.75) !important;
     }
     #layout-groups > div:nth-child(1) > button {
-      background: rgba(249,115,22,0.25) !important;
+      background: rgba(249,115,22,0.35) !important;
       border-radius: 10px;
       padding: 10px 14px !important;
       width: 100%;
     }
 
-    /* Section 2: cyan (Network & Security / Media Management) */
+    /* Section 2: cyan */
     #layout-groups > div:nth-child(2) {
-      background: rgba(6,182,212,0.12) !important;
-      border: 1px solid rgba(6,182,212,0.45) !important;
+      background: rgba(6,182,212,0.20) !important;
+      border: 2px solid rgba(6,182,212,0.75) !important;
     }
     #layout-groups > div:nth-child(2) > button {
-      background: rgba(6,182,212,0.25) !important;
+      background: rgba(6,182,212,0.35) !important;
       border-radius: 10px;
       padding: 10px 14px !important;
       width: 100%;
     }
 
-    /* Section 3: green (Network Hardware) */
+    /* Section 3: green */
     #layout-groups > div:nth-child(3) {
-      background: rgba(34,197,94,0.12) !important;
-      border: 1px solid rgba(34,197,94,0.45) !important;
+      background: rgba(34,197,94,0.20) !important;
+      border: 2px solid rgba(34,197,94,0.75) !important;
     }
     #layout-groups > div:nth-child(3) > button {
-      background: rgba(34,197,94,0.25) !important;
+      background: rgba(34,197,94,0.35) !important;
       border-radius: 10px;
       padding: 10px 14px !important;
       width: 100%;
