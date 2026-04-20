@@ -18,17 +18,12 @@ spec:
           create: true
 
         env:
-          HOMEPAGE_ALLOWED_HOSTS: "home.jupitertech.net"
-          HOMEPAGE_VAR_SYNOLOGY_USER:
-            valueFrom:
-              secretKeyRef:
-                name: homepage-synology
-                key: HOMEPAGE_VAR_SYNOLOGY_USER
-          HOMEPAGE_VAR_SYNOLOGY_PASSWORD:
-            valueFrom:
-              secretKeyRef:
-                name: homepage-synology
-                key: HOMEPAGE_VAR_SYNOLOGY_PASSWORD
+          - name: HOMEPAGE_ALLOWED_HOSTS
+            value: "home.jupitertech.net"
+
+        envFrom:
+          - secretRef:
+              name: homepage-synology
 
         service:
           main:
