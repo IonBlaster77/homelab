@@ -181,6 +181,10 @@ spec:
                     description: Core router — AS 65530
                     icon: mikrotik.png
                     siteMonitor: http://10.77.10.1
+                    widget:
+                      type: prometheus
+                      url: http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090
+                      query: mikrotik_system_cpu_load{name="homelab"}
                 - Dell N1148P-ON:
                     href: http://10.77.10.2
                     description: Core switch

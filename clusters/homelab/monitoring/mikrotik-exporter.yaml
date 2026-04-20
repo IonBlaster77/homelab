@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mikrotik-exporter
+  namespace: monitoring
+  labels:
+    app: mikrotik-exporter
+    app.kubernetes.io/name: mikrotik-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mikrotik-exporter
+  template:
+    metadata:
+      labels:
+        app: mikrotik-exporter
+        app.kubernetes.io/name: mikrotik-exporter
+    spec:
+      containers:
+        - name: mikrotik-exporter
+          image: nshttpd/mikrotik-exporter:1.0.12
+          args:
+            - -config-file=/config/config.yaml
+          ports:
+            - containerPort: 9436
+              name: metrics
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          secret:
+            secretName: mikrotik-exporter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mikrotik-exporter
+  namespace: monitoring
+  labels:
+    app: mikrotik-exporter
+spec:
+  selector:
+    app: mikrotik-exporter
+  ports:
+    - port: 9436
+      targetPort: 9436
+      name: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mikrotik-exporter
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: mikrotik-exporter
+  endpoints:
+    - port: metrics
+      interval: 30s
