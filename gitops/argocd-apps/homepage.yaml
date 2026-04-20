@@ -91,7 +91,7 @@ spec:
                     icon: longhorn.png
                     siteMonitor: https://longhorn.jupitertech.net
                     namespace: longhorn-system
-                    app: longhorn-ui
+                    app: longhorn
 
             - Network & Security:
                 - Authentik:
@@ -107,7 +107,7 @@ spec:
                     icon: adguard-home.png
                     siteMonitor: https://adguard.jupitertech.net
                     namespace: adguard
-                    app: adguard-primary
+                    app: adguard
 
             - Media:
                 - Jellyfin:
