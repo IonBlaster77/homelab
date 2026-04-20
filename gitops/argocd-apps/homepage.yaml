@@ -40,20 +40,69 @@ spec:
             cardBlur: sm
             layout:
               Cluster Management:
+                tab: Infrastructure
                 style: row
                 columns: 4
+                icon: mdi-server-network
+                background:
+                  color: orange
+                  brightness: 400
+                  saturate: 200
+                  opacity: 30
+                  blur: xl
               Network & Security:
-                style: row
-                columns: 3
-              Network Hardware:
-                style: row
-                columns: 4
-              Media:
+                tab: Infrastructure
                 style: row
                 columns: 2
+                icon: mdi-shield-lock
+                background:
+                  color: cyan
+                  brightness: 400
+                  saturate: 200
+                  opacity: 30
+                  blur: xl
+              Network Hardware:
+                tab: Infrastructure
+                style: row
+                columns: 4
+                icon: mdi-router-network
+                background:
+                  color: blue
+                  brightness: 400
+                  saturate: 200
+                  opacity: 30
+                  blur: xl
+              Media:
+                tab: Media
+                style: row
+                columns: 2
+                icon: mdi-television-play
+                background:
+                  color: purple
+                  brightness: 400
+                  saturate: 200
+                  opacity: 30
+                  blur: xl
               Media Management:
+                tab: Media
                 style: row
                 columns: 5
+                icon: mdi-cog-play
+                background:
+                  color: emerald
+                  brightness: 400
+                  saturate: 200
+                  opacity: 30
+                  blur: xl
+              Quick Links:
+                tab: Apps
+                icon: mdi-bookmark-multiple
+                background:
+                  color: rose
+                  brightness: 400
+                  saturate: 200
+                  opacity: 30
+                  blur: xl
 
           bookmarks:
             - Quick Links:
@@ -164,10 +213,10 @@ spec:
 
             - Network Hardware:
                 - MikroTik CCR1036:
-                    href: http://10.77.110.1
+                    href: http://10.77.10.1
                     description: Core router — AS 65530
                     icon: mikrotik.png
-                    siteMonitor: http://10.77.110.1
+                    siteMonitor: http://10.77.10.1
                 - Dell N1148P-ON:
                     href: http://10.77.10.2
                     description: Core switch
@@ -220,11 +269,11 @@ spec:
 
           custom.css: |
             body {
-              background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+              background: #09090b;
               background-attachment: fixed;
             }
             :root {
-              --color-text-primary: rgba(255,255,255,0.9);
+              --color-text-primary: rgba(255,255,255,0.95);
             }
 
   destination:
