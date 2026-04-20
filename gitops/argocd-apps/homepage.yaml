@@ -44,29 +44,53 @@ spec:
                 style: row
                 columns: 4
                 icon: mdi-server-network
+                background:
+                  color: orange
+                  brightness: 400
+                  opacity: 70
               Network & Security:
                 tab: Infrastructure
                 style: row
                 columns: 2
                 icon: mdi-shield-lock
+                background:
+                  color: cyan
+                  brightness: 400
+                  opacity: 70
               Network Hardware:
                 tab: Infrastructure
                 style: row
                 columns: 4
                 icon: mdi-router-network
+                background:
+                  color: green
+                  brightness: 400
+                  opacity: 70
               Media:
                 tab: Media
                 style: row
                 columns: 2
                 icon: mdi-television-play
+                background:
+                  color: purple
+                  brightness: 400
+                  opacity: 70
               Media Management:
                 tab: Media
                 style: row
                 columns: 5
                 icon: mdi-cog-play
+                background:
+                  color: emerald
+                  brightness: 400
+                  opacity: 70
               Quick Links:
                 tab: Apps
                 icon: mdi-bookmark-multiple
+                background:
+                  color: rose
+                  brightness: 400
+                  opacity: 70
 
           bookmarks:
             - Quick Links:
