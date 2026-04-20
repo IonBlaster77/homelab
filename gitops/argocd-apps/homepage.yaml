@@ -44,6 +44,12 @@ spec:
               Network Hardware:
                 style: row
                 columns: 4
+              Media:
+                style: row
+                columns: 2
+              Media Management:
+                style: row
+                columns: 5
 
           bookmarks:
             - Quick Links:
@@ -98,6 +104,59 @@ spec:
                     siteMonitor: https://adguard.jupitertech.net
                     namespace: adguard
                     app: adguard-primary
+
+            - Media:
+                - Jellyfin:
+                    href: https://jellyfin.jupitertech.net
+                    description: Media server
+                    icon: jellyfin.png
+                    siteMonitor: https://jellyfin.jupitertech.net
+                    namespace: media
+                    app: jellyfin
+                - Jellyseerr:
+                    href: https://jellyseerr.jupitertech.net
+                    description: Media request management
+                    icon: jellyseerr.png
+                    siteMonitor: https://jellyseerr.jupitertech.net
+                    namespace: media
+                    app: jellyseerr
+
+            - Media Management:
+                - Radarr:
+                    href: https://radarr.jupitertech.net
+                    description: Movie automation
+                    icon: radarr.png
+                    siteMonitor: https://radarr.jupitertech.net
+                    namespace: media
+                    app: radarr
+                - Sonarr:
+                    href: https://sonarr.jupitertech.net
+                    description: TV show automation
+                    icon: sonarr.png
+                    siteMonitor: https://sonarr.jupitertech.net
+                    namespace: media
+                    app: sonarr
+                - Prowlarr:
+                    href: https://prowlarr.jupitertech.net
+                    description: Indexer management
+                    icon: prowlarr.png
+                    siteMonitor: https://prowlarr.jupitertech.net
+                    namespace: media
+                    app: prowlarr
+                - qBittorrent:
+                    href: https://qbittorrent.jupitertech.net
+                    description: Torrent client
+                    icon: qbittorrent.png
+                    siteMonitor: https://qbittorrent.jupitertech.net
+                    namespace: media
+                    app: qbittorrent
+                - Bazarr:
+                    href: https://bazarr.jupitertech.net
+                    description: Subtitle automation
+                    icon: bazarr.png
+                    siteMonitor: https://bazarr.jupitertech.net
+                    namespace: media
+                    app: bazarr
 
             - Network Hardware:
                 - MikroTik CCR1036:
