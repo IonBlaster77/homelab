@@ -235,17 +235,14 @@ spec:
           kubernetes:
             mode: cluster
 
-        persistence:
-          custom-css:
-            enabled: true
-            type: custom
-            volumeSpec:
-              configMap:
-                name: homepage-custom-css
-            subPath:
-              - path: custom.css
-                mountPath: /app/config/custom.css
-                readOnly: true
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: homepage
+      namespace: homepage
+      jsonPointers:
+        - /spec/template/spec/volumes
+        - /spec/template/spec/containers/0/volumeMounts
 
   destination:
     server: https://kubernetes.default.svc
