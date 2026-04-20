@@ -44,53 +44,29 @@ spec:
                 style: row
                 columns: 4
                 icon: mdi-server-network
-                background:
-                  color: orange
-                  brightness: 400
-                  opacity: 70
               Network & Security:
                 tab: Infrastructure
                 style: row
                 columns: 2
                 icon: mdi-shield-lock
-                background:
-                  color: cyan
-                  brightness: 400
-                  opacity: 70
               Network Hardware:
                 tab: Infrastructure
                 style: row
                 columns: 4
                 icon: mdi-router-network
-                background:
-                  color: green
-                  brightness: 400
-                  opacity: 70
               Media:
                 tab: Media
                 style: row
                 columns: 2
                 icon: mdi-television-play
-                background:
-                  color: purple
-                  brightness: 400
-                  opacity: 70
               Media Management:
                 tab: Media
                 style: row
                 columns: 5
                 icon: mdi-cog-play
-                background:
-                  color: emerald
-                  brightness: 400
-                  opacity: 70
               Quick Links:
                 tab: Apps
                 icon: mdi-bookmark-multiple
-                background:
-                  color: rose
-                  brightness: 400
-                  opacity: 70
 
           bookmarks:
             - Quick Links:
@@ -264,36 +240,31 @@ spec:
               --color-text-primary: rgba(255,255,255,0.95);
             }
 
-            /* Section card colour bands */
-            #services > div:nth-child(1) > div:first-child {
-              background: rgba(249, 115, 22, 0.18);
-              border: 1px solid rgba(249, 115, 22, 0.4);
-              border-radius: 12px;
-              padding: 12px;
+            /* Colour all section cards — nth-child maps to layout order */
+            div:has(> h2) {
+              border-radius: 14px;
+              padding: 14px;
+              margin-bottom: 4px;
             }
-            #services > div:nth-child(2) > div:first-child {
-              background: rgba(6, 182, 212, 0.18);
-              border: 1px solid rgba(6, 182, 212, 0.4);
-              border-radius: 12px;
-              padding: 12px;
+            div:has(> h2):nth-child(1) {
+              background: rgba(249, 115, 22, 0.20);
+              border: 1px solid rgba(249, 115, 22, 0.45);
             }
-            #services > div:nth-child(3) > div:first-child {
-              background: rgba(34, 197, 94, 0.18);
-              border: 1px solid rgba(34, 197, 94, 0.4);
-              border-radius: 12px;
-              padding: 12px;
+            div:has(> h2):nth-child(2) {
+              background: rgba(6, 182, 212, 0.20);
+              border: 1px solid rgba(6, 182, 212, 0.45);
             }
-            #services > div:nth-child(4) > div:first-child {
-              background: rgba(168, 85, 247, 0.18);
-              border: 1px solid rgba(168, 85, 247, 0.4);
-              border-radius: 12px;
-              padding: 12px;
+            div:has(> h2):nth-child(3) {
+              background: rgba(34, 197, 94, 0.20);
+              border: 1px solid rgba(34, 197, 94, 0.45);
             }
-            #services > div:nth-child(5) > div:first-child {
-              background: rgba(16, 185, 129, 0.18);
-              border: 1px solid rgba(16, 185, 129, 0.4);
-              border-radius: 12px;
-              padding: 12px;
+            div:has(> h2):nth-child(4) {
+              background: rgba(168, 85, 247, 0.20);
+              border: 1px solid rgba(168, 85, 247, 0.45);
+            }
+            div:has(> h2):nth-child(5) {
+              background: rgba(16, 185, 129, 0.20);
+              border: 1px solid rgba(16, 185, 129, 0.45);
             }
 
   destination:
