@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: jellyfin
+        app.kubernetes.io/name: jellyfin
     spec:
       containers:
         - name: jellyfin

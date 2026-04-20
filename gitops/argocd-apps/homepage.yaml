@@ -100,7 +100,7 @@ spec:
                     icon: authentik.png
                     siteMonitor: https://auth.jupitertech.net
                     namespace: authentik
-                    app: authentik-server
+                    app: authentik
                 - AdGuard Home:
                     href: https://adguard.jupitertech.net
                     description: Network-wide DNS filtering & ad blocking

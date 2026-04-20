@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: radarr
+        app.kubernetes.io/name: radarr
     spec:
       containers:
         - name: radarr

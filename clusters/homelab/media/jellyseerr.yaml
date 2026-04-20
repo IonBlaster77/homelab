@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: jellyseerr
+        app.kubernetes.io/name: jellyseerr
     spec:
       containers:
         - name: jellyseerr

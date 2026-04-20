@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: bazarr
+        app.kubernetes.io/name: bazarr
     spec:
       containers:
         - name: bazarr

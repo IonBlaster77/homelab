@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: prowlarr
+        app.kubernetes.io/name: prowlarr
     spec:
       containers:
         - name: prowlarr

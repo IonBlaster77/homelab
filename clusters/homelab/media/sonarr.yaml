@@ -27,6 +27,7 @@ spec:
     metadata:
       labels:
         app: sonarr
+        app.kubernetes.io/name: sonarr
     spec:
       containers:
         - name: sonarr
