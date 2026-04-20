@@ -67,7 +67,7 @@ spec:
                 columns: 4
                 icon: mdi-router-network
                 background:
-                  color: blue
+                  color: green
                   brightness: 400
                   saturate: 200
                   opacity: 30
