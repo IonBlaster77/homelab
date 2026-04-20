@@ -238,11 +238,14 @@ spec:
         persistence:
           custom-css:
             enabled: true
-            type: configMap
-            name: homepage-custom-css
-            mountPath: /app/config/custom.css
-            subPath: custom.css
-            readOnly: true
+            type: custom
+            volumeSpec:
+              configMap:
+                name: homepage-custom-css
+            subPath:
+              - path: custom.css
+                mountPath: /app/config/custom.css
+                readOnly: true
 
   destination:
     server: https://kubernetes.default.svc
