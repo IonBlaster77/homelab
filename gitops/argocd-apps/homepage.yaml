@@ -240,31 +240,38 @@ spec:
               --color-text-primary: rgba(255,255,255,0.95);
             }
 
-            /* Colour all section cards — nth-child maps to layout order */
-            div:has(> h2) {
-              border-radius: 14px;
-              padding: 14px;
-              margin-bottom: 4px;
+            /* Section header buttons — direct children of #layout-groups */
+            #layout-groups > button {
+              border-radius: 12px;
+              padding: 10px 14px !important;
+              margin-bottom: 2px;
             }
-            div:has(> h2):nth-child(1) {
-              background: rgba(249, 115, 22, 0.20);
-              border: 1px solid rgba(249, 115, 22, 0.45);
+
+            /* Section 1: orange (Cluster Management / Media / Quick Links) */
+            #layout-groups > button:nth-of-type(1) {
+              background: linear-gradient(135deg, rgba(249,115,22,0.30), rgba(249,115,22,0.08)) !important;
+              border: 1px solid rgba(249,115,22,0.55) !important;
             }
-            div:has(> h2):nth-child(2) {
-              background: rgba(6, 182, 212, 0.20);
-              border: 1px solid rgba(6, 182, 212, 0.45);
+            #layout-groups > button:nth-of-type(1) ~ div.services-group {
+              border-left: 2px solid rgba(249,115,22,0.35);
             }
-            div:has(> h2):nth-child(3) {
-              background: rgba(34, 197, 94, 0.20);
-              border: 1px solid rgba(34, 197, 94, 0.45);
+
+            /* Section 2: cyan (Network & Security / Media Management) */
+            #layout-groups > button:nth-of-type(2) {
+              background: linear-gradient(135deg, rgba(6,182,212,0.30), rgba(6,182,212,0.08)) !important;
+              border: 1px solid rgba(6,182,212,0.55) !important;
             }
-            div:has(> h2):nth-child(4) {
-              background: rgba(168, 85, 247, 0.20);
-              border: 1px solid rgba(168, 85, 247, 0.45);
+            #layout-groups > button:nth-of-type(2) ~ div.services-group {
+              border-left: 2px solid rgba(6,182,212,0.35);
             }
-            div:has(> h2):nth-child(5) {
-              background: rgba(16, 185, 129, 0.20);
-              border: 1px solid rgba(16, 185, 129, 0.45);
+
+            /* Section 3: green (Network Hardware) */
+            #layout-groups > button:nth-of-type(3) {
+              background: linear-gradient(135deg, rgba(34,197,94,0.30), rgba(34,197,94,0.08)) !important;
+              border: 1px solid rgba(34,197,94,0.55) !important;
+            }
+            #layout-groups > button:nth-of-type(3) ~ div.services-group {
+              border-left: 2px solid rgba(34,197,94,0.35);
             }
 
   destination:
