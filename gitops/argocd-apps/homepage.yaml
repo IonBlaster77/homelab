@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://jameswynn.github.io/helm-charts
-    chart: homepage
-    targetRevision: 2.1.0
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    path: gitops/homepage-chart
+    targetRevision: HEAD
     helm:
       releaseName: homepage
       values: |
@@ -234,6 +234,18 @@ spec:
 
           kubernetes:
             mode: cluster
+
+        persistence:
+          custom-css:
+            enabled: true
+            type: custom
+            volumeSpec:
+              configMap:
+                name: homepage-custom-css
+            subPath:
+              - path: custom.css
+                mountPath: /app/config/custom.css
+                readOnly: true
 
   destination:
     server: https://kubernetes.default.svc
