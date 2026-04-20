@@ -235,15 +235,6 @@ spec:
           kubernetes:
             mode: cluster
 
-  ignoreDifferences:
-    - group: apps
-      kind: Deployment
-      name: homepage
-      namespace: homepage
-      jsonPointers:
-        - /spec/template/spec/volumes
-        - /spec/template/spec/containers/0/volumeMounts
-
   destination:
     server: https://kubernetes.default.svc
     namespace: homepage
