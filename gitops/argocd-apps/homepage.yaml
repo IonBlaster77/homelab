@@ -20,16 +20,10 @@ spec:
         env:
           - name: HOMEPAGE_ALLOWED_HOSTS
             value: "home.jupitertech.net"
-          - name: HOMEPAGE_VAR_SYNOLOGY_USER
-            valueFrom:
-              secretKeyRef:
-                name: homepage-synology
-                key: username
-          - name: HOMEPAGE_VAR_SYNOLOGY_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: homepage-synology
-                key: password
+
+        envFrom:
+          - secretRef:
+              name: homepage-synology
 
         service:
           main:
@@ -189,14 +183,14 @@ spec:
                     description: Synology DiskStation
                     icon: synology.png
                     siteMonitor: http://10.77.10.20:5000
-                    widget:
-                      type: diskstation
-                      url: http://10.77.20.20:5000
-                      username: "{{HOMEPAGE_VAR_SYNOLOGY_USER}}"
-                      password: "{{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}"
-                      volume: volume1
 
           widgets:
+            - diskstation:
+                url: http://10.77.20.20:5000
+                username: "{{HOMEPAGE_VAR_SYNOLOGY_USER}}"
+                password: "{{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}"
+                volume: volume_1
+
             - kubernetes:
                 cluster:
                   show: true
