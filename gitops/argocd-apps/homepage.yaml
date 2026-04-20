@@ -244,38 +244,47 @@ spec:
               --color-text-primary: rgba(255,255,255,0.95);
             }
 
-            /* Section header buttons — direct children of #layout-groups */
-            #layout-groups > button {
-              border-radius: 12px;
-              padding: 10px 14px !important;
-              margin-bottom: 2px;
+            /* Full section card colour — Disclosure wrapper divs */
+            #layout-groups > div {
+              border-radius: 14px;
+              padding: 8px;
+              margin-bottom: 12px;
             }
 
             /* Section 1: orange (Cluster Management / Media / Quick Links) */
-            #layout-groups > button:nth-of-type(1) {
-              background: linear-gradient(135deg, rgba(249,115,22,0.30), rgba(249,115,22,0.08)) !important;
-              border: 1px solid rgba(249,115,22,0.55) !important;
+            #layout-groups > div:nth-child(1) {
+              background: rgba(249,115,22,0.12) !important;
+              border: 1px solid rgba(249,115,22,0.45) !important;
             }
-            #layout-groups > button:nth-of-type(1) ~ div.services-group {
-              border-left: 2px solid rgba(249,115,22,0.35);
+            #layout-groups > div:nth-child(1) > button {
+              background: rgba(249,115,22,0.25) !important;
+              border-radius: 10px;
+              padding: 10px 14px !important;
+              width: 100%;
             }
 
             /* Section 2: cyan (Network & Security / Media Management) */
-            #layout-groups > button:nth-of-type(2) {
-              background: linear-gradient(135deg, rgba(6,182,212,0.30), rgba(6,182,212,0.08)) !important;
-              border: 1px solid rgba(6,182,212,0.55) !important;
+            #layout-groups > div:nth-child(2) {
+              background: rgba(6,182,212,0.12) !important;
+              border: 1px solid rgba(6,182,212,0.45) !important;
             }
-            #layout-groups > button:nth-of-type(2) ~ div.services-group {
-              border-left: 2px solid rgba(6,182,212,0.35);
+            #layout-groups > div:nth-child(2) > button {
+              background: rgba(6,182,212,0.25) !important;
+              border-radius: 10px;
+              padding: 10px 14px !important;
+              width: 100%;
             }
 
             /* Section 3: green (Network Hardware) */
-            #layout-groups > button:nth-of-type(3) {
-              background: linear-gradient(135deg, rgba(34,197,94,0.30), rgba(34,197,94,0.08)) !important;
-              border: 1px solid rgba(34,197,94,0.55) !important;
+            #layout-groups > div:nth-child(3) {
+              background: rgba(34,197,94,0.12) !important;
+              border: 1px solid rgba(34,197,94,0.45) !important;
             }
-            #layout-groups > button:nth-of-type(3) ~ div.services-group {
-              border-left: 2px solid rgba(34,197,94,0.35);
+            #layout-groups > div:nth-child(3) > button {
+              background: rgba(34,197,94,0.25) !important;
+              border-radius: 10px;
+              padding: 10px 14px !important;
+              width: 100%;
             }
 
   destination:
