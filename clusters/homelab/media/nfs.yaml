@@ -13,7 +13,7 @@ spec:
     - nfsvers=4
     - hard
   nfs:
-    server: 10.77.10.20
+    server: 10.77.20.20
     path: /volume1/Media
 ---
 apiVersion: v1

@@ -3,7 +3,7 @@ kind: Setting
 metadata:
   name: backup-target
   namespace: longhorn-system
-value: "nfs://10.77.10.20:/volume1/longhorn-backups"
+value: "nfs://10.77.20.20:/volume1/longhorn-backups"
 ---
 apiVersion: longhorn.io/v1beta2
 kind: Setting

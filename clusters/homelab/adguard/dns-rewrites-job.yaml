@@ -45,7 +45,7 @@ spec:
                 fi
               }
 
-              add_rewrite "nas.jupitertech.net"      "10.77.10.20"
+              add_rewrite "nas.jupitertech.net"      "10.77.20.20"
               add_rewrite "argocd.jupitertech.net"   "10.77.20.60"
               add_rewrite "grafana.jupitertech.net"  "10.77.20.60"
               add_rewrite "longhorn.jupitertech.net" "10.77.20.60"
