@@ -1,0 +1,15 @@
+apiVersion: v2
+name: argocd-wrapper
+description: >
+  Umbrella chart wrapping the upstream argo-cd Helm chart.
+  Using a git-path source instead of a direct Helm repo source avoids
+  the ArgoCD v3 semver bug ("improper constraint: HEAD") that fires
+  on GenerateManifest when the repoURL is a Helm HTTP index.
+  ArgoCD runs `helm dependency build` against Chart.lock, which fetches
+  the exact argo-cd-9.5.2.tgz — no version resolution, no HEAD lookup.
+type: application
+version: 0.1.0
+dependencies:
+  - name: argo-cd
+    version: 9.5.2
+    repository: https://argoproj.github.io/argo-helm

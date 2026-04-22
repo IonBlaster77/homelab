@@ -1,0 +1,116 @@
+# argocd-values.yaml
+global:
+  domain: ""  # can leave empty for now
+
+server:
+  service:
+    type: LoadBalancer
+    annotations:
+      # lbipam.cilium.io/ips pins this service to exactly 10.77.20.50 every time.
+      # Without this annotation, Cilium picks the next free IP from the pool —
+      # fine functionally, but the IP would change after a cluster wipe.
+      # With the pin you can bookmark http://10.77.20.50 and it never moves.
+      lbipam.cilium.io/ips: "10.77.20.50"
+
+  ingress:
+    enabled: false
+
+configs:
+  params:
+    # server.insecure: true — ArgoCD serves plain HTTP.
+    # This is fine because traffic stays on your local network and the
+    # LoadBalancer IP is only reachable inside 10.77.20.0/24.
+    # If you later add TLS (cert-manager + Let's Encrypt), set this to false.
+    server.insecure: "true"
+  cm:
+    application.resourceTrackingMethod: annotation
+    # Kubernetes 1.35 adds terminatingReplicas to StatefulSet status but the field
+    # is not yet in the schema ArgoCD uses for structured merge diff — suppress globally.
+    resource.customizations.ignoreDifferences.apps_StatefulSet: |
+      jsonPointers:
+        - /status/terminatingReplicas
+    # Custom Lua health checks for CRDs ArgoCD doesn't understand natively.
+    resource.customizations.health.monitoring.coreos.com_Prometheus: |
+      hs = {}
+      if obj.status ~= nil and obj.status.conditions ~= nil then
+        for _, condition in pairs(obj.status.conditions) do
+          if condition.type == "Available" and condition.status == "True" then
+            hs.status = "Healthy"
+            hs.message = "Prometheus is available"
+            return hs
+          end
+        end
+      end
+      hs.status = "Progressing"
+      hs.message = "Waiting for Prometheus to become available"
+      return hs
+
+repoServer:
+  # Volumes shared between the init container and the CMP sidecar.
+  volumes:
+    - name: sops-age
+      secret:
+        secretName: sops-age
+    - name: custom-tools
+      emptyDir: {}
+    - name: argocd-cmp-sops
+      configMap:
+        name: argocd-cmp-sops
+
+  # Copies the sops binary from the official image into the shared custom-tools
+  # volume. Using a versioned image avoids a wget-at-runtime network call —
+  # containerd pulls and caches the image, so the pod starts even if GitHub
+  # is temporarily unreachable.
+  initContainers:
+    - name: install-sops
+      image: ghcr.io/getsops/sops:v3.12.1
+      command: [cp, /usr/local/bin/sops, /custom-tools/sops]
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        runAsUser: 999
+        capabilities:
+          drop: [ALL]
+        seccompProfile:
+          type: RuntimeDefault
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+
+  # CMP sidecar — ArgoCD routes SOPS-encrypted source directories through
+  # this container. It auto-discovers directories that contain a sops: block,
+  # decrypts those files in-memory, and passes plain files through unchanged.
+  # The decrypted values never reach disk or git.
+  extraContainers:
+    - name: cmp-sops
+      image: quay.io/argoproj/argocd:v3.3.7
+      command: [/var/run/argocd/argocd-cmp-server]
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        seccompProfile:
+          type: RuntimeDefault
+      env:
+        - name: SOPS_AGE_KEY_FILE
+          value: /home/argocd/.config/sops/age/keys.txt
+      volumeMounts:
+        # Standard ArgoCD CMP sidecar mounts (created automatically by the chart).
+        - name: var-files
+          mountPath: /var/run/argocd
+        - name: plugins
+          mountPath: /home/argocd/cmp-server/plugins
+        # Plugin config from argocd-cmp-configmap.yaml.
+        - name: argocd-cmp-sops
+          mountPath: /home/argocd/cmp-server/config/plugin.yaml
+          subPath: plugin.yaml
+        # Age decryption key (same secret used during manual bootstrap).
+        - name: sops-age
+          mountPath: /home/argocd/.config/sops/age
+          readOnly: true
+        # sops binary installed by the init container.
+        - name: custom-tools
+          mountPath: /usr/local/bin/sops
+          subPath: sops

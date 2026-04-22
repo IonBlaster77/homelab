@@ -1,0 +1,99 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    # Prevent ArgoCD from deleting itself if this Application is accidentally removed.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/argocd-chart
+    helm:
+      # releaseName must match the existing Helm release so ArgoCD adopts it
+      # rather than creating a duplicate release alongside the bootstrapped one.
+      releaseName: argocd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true
+    # No automated sync — ArgoCD upgrades must be deliberate.
+    # A failed self-sync can take down the entire CD system.
+  ignoreDifferences:
+    # argocd-secret holds the bcrypt admin password hash and server.secretkey,
+    # both set at bootstrap time and managed outside the chart via argocd-secrets.yaml.
+    # The chart renders these fields empty — ignore to prevent constant OutOfSync.
+    - group: ""
+      kind: Secret
+      name: argocd-secret
+      namespace: argocd
+      jsonPointers:
+        - /data/admin.password
+        - /data/admin.passwordMtime
+        - /data/server.secretkey
+
+    # NodePort assignments are runtime-allocated by kube-proxy, not in the chart.
+    - group: ""
+      kind: Service
+      jqPathExpressions:
+        - .spec.ports[].nodePort
+
+    # helm.sh/chart label: umbrella chart renders "argocd-wrapper-0.1.0" but
+    # live resources show "argo-cd-9.5.2" (set at bootstrap time).
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+        - /spec/template/metadata/labels/helm.sh~1chart
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+        - /spec/template/metadata/labels/helm.sh~1chart
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: ""
+      kind: ServiceAccount
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: ""
+      kind: ConfigMap
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: ""
+      kind: Secret
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: Role
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
