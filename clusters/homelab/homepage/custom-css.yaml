@@ -5,52 +5,267 @@ metadata:
   namespace: homepage
 data:
   custom.css: |
+    /* ── Background: deep space with purple/blue ambient glow ───── */
     body {
-      background: #09090b !important;
+      background:
+        radial-gradient(ellipse 70% 45% at 15% 8%,  rgba(120,40,220,0.22) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 40% at 85% 85%, rgba(0,90,200,0.20)   0%, transparent 65%),
+        radial-gradient(ellipse 40% 55% at 50% 45%, rgba(30,10,60,0.55)   0%, transparent 100%),
+        #05040a !important;
+      min-height: 100vh;
     }
+
     :root {
       --color-text-primary: rgba(255,255,255,0.95);
+      --blur: blur(16px);
     }
 
-    /* Section wrapper base */
+    /* ── Section wrapper: frosted glass tile base ───────────────── */
     #layout-groups > div {
-      border-radius: 14px;
-      padding: 8px;
-      margin-bottom: 12px;
+      border-radius: 18px;
+      padding: 10px;
+      margin-bottom: 14px;
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      transition: box-shadow 0.35s ease, transform 0.2s ease;
     }
 
-    /* Section 1: orange */
+    #layout-groups > div:hover {
+      transform: translateY(-1px);
+    }
+
+    /* ── Section header button base ─────────────────────────────── */
+    #layout-groups > div > button {
+      border-radius: 12px !important;
+      padding: 10px 16px !important;
+      width: 100%;
+      font-weight: 700 !important;
+      letter-spacing: 0.07em !important;
+      text-transform: uppercase !important;
+      font-size: 0.76em !important;
+      border-width: 1px !important;
+      border-style: solid !important;
+      margin-bottom: 6px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    /* ── Service item cards inside sections ─────────────────────── */
+    #layout-groups > div li {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 12px;
+      transition: filter 0.2s ease, transform 0.2s ease;
+    }
+
+    #layout-groups > div li:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    /* ── Information widgets bar ────────────────────────────────── */
+    #information-widgets > div {
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      background: rgba(255,255,255,0.05) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      border-radius: 14px;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       Per-section colour themes  (12 vivid colours)
+       1 Electric Purple · 2 Neon Cyan  · 3 Emerald  · 4 Orange
+       5 Hot Pink        · 6 Blue       · 7 Yellow   · 8 Rose
+       9 Violet          · 10 Teal      · 11 Lime    · 12 Sky
+       ═══════════════════════════════════════════════════════════ */
+
+    /* 1 – Electric Purple */
     #layout-groups > div:nth-child(1) {
-      background: rgba(249,115,22,0.20) !important;
-      border: 2px solid rgba(249,115,22,0.75) !important;
+      background: rgba(168,85,247,0.10) !important;
+      border: 1.5px solid rgba(168,85,247,0.55) !important;
+      box-shadow: 0 0 30px rgba(168,85,247,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(1):hover {
+      box-shadow: 0 0 50px rgba(168,85,247,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
     }
     #layout-groups > div:nth-child(1) > button {
-      background: rgba(249,115,22,0.35) !important;
-      border-radius: 10px;
-      padding: 10px 14px !important;
-      width: 100%;
+      background: rgba(168,85,247,0.28) !important;
+      border-color: rgba(168,85,247,0.65) !important;
+      box-shadow: 0 0 14px rgba(168,85,247,0.50);
+      color: #e9d5ff !important;
     }
 
-    /* Section 2: cyan */
+    /* 2 – Neon Cyan */
     #layout-groups > div:nth-child(2) {
-      background: rgba(6,182,212,0.20) !important;
-      border: 2px solid rgba(6,182,212,0.75) !important;
+      background: rgba(6,182,212,0.10) !important;
+      border: 1.5px solid rgba(6,182,212,0.55) !important;
+      box-shadow: 0 0 30px rgba(6,182,212,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(2):hover {
+      box-shadow: 0 0 50px rgba(6,182,212,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
     }
     #layout-groups > div:nth-child(2) > button {
-      background: rgba(6,182,212,0.35) !important;
-      border-radius: 10px;
-      padding: 10px 14px !important;
-      width: 100%;
+      background: rgba(6,182,212,0.28) !important;
+      border-color: rgba(6,182,212,0.65) !important;
+      box-shadow: 0 0 14px rgba(6,182,212,0.50);
+      color: #cffafe !important;
     }
 
-    /* Section 3: green */
+    /* 3 – Emerald */
     #layout-groups > div:nth-child(3) {
-      background: rgba(34,197,94,0.20) !important;
-      border: 2px solid rgba(34,197,94,0.75) !important;
+      background: rgba(16,185,129,0.10) !important;
+      border: 1.5px solid rgba(16,185,129,0.55) !important;
+      box-shadow: 0 0 30px rgba(16,185,129,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(3):hover {
+      box-shadow: 0 0 50px rgba(16,185,129,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
     }
     #layout-groups > div:nth-child(3) > button {
-      background: rgba(34,197,94,0.35) !important;
-      border-radius: 10px;
-      padding: 10px 14px !important;
-      width: 100%;
+      background: rgba(16,185,129,0.28) !important;
+      border-color: rgba(16,185,129,0.65) !important;
+      box-shadow: 0 0 14px rgba(16,185,129,0.50);
+      color: #d1fae5 !important;
+    }
+
+    /* 4 – Neon Orange */
+    #layout-groups > div:nth-child(4) {
+      background: rgba(249,115,22,0.10) !important;
+      border: 1.5px solid rgba(249,115,22,0.55) !important;
+      box-shadow: 0 0 30px rgba(249,115,22,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(4):hover {
+      box-shadow: 0 0 50px rgba(249,115,22,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(4) > button {
+      background: rgba(249,115,22,0.28) !important;
+      border-color: rgba(249,115,22,0.65) !important;
+      box-shadow: 0 0 14px rgba(249,115,22,0.50);
+      color: #fed7aa !important;
+    }
+
+    /* 5 – Hot Pink */
+    #layout-groups > div:nth-child(5) {
+      background: rgba(236,72,153,0.10) !important;
+      border: 1.5px solid rgba(236,72,153,0.55) !important;
+      box-shadow: 0 0 30px rgba(236,72,153,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(5):hover {
+      box-shadow: 0 0 50px rgba(236,72,153,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(5) > button {
+      background: rgba(236,72,153,0.28) !important;
+      border-color: rgba(236,72,153,0.65) !important;
+      box-shadow: 0 0 14px rgba(236,72,153,0.50);
+      color: #fce7f3 !important;
+    }
+
+    /* 6 – Electric Blue */
+    #layout-groups > div:nth-child(6) {
+      background: rgba(59,130,246,0.10) !important;
+      border: 1.5px solid rgba(59,130,246,0.55) !important;
+      box-shadow: 0 0 30px rgba(59,130,246,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(6):hover {
+      box-shadow: 0 0 50px rgba(59,130,246,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(6) > button {
+      background: rgba(59,130,246,0.28) !important;
+      border-color: rgba(59,130,246,0.65) !important;
+      box-shadow: 0 0 14px rgba(59,130,246,0.50);
+      color: #dbeafe !important;
+    }
+
+    /* 7 – Acid Yellow */
+    #layout-groups > div:nth-child(7) {
+      background: rgba(234,179,8,0.10) !important;
+      border: 1.5px solid rgba(234,179,8,0.55) !important;
+      box-shadow: 0 0 30px rgba(234,179,8,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(7):hover {
+      box-shadow: 0 0 50px rgba(234,179,8,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(7) > button {
+      background: rgba(234,179,8,0.28) !important;
+      border-color: rgba(234,179,8,0.65) !important;
+      box-shadow: 0 0 14px rgba(234,179,8,0.50);
+      color: #fef9c3 !important;
+    }
+
+    /* 8 – Rose */
+    #layout-groups > div:nth-child(8) {
+      background: rgba(244,63,94,0.10) !important;
+      border: 1.5px solid rgba(244,63,94,0.55) !important;
+      box-shadow: 0 0 30px rgba(244,63,94,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(8):hover {
+      box-shadow: 0 0 50px rgba(244,63,94,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(8) > button {
+      background: rgba(244,63,94,0.28) !important;
+      border-color: rgba(244,63,94,0.65) !important;
+      box-shadow: 0 0 14px rgba(244,63,94,0.50);
+      color: #ffe4e6 !important;
+    }
+
+    /* 9 – Violet */
+    #layout-groups > div:nth-child(9) {
+      background: rgba(139,92,246,0.10) !important;
+      border: 1.5px solid rgba(139,92,246,0.55) !important;
+      box-shadow: 0 0 30px rgba(139,92,246,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(9):hover {
+      box-shadow: 0 0 50px rgba(139,92,246,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(9) > button {
+      background: rgba(139,92,246,0.28) !important;
+      border-color: rgba(139,92,246,0.65) !important;
+      box-shadow: 0 0 14px rgba(139,92,246,0.50);
+      color: #ede9fe !important;
+    }
+
+    /* 10 – Teal */
+    #layout-groups > div:nth-child(10) {
+      background: rgba(20,184,166,0.10) !important;
+      border: 1.5px solid rgba(20,184,166,0.55) !important;
+      box-shadow: 0 0 30px rgba(20,184,166,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(10):hover {
+      box-shadow: 0 0 50px rgba(20,184,166,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(10) > button {
+      background: rgba(20,184,166,0.28) !important;
+      border-color: rgba(20,184,166,0.65) !important;
+      box-shadow: 0 0 14px rgba(20,184,166,0.50);
+      color: #ccfbf1 !important;
+    }
+
+    /* 11 – Lime */
+    #layout-groups > div:nth-child(11) {
+      background: rgba(132,204,22,0.10) !important;
+      border: 1.5px solid rgba(132,204,22,0.55) !important;
+      box-shadow: 0 0 30px rgba(132,204,22,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(11):hover {
+      box-shadow: 0 0 50px rgba(132,204,22,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(11) > button {
+      background: rgba(132,204,22,0.28) !important;
+      border-color: rgba(132,204,22,0.65) !important;
+      box-shadow: 0 0 14px rgba(132,204,22,0.50);
+      color: #ecfccb !important;
+    }
+
+    /* 12 – Sky */
+    #layout-groups > div:nth-child(12) {
+      background: rgba(14,165,233,0.10) !important;
+      border: 1.5px solid rgba(14,165,233,0.55) !important;
+      box-shadow: 0 0 30px rgba(14,165,233,0.22), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    #layout-groups > div:nth-child(12):hover {
+      box-shadow: 0 0 50px rgba(14,165,233,0.42), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+    }
+    #layout-groups > div:nth-child(12) > button {
+      background: rgba(14,165,233,0.28) !important;
+      border-color: rgba(14,165,233,0.65) !important;
+      box-shadow: 0 0 14px rgba(14,165,233,0.50);
+      color: #e0f2fe !important;
     }
