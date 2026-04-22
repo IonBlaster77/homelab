@@ -525,43 +525,47 @@ kubectl get applications -n argocd
 
 ---
 
-## Phase 13 — Post-Sync: AdGuard DNS Rewrites (imperative, not in git)
+## Phase 13 — AdGuard DNS Rewrites (automated via ArgoCD PostSync hook)
 
-AdGuard DNS rewrites are not stored in git — they live in AdGuard's config on the
-PVC. After a cluster rebuild, re-add them via the AdGuard API:
+DNS rewrites are declared in git and applied automatically by ArgoCD after each sync
+via `clusters/homelab/adguard/dns-rewrites-job.yaml`. No manual steps required.
 
-```bash
-# Port-forward to the primary AdGuard instance
-kubectl port-forward svc/adguard-primary -n adguard 3030:3000 &
+The PostSync Job calls the AdGuard API using credentials from the `adguard-api-credentials`
+Secret and idempotently adds each rewrite only if it doesn't already exist. Rewrites
+currently configured:
 
-# Add all internal service rewrites pointing to the gateway IP
-for domain in argocd grafana longhorn adguard home; do
-  curl -s --user 'admin:<ADGUARD_PASSWORD>' \
-    -X POST http://localhost:3030/control/rewrite/add \
-    -H 'Content-Type: application/json' \
-    -d "{\"domain\":\"${domain}.jupitertech.net\",\"answer\":\"10.77.20.60\"}"
-  echo " → ${domain}.jupitertech.net"
-done
+| Domain | Answer |
+|---|---|
+| `nas.jupitertech.net` | `10.77.20.20` |
+| `argocd.jupitertech.net` | `10.77.20.60` |
+| `grafana.jupitertech.net` | `10.77.20.60` |
+| `longhorn.jupitertech.net` | `10.77.20.60` |
+| `adguard.jupitertech.net` | `10.77.20.60` |
+| `home.jupitertech.net` | `10.77.20.60` |
+| `auth.jupitertech.net` | `10.77.20.60` |
+| `pgadmin.jupitertech.net` | `10.77.20.60` |
+| `radarr.jupitertech.net` | `10.77.20.60` |
+| `sonarr.jupitertech.net` | `10.77.20.60` |
+| `prowlarr.jupitertech.net` | `10.77.20.60` |
+| `qbittorrent.jupitertech.net` | `10.77.20.60` |
+| `jellyfin.jupitertech.net` | `10.77.20.60` |
+| `jellyseerr.jupitertech.net` | `10.77.20.60` |
+| `bazarr.jupitertech.net` | `10.77.20.60` |
 
-kill %1  # stop port-forward
-```
+To verify after sync:
 
-Verify:
 ```bash
 kubectl port-forward svc/adguard-primary -n adguard 3030:3000 &>/dev/null &
-curl -s --user 'admin:<ADGUARD_PASSWORD>' http://localhost:3030/control/rewrite/list
+curl -s -u "$(kubectl get secret adguard-api-credentials -n adguard -o jsonpath='{.data.username}' | base64 -d):$(kubectl get secret adguard-api-credentials -n adguard -o jsonpath='{.data.password}' | base64 -d)" \
+  http://localhost:3030/control/rewrite/list | jq .
 kill %1
 ```
 
-Expected output — 5 rewrites, all pointing to `10.77.20.60`:
-```json
-[
-  {"domain":"argocd.jupitertech.net","answer":"10.77.20.60"},
-  {"domain":"grafana.jupitertech.net","answer":"10.77.20.60"},
-  {"domain":"longhorn.jupitertech.net","answer":"10.77.20.60"},
-  {"domain":"adguard.jupitertech.net","answer":"10.77.20.60"},
-  {"domain":"home.jupitertech.net","answer":"10.77.20.60"}
-]
+To force re-apply outside of a normal sync (e.g. if rewrites were manually deleted):
+
+```bash
+kubectl delete job adguard-dns-rewrites -n adguard --ignore-not-found
+kubectl apply -f clusters/homelab/adguard/dns-rewrites-job.yaml
 ```
 
 > **Note on NAT hairpinning:** The MikroTik already handles hairpin NAT, so internal
