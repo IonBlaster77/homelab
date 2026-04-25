@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: node-uncordon
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-uncordon
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-uncordon
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-uncordon
+subjects:
+  - kind: ServiceAccount
+    name: node-uncordon
+    namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-uncordon
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: node-uncordon
+  template:
+    metadata:
+      labels:
+        app: node-uncordon
+    spec:
+      serviceAccountName: node-uncordon
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: uncordon
+          image: bitnami/kubectl:1.35
+          command:
+            - sh
+            - -c
+            - |
+              # Skip if node has the maintenance annotation set
+              SKIP=$(kubectl get node "$NODE_NAME" -o jsonpath='{.metadata.annotations.homelab/skip-auto-uncordon}' 2>/dev/null)
+              if [ "$SKIP" = "true" ]; then
+                echo "Node $NODE_NAME has skip-auto-uncordon annotation, leaving cordoned"
+                exit 0
+              fi
+              kubectl uncordon "$NODE_NAME"
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 1m
+              memory: 1Mi

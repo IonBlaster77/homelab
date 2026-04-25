@@ -19,6 +19,15 @@
 # LoadBalancer traffic entirely in eBPF rather than iptables.
 kubeProxyReplacement: true
 
+# Prevents "operation not permitted" DNS failures at pod startup.
+# With kubeProxyReplacement: true, Cilium attaches a BPF hook to the connect()
+# syscall for socket-level LB. New pods hit an EPERM during the brief window
+# before their endpoint is registered in Cilium's BPF maps. Setting this to
+# true scopes the socket-level hook to the host network namespace only; pods
+# use the normal BPF datapath instead, which doesn't have the startup race.
+socketLB:
+  hostNamespaceOnly: true
+
 # Where to find the Kubernetes API server.
 # Must be the cluster VIP (10.77.20.10) so this works regardless of which
 # control-plane node is currently active. Without this, Cilium would try
