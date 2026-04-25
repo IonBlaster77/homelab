@@ -46,7 +46,7 @@ spec:
         - operator: Exists
       initContainers:
         - name: uncordon
-          image: bitnami/kubectl:1.35
+          image: registry.k8s.io/kubectl:v1.35.0
           command:
             - sh
             - -c
