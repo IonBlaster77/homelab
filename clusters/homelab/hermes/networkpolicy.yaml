@@ -59,9 +59,9 @@ spec:
               protocol: TCP
 ---
 # Ingress to web UI (port 8787) from the Cilium Gateway.
-# cilium-envoy runs with hostNetwork:true so its traffic appears as the node IP.
-# Node IPs are assigned Cilium's reserved:remote-node identity (7) or reserved:host (1),
-# NOT a CIDR identity — fromCIDR won't match them. Use fromEntities instead.
+# Cilium tags Gateway API traffic with reserved:ingress identity (source IP is a
+# Cilium-internal address, e.g. 10.0.11.x on talos1), not remote-node or CIDR.
+# fromEntities: ingress is required to allow this Cilium gateway forwarding identity.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -73,8 +73,7 @@ spec:
       app: hermes
   ingress:
     - fromEntities:
-        - remote-node
-        - host
+        - ingress
       toPorts:
         - ports:
             - port: "8787"
