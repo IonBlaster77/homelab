@@ -72,11 +72,6 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-              add: ["SETUID", "SETGID", "CHOWN"]
           resources:
             requests:
               memory: "256Mi"
@@ -103,10 +98,6 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-          securityContext:
-            capabilities:
-              drop: ["ALL"]
-              add: ["SETUID", "SETGID", "CHOWN", "AUDIT_WRITE"]
           resources:
             requests:
               memory: "128Mi"
