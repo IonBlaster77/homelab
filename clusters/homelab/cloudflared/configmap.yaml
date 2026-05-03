@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-config
+  namespace: cloudflared
+data:
+  config.yaml: |
+    # Tunnel ingress rules — processed top to bottom, first match wins.
+    #
+    # auth.jupitertech.net routes directly to the Authentik service, bypassing
+    # the gateway. This ensures the Cloudflare Access OIDC server-to-server
+    # token exchange works even if the gateway has an issue.
+    #
+    # All other *.jupitertech.net traffic routes to the shared Cilium Gateway,
+    # which dispatches to individual services via HTTPRoutes. Adding a new
+    # public service only requires a new HTTPRoute — no changes here.
+    #
+    # noTLSVerify is set for the gateway backend: the wildcard cert is valid
+    # externally but cloudflared verifies against the internal cluster hostname.
+    # Internal traffic is already protected by Cilium network policies.
+    ingress:
+      - hostname: auth.jupitertech.net
+        service: http://authentik-server.authentik.svc.cluster.local:80
+
+      - hostname: "*.jupitertech.net"
+        service: https://cilium-gateway-homelab-gateway.networking.svc.cluster.local:443
+        originRequest:
+          noTLSVerify: true
+
+      - service: http_status:404

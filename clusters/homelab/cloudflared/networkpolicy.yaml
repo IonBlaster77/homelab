@@ -1,0 +1,67 @@
+---
+# Default deny all ingress and egress for the cloudflared namespace.
+# cloudflared dials out to Cloudflare — it never accepts inbound connections.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared-default-deny
+  namespace: cloudflared
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress: []
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared-allow-egress
+  namespace: cloudflared
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cloudflared
+  egress:
+    # DNS resolution via kube-dns
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+
+    # Cloudflare network — HTTPS (TLS fallback) and QUIC (primary)
+    # cloudflared connects outbound to Cloudflare's edge on these ports.
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "443"
+              protocol: UDP
+            - port: "7844"
+              protocol: UDP
+            - port: "7844"
+              protocol: TCP
+
+    # Authentik — direct route for auth.jupitertech.net token exchange
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+
+    # Cilium Gateway — wildcard route for all other *.jupitertech.net traffic
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: networking
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
