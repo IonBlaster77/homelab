@@ -34,9 +34,6 @@ spec:
         - name: hermes-data
           persistentVolumeClaim:
             claimName: hermes-data
-        # Shared agent source dir — webui reads agent state from here.
-        - name: hermes-agent-src
-          emptyDir: {}
         # sshd needs a writable /etc/ssh to generate host keys on first boot.
         - name: ssh-config
           emptyDir: {}
@@ -65,12 +62,11 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-            - name: hermes-agent-src
-              mountPath: /opt/hermes
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+              add: ["SETUID", "SETGID"]
           resources:
             requests:
               memory: "256Mi"
@@ -97,12 +93,11 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-            - name: hermes-agent-src
-              mountPath: /home/hermes/.hermes/hermes-agent
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+              add: ["SETUID", "SETGID"]
           resources:
             requests:
               memory: "128Mi"
@@ -113,11 +108,6 @@ spec:
 
         # ------------------------------------------------------------------
         # Container 3 — SSH Sidecar (linuxserver/openssh-server)
-        # Serves two clients:
-        #   1. Scarf iOS app over Tailscale (future)
-        #   2. Local WSL hermes CLI via SSH terminal backend
-        #      (hermes config set terminal.backend ssh)
-        #
         # Runs as root initially so sshd can bind and drop privileges —
         # namespace is labeled pod-security: baseline to permit this.
         # ------------------------------------------------------------------
