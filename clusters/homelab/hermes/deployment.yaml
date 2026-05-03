@@ -32,10 +32,8 @@ spec:
         - name: hermes-data
           persistentVolumeClaim:
             claimName: hermes-data
-        # Writable scratch space for the agent and webui containers.
-        - name: tmp-agent
-          emptyDir: {}
-        - name: tmp-webui
+        # Shared agent source dir — webui reads agent state from here.
+        - name: hermes-agent-src
           emptyDir: {}
         # sshd needs a writable /etc/ssh to generate host keys on first boot.
         - name: ssh-config
@@ -50,14 +48,10 @@ spec:
             defaultMode: 0600
 
       containers:
-        # ------------------------------------------------------------------
-        # Container 1 — Hermes Agent
-        # NOTE: Verify image exists at ghcr.io/nousresearch/hermes-agent
-        # before first deploy. Pin to a digest once confirmed.
-        # ------------------------------------------------------------------
         - name: hermes-agent
-          image: ghcr.io/nousresearch/hermes-agent:latest
+          image: nousresearch/hermes-agent:latest
           imagePullPolicy: Always
+          command: ["gateway", "run"]
           envFrom:
             - configMapRef:
                 name: hermes-config
@@ -70,13 +64,9 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-            - name: tmp-agent
-              mountPath: /tmp
+            - name: hermes-agent-src
+              mountPath: /opt/hermes
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
@@ -88,11 +78,6 @@ spec:
               memory: "1Gi"
               cpu: "500m"
 
-        # ------------------------------------------------------------------
-        # Container 2 — Hermes Web UI
-        # NOTE: Verify image exists at ghcr.io/nesquena/hermes-webui
-        # before first deploy. Pin to a digest once confirmed.
-        # ------------------------------------------------------------------
         - name: hermes-webui
           image: ghcr.io/nesquena/hermes-webui:latest
           imagePullPolicy: Always
@@ -111,13 +96,9 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-            - name: tmp-webui
-              mountPath: /tmp
+            - name: hermes-agent-src
+              mountPath: /home/hermes/.hermes/hermes-agent
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 1000
-            runAsGroup: 1000
-            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
