@@ -59,9 +59,9 @@ spec:
               protocol: TCP
 ---
 # Ingress to web UI (port 8787) from the Cilium Gateway.
-# cilium-envoy runs with hostNetwork:true so its traffic appears as the node IP
-# (10.77.20.x), not as a Cilium endpoint — fromEndpoints won't match it.
-# Allow from the node subnet to cover both local-node and cross-node envoy traffic.
+# cilium-envoy runs with hostNetwork:true so its traffic appears as the node IP.
+# Node IPs are assigned Cilium's reserved:remote-node identity (7) or reserved:host (1),
+# NOT a CIDR identity — fromCIDR won't match them. Use fromEntities instead.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -72,8 +72,9 @@ spec:
     matchLabels:
       app: hermes
   ingress:
-    - fromCIDR:
-        - 10.77.20.0/24
+    - fromEntities:
+        - remote-node
+        - host
       toPorts:
         - ports:
             - port: "8787"
