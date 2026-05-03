@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: mikrotik-exporter
-          image: nshttpd/mikrotik-exporter:1.0.12
+          image: nshttpd/mikrotik-exporter:1.0.11
           args:
             - -config-file=/config/config.yaml
           ports:
