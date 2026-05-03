@@ -66,7 +66,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-              add: ["SETUID", "SETGID"]
+              add: ["SETUID", "SETGID", "CHOWN"]
           resources:
             requests:
               memory: "256Mi"
@@ -94,10 +94,9 @@ spec:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
           securityContext:
-            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-              add: ["SETUID", "SETGID"]
+              add: ["SETUID", "SETGID", "CHOWN"]
           resources:
             requests:
               memory: "128Mi"
