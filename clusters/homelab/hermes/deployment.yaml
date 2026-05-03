@@ -60,6 +60,7 @@ spec:
         - name: hermes-agent
           image: nousresearch/hermes-agent:latest
           imagePullPolicy: Always
+          args: ["gateway", "run"]
           envFrom:
             - configMapRef:
                 name: hermes-config
