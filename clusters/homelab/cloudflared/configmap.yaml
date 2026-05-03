@@ -21,6 +21,8 @@ data:
     ingress:
       - hostname: auth.jupitertech.net
         service: http://authentik-server.authentik.svc.cluster.local:80
+        originRequest:
+          httpHostHeader: auth.jupitertech.net
 
       - hostname: "*.jupitertech.net"
         service: https://cilium-gateway-homelab-gateway.networking.svc.cluster.local:443
