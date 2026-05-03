@@ -48,13 +48,17 @@ spec:
             - port: "7844"
               protocol: TCP
 
-    # Authentik — direct route for auth.jupitertech.net token exchange
+    # Authentik — direct route for auth.jupitertech.net token exchange.
+    # Port 9000 is the Authentik server pod's container port (HTTP); the
+    # authentik-server Service maps :80 → :9000. Cilium socket-LB rewrites
+    # the destination before TC policy enforcement, so the policy must use
+    # the pod port (9000), not the service port (80).
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: authentik
       toPorts:
         - ports:
-            - port: "80"
+            - port: "9000"
               protocol: TCP
 
     # Cilium Gateway — wildcard route for all other *.jupitertech.net traffic
