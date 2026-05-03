@@ -79,6 +79,37 @@ spec:
             - port: "8787"
               protocol: TCP
 ---
+# Allow response traffic back to the node subnet for cross-node Envoy connections.
+# In native-routing mode without overlay, Cilium's egress BPF evaluates reply
+# traffic for cross-node connections separately from the CT table. Without this,
+# SYN-ACKs to remote Envoy nodes (10.77.20.x) are dropped by the egress deny.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-node-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toCIDR:
+        - 10.77.20.0/24
+---
+# Allow response traffic back to the pod subnet for same-node connections.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-pod-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toCIDR:
+        - 10.0.0.0/8
+---
 # Ingress to SSH sidecar (port 2222) from the Trusted VLAN (WSL desktop).
 # Used by the local hermes CLI SSH terminal backend:
 #   hermes config set terminal.backend ssh
