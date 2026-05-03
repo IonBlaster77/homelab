@@ -58,9 +58,9 @@ spec:
             - port: "80"
               protocol: TCP
 ---
-# Ingress to web UI (port 8787) from the Cilium Gateway in the networking namespace.
-# The gateway pod forwards HTTPRoute traffic to hermes-webui:8787.
-# Port 8787 is the pod container port (same as service port — no DNAT offset here).
+# Ingress to web UI (port 8787) from the Cilium Gateway.
+# The Cilium Gateway API is implemented by cilium-envoy DaemonSet pods in kube-system
+# (not pods in the networking namespace). Traffic is sourced from kube-system envoy.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -73,7 +73,8 @@ spec:
   ingress:
     - fromEndpoints:
         - matchLabels:
-            io.kubernetes.pod.namespace: networking
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: cilium-envoy
       toPorts:
         - ports:
             - port: "8787"
