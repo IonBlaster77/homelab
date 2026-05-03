@@ -1,0 +1,104 @@
+---
+# Default deny all ingress and egress for the hermes namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-default-deny
+  namespace: hermes
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress: []
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-dns
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Outbound internet access for LLM API endpoints (Nous Portal, OpenRouter, etc.)
+# Explicitly denies egress to cluster-internal CIDRs via absence of allow rules:
+#   - 10.77.20.0/24 (K8s nodes + API VIP at 10.77.20.10:6443)
+#   - 10.77.10.0/24 (Management VLAN)
+#   - Other cluster namespaces
+# Verify after deploy: kubectl exec -n hermes <pod> -- curl -k --connect-timeout 5
+#   https://10.77.20.10:6443  # must timeout
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-internet
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Ingress to web UI (port 8787) from the Cilium Gateway in the networking namespace.
+# The gateway pod forwards HTTPRoute traffic to hermes-webui:8787.
+# Port 8787 is the pod container port (same as service port — no DNAT offset here).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-webui-ingress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: networking
+      toPorts:
+        - ports:
+            - port: "8787"
+              protocol: TCP
+---
+# Ingress to SSH sidecar (port 2222) from the Trusted VLAN (WSL desktop).
+# Used by the local hermes CLI SSH terminal backend:
+#   hermes config set terminal.backend ssh
+#   hermes config set terminal.ssh_host <cluster-node-ip-or-tailscale-ip>
+#   hermes config set terminal.ssh_port 2222
+#   hermes config set terminal.ssh_user hermes
+# Tailscale operator ingress will be added here when Tailscale is deployed.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-ssh-ingress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  ingress:
+    - fromCIDR:
+        - 10.77.110.0/24
+      toPorts:
+        - ports:
+            - port: "2222"
+              protocol: TCP

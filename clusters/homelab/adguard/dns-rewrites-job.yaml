@@ -60,3 +60,4 @@ spec:
               add_rewrite "jellyfin.jupitertech.net"  "10.77.20.60"
               add_rewrite "jellyseerr.jupitertech.net" "10.77.20.60"
               add_rewrite "bazarr.jupitertech.net"    "10.77.20.60"
+              add_rewrite "hermes.jupitertech.net"   "10.77.20.60"

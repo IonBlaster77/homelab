@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hermes
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    # baseline allows the SSH sidecar to run as root initially (sshd privilege
+    # separation) and use SETUID/SETGID capabilities. restricted would block it.
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: baseline

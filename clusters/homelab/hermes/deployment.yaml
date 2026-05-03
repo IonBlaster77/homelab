@@ -1,0 +1,183 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes
+  namespace: hermes
+  labels:
+    app: hermes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hermes
+  template:
+    metadata:
+      labels:
+        app: hermes
+    spec:
+      serviceAccountName: hermes-sa
+      restartPolicy: Always
+      # Pin to nodes with sufficient memory headroom (avoid talos1 at ~90%).
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["talos3", "talos4"]
+
+      volumes:
+        - name: hermes-data
+          persistentVolumeClaim:
+            claimName: hermes-data
+        # Writable scratch space for the agent and webui containers.
+        - name: tmp-agent
+          emptyDir: {}
+        - name: tmp-webui
+          emptyDir: {}
+        # sshd needs a writable /etc/ssh to generate host keys on first boot.
+        - name: ssh-config
+          emptyDir: {}
+        # authorized_keys injected from the Secret — key-only SSH auth.
+        - name: authorized-keys
+          secret:
+            secretName: hermes-secret
+            items:
+              - key: SSH_AUTHORIZED_KEYS
+                path: authorized_keys
+            defaultMode: 0600
+
+      containers:
+        # ------------------------------------------------------------------
+        # Container 1 — Hermes Agent
+        # NOTE: Verify image exists at ghcr.io/nousresearch/hermes-agent
+        # before first deploy. Pin to a digest once confirmed.
+        # ------------------------------------------------------------------
+        - name: hermes-agent
+          image: ghcr.io/nousresearch/hermes-agent:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: hermes-config
+          env:
+            - name: LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: LLM_API_KEY
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
+            - name: tmp-agent
+              mountPath: /tmp
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+
+        # ------------------------------------------------------------------
+        # Container 2 — Hermes Web UI
+        # NOTE: Verify image exists at ghcr.io/nesquena/hermes-webui
+        # before first deploy. Pin to a digest once confirmed.
+        # ------------------------------------------------------------------
+        - name: hermes-webui
+          image: ghcr.io/nesquena/hermes-webui:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: hermes-config
+          env:
+            - name: HERMES_WEBUI_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: HERMES_WEBUI_PASSWORD
+          ports:
+            - containerPort: 8787
+              name: webui
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
+            - name: tmp-webui
+              mountPath: /tmp
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+
+        # ------------------------------------------------------------------
+        # Container 3 — SSH Sidecar (linuxserver/openssh-server)
+        # Serves two clients:
+        #   1. Scarf iOS app over Tailscale (future)
+        #   2. Local WSL hermes CLI via SSH terminal backend
+        #      (hermes config set terminal.backend ssh)
+        #
+        # Runs as root initially so sshd can bind and drop privileges —
+        # namespace is labeled pod-security: baseline to permit this.
+        # ------------------------------------------------------------------
+        - name: hermes-ssh
+          image: lscr.io/linuxserver/openssh-server:latest
+          imagePullPolicy: Always
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: USER_NAME
+              value: "hermes"
+            - name: PASSWORD_ACCESS
+              value: "false"
+            - name: SUDO_ACCESS
+              value: "false"
+            # Point the image's init script at the Secret-backed key file.
+            - name: PUBLIC_KEY_FILE
+              value: /home/hermes/.ssh/authorized_keys
+          ports:
+            - containerPort: 2222
+              name: ssh
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
+            - name: ssh-config
+              mountPath: /etc/ssh
+            - name: authorized-keys
+              mountPath: /home/hermes/.ssh/authorized_keys
+              subPath: authorized_keys
+              readOnly: true
+          securityContext:
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["SETUID", "SETGID"]
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "10m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
