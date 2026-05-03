@@ -30,6 +30,16 @@ spec:
                     operator: In
                     values: ["talos3", "talos4"]
 
+      initContainers:
+        - name: fix-perms
+          image: busybox:latest
+          command: ["sh", "-c", "chown -R 1000:1000 /home/hermes/.hermes"]
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
+          securityContext:
+            runAsUser: 0
+
       volumes:
         - name: hermes-data
           persistentVolumeClaim:
@@ -96,7 +106,7 @@ spec:
           securityContext:
             capabilities:
               drop: ["ALL"]
-              add: ["SETUID", "SETGID", "CHOWN"]
+              add: ["SETUID", "SETGID", "CHOWN", "AUDIT_WRITE"]
           resources:
             requests:
               memory: "128Mi"
