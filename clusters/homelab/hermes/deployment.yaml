@@ -70,6 +70,11 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: LLM_API_KEY
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: API_SERVER_KEY
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
@@ -93,6 +98,11 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: HERMES_WEBUI_PASSWORD
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: API_SERVER_KEY
           ports:
             - containerPort: 8787
               name: webui
