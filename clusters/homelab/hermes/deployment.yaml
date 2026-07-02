@@ -56,31 +56,11 @@ spec:
           securityContext:
             runAsUser: 0
 
-        # Seed a webui-native venv (same image as the main webui container,
-        # so no cross-image ABI mismatch) and editable-install the agent
-        # source into it — the officially documented fix for "AIAgent not
-        # available" (docs/troubleshooting.md, step 3).
-        - name: prep-webui-venv
-          image: ghcr.io/nesquena/hermes-webui:latest
-          command:
-            - sh
-            - -c
-            - "cp -a /app/venv/. /venv-ext/ && /venv-ext/bin/pip install --no-cache-dir -e /agent-src"
-          volumeMounts:
-            - name: agent-share
-              mountPath: /agent-src
-            - name: webui-venv-ext
-              mountPath: /venv-ext
-          securityContext:
-            runAsUser: 0
-
       volumes:
         - name: hermes-data
           persistentVolumeClaim:
             claimName: hermes-data
         - name: agent-share
-          emptyDir: {}
-        - name: webui-venv-ext
           emptyDir: {}
         # sshd needs a writable /etc/ssh to generate host keys on first boot.
         - name: ssh-config
@@ -143,8 +123,6 @@ spec:
                   key: API_SERVER_KEY
             - name: HERMES_WEBUI_AGENT_DIR
               value: /agent-src
-            - name: HERMES_WEBUI_PYTHON
-              value: /venv-ext/bin/python3
           ports:
             - containerPort: 8787
               name: webui
@@ -153,8 +131,6 @@ spec:
               mountPath: /home/hermes/.hermes
             - name: agent-share
               mountPath: /agent-src
-            - name: webui-venv-ext
-              mountPath: /venv-ext
           resources:
             requests:
               memory: "128Mi"
