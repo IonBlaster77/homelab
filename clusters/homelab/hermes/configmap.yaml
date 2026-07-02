@@ -9,6 +9,8 @@ data:
   HERMES_WEBUI_STATE_DIR: "/home/hermes/.hermes/webui"
   API_SERVER_ENABLED: "true"
   API_SERVER_PORT: "8642"
+  HERMES_API_URL: "http://localhost:8642"
+  GATEWAY_HEALTH_URL: "http://localhost:8642/health"
   HERMES_HOME: "/home/hermes/.hermes"
   WANTED_UID: "1000"
   WANTED_GID: "1000"
