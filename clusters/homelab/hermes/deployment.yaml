@@ -41,19 +41,36 @@ spec:
             runAsUser: 0
 
         # hermes-webui imports the agent in-process (`from run_agent import
-        # AIAgent`) — it needs the agent's source + its own venv on disk.
-        # Copy them out of the agent image into a shared volume (skip
-        # node_modules/.playwright: browser-automation assets, not needed
-        # for the Python import).
+        # AIAgent`) on every chat request. Copy the agent's source (not its
+        # venv — different Python version/ABI than the webui image, would
+        # break compiled deps) out of the agent image into a shared volume.
         - name: share-agent-src
           image: nousresearch/hermes-agent:latest
           command:
             - sh
             - -c
-            - "tar --exclude=node_modules --exclude=.playwright -C /opt/hermes -cf - . | tar -C /agent-src -xf -"
+            - "tar --exclude=node_modules --exclude=.playwright --exclude=.venv -C /opt/hermes -cf - . | tar -C /agent-src -xf -"
           volumeMounts:
             - name: agent-share
               mountPath: /agent-src
+          securityContext:
+            runAsUser: 0
+
+        # Seed a webui-native venv (same image as the main webui container,
+        # so no cross-image ABI mismatch) and editable-install the agent
+        # source into it — the officially documented fix for "AIAgent not
+        # available" (docs/troubleshooting.md, step 3).
+        - name: prep-webui-venv
+          image: ghcr.io/nesquena/hermes-webui:latest
+          command:
+            - sh
+            - -c
+            - "cp -a /app/venv/. /venv-ext/ && /venv-ext/bin/pip install --no-cache-dir -e /agent-src"
+          volumeMounts:
+            - name: agent-share
+              mountPath: /agent-src
+            - name: webui-venv-ext
+              mountPath: /venv-ext
           securityContext:
             runAsUser: 0
 
@@ -62,6 +79,8 @@ spec:
           persistentVolumeClaim:
             claimName: hermes-data
         - name: agent-share
+          emptyDir: {}
+        - name: webui-venv-ext
           emptyDir: {}
         # sshd needs a writable /etc/ssh to generate host keys on first boot.
         - name: ssh-config
@@ -125,7 +144,7 @@ spec:
             - name: HERMES_WEBUI_AGENT_DIR
               value: /agent-src
             - name: HERMES_WEBUI_PYTHON
-              value: /agent-src/.venv/bin/python3
+              value: /venv-ext/bin/python3
           ports:
             - containerPort: 8787
               name: webui
@@ -134,6 +153,8 @@ spec:
               mountPath: /home/hermes/.hermes
             - name: agent-share
               mountPath: /agent-src
+            - name: webui-venv-ext
+              mountPath: /venv-ext
           resources:
             requests:
               memory: "128Mi"
