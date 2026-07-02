@@ -12,6 +12,7 @@ data:
   HERMES_API_URL: "http://localhost:8642"
   GATEWAY_HEALTH_URL: "http://localhost:8642/health"
   HERMES_HOME: "/home/hermes/.hermes"
+  HERMES_WEBUI_AUTO_INSTALL: "1"
   WANTED_UID: "1000"
   WANTED_GID: "1000"
   HERMES_UID: "1000"
