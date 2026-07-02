@@ -49,10 +49,10 @@ spec:
           command:
             - sh
             - -c
-            - "tar --exclude=node_modules --exclude=.playwright --exclude=.venv -C /opt/hermes -cf - . | tar -C /agent-src -xf -"
+            - "tar --exclude=node_modules --exclude=.playwright --exclude=.venv -C /opt/hermes -cf - . | tar -C /home/hermeswebui/.hermes/hermes-agent -xf -"
           volumeMounts:
             - name: agent-share
-              mountPath: /agent-src
+              mountPath: /home/hermeswebui/.hermes/hermes-agent
           securityContext:
             runAsUser: 0
 
@@ -122,7 +122,7 @@ spec:
                   name: hermes-secret
                   key: API_SERVER_KEY
             - name: HERMES_WEBUI_AGENT_DIR
-              value: /agent-src
+              value: /home/hermeswebui/.hermes/hermes-agent
           ports:
             - containerPort: 8787
               name: webui
@@ -130,7 +130,7 @@ spec:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
             - name: agent-share
-              mountPath: /agent-src
+              mountPath: /home/hermeswebui/.hermes/hermes-agent
           resources:
             requests:
               memory: "128Mi"
