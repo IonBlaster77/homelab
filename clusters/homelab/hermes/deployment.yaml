@@ -40,10 +40,29 @@ spec:
           securityContext:
             runAsUser: 0
 
+        # hermes-webui imports the agent in-process (`from run_agent import
+        # AIAgent`) — it needs the agent's source + its own venv on disk.
+        # Copy them out of the agent image into a shared volume (skip
+        # node_modules/.playwright: browser-automation assets, not needed
+        # for the Python import).
+        - name: share-agent-src
+          image: nousresearch/hermes-agent:latest
+          command:
+            - sh
+            - -c
+            - "tar --exclude=node_modules --exclude=.playwright -C /opt/hermes -cf - . | tar -C /agent-src -xf -"
+          volumeMounts:
+            - name: agent-share
+              mountPath: /agent-src
+          securityContext:
+            runAsUser: 0
+
       volumes:
         - name: hermes-data
           persistentVolumeClaim:
             claimName: hermes-data
+        - name: agent-share
+          emptyDir: {}
         # sshd needs a writable /etc/ssh to generate host keys on first boot.
         - name: ssh-config
           emptyDir: {}
@@ -103,18 +122,24 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: API_SERVER_KEY
+            - name: HERMES_WEBUI_AGENT_DIR
+              value: /agent-src
+            - name: HERMES_WEBUI_PYTHON
+              value: /agent-src/.venv/bin/python3
           ports:
             - containerPort: 8787
               name: webui
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
+            - name: agent-share
+              mountPath: /agent-src
           resources:
             requests:
               memory: "128Mi"
               cpu: "50m"
             limits:
-              memory: "512Mi"
+              memory: "768Mi"
               cpu: "250m"
 
         # ------------------------------------------------------------------
