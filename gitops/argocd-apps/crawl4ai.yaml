@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crawl4ai
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/crawl4ai
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: crawl4ai
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

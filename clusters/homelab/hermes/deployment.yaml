@@ -40,6 +40,40 @@ spec:
           securityContext:
             runAsUser: 0
 
+        # Merge the hermes-mcp-servers ConfigMap fragment into
+        # ~/.hermes/config.yaml's mcp_servers: key. Idempotent (safe on every
+        # restart) — deep-merges by key so it neither clobbers config.yaml's
+        # other runtime-written settings nor requires config.yaml to already
+        # exist. Runs after fix-perms (needs the PVC already chowned to
+        # 1000:1000) and as UID 1000 (least-privilege — it only touches its
+        # own app's config file).
+        - name: merge-mcp-config
+          image: mikefarah/yq:4
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          env:
+            - name: CONFIG_PATH
+              value: /home/hermes/.hermes/config.yaml
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              if [ ! -f "$CONFIG_PATH" ]; then
+                echo "mcp_servers: {}" > "$CONFIG_PATH"
+              fi
+              yq eval-all '. as $item ireduce ({}; . * $item)' \
+                "$CONFIG_PATH" /mcp-fragment/mcp-servers-fragment.yaml \
+                > /tmp/config-merged.yaml
+              mv /tmp/config-merged.yaml "$CONFIG_PATH"
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
+            - name: mcp-servers-fragment
+              mountPath: /mcp-fragment
+              readOnly: true
+
         # hermes-webui imports the agent in-process (`from run_agent import
         # AIAgent`) on every chat request. Copy the agent's source (not its
         # venv — different Python version/ABI than the webui image, would
@@ -62,6 +96,9 @@ spec:
             claimName: hermes-data
         - name: agent-share
           emptyDir: {}
+        - name: mcp-servers-fragment
+          configMap:
+            name: hermes-mcp-servers
         # sshd needs a writable /etc/ssh to generate host keys on first boot.
         - name: ssh-config
           emptyDir: {}
@@ -93,6 +130,23 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: API_SERVER_KEY
+            # Read by config.yaml's mcp_servers.crawl4ai.headers.Authorization
+            # via Hermes' ${VAR} substitution (see mcp-servers-configmap.yaml).
+            # Must be kept in sync with clusters/homelab/crawl4ai/secret.yaml's
+            # CRAWL4AI_API_TOKEN — SOPS secrets aren't shareable cross-namespace.
+            - name: CRAWL4AI_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: CRAWL4AI_AUTH_TOKEN
+            # Read by config.yaml's mcp_servers.searxng.headers.Authorization.
+            # Must be kept in sync with clusters/homelab/searxng/secret.yaml's
+            # SEARXNG_MCP_AUTH_TOKEN, enforced by the bridge's MCP_HTTP_AUTH_TOKEN.
+            - name: SEARXNG_MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: SEARXNG_MCP_AUTH_TOKEN
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes

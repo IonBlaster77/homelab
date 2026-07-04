@@ -1,0 +1,121 @@
+---
+# Default deny all ingress and egress for the crawl4ai namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-default-deny
+  namespace: crawl4ai
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress: []
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-allow-dns
+  namespace: crawl4ai
+spec:
+  endpointSelector:
+    matchLabels:
+      app: crawl4ai
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Outbound internet access — crawl4ai needs to reach arbitrary target sites.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-allow-internet
+  namespace: crawl4ai
+spec:
+  endpointSelector:
+    matchLabels:
+      app: crawl4ai
+  egress:
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Allow response traffic back to the node subnet for cross-node Envoy
+# connections (see clusters/homelab/hermes/networkpolicy.yaml for the
+# native-routing-mode explanation this mirrors).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-allow-node-egress
+  namespace: crawl4ai
+spec:
+  endpointSelector:
+    matchLabels:
+      app: crawl4ai
+  egress:
+    - toCIDR:
+        - 10.77.20.0/24
+---
+# Allow response traffic back to the pod subnet for same-node connections.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-allow-pod-egress
+  namespace: crawl4ai
+spec:
+  endpointSelector:
+    matchLabels:
+      app: crawl4ai
+  egress:
+    - toCIDR:
+        - 10.0.0.0/8
+---
+# MCP ingress from Hermes (namespace+label selector — survives IP churn).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-allow-mcp-ingress
+  namespace: crawl4ai
+spec:
+  endpointSelector:
+    matchLabels:
+      app: crawl4ai
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "11235"
+              protocol: TCP
+---
+# LAN ingress to the playground/REST UI via the Cilium Gateway.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: crawl4ai-allow-lan-ingress
+  namespace: crawl4ai
+spec:
+  endpointSelector:
+    matchLabels:
+      app: crawl4ai
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "11235"
+              protocol: TCP

@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawl4ai
+  namespace: crawl4ai
+  labels:
+    app: crawl4ai
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crawl4ai
+  template:
+    metadata:
+      labels:
+        app: crawl4ai
+    spec:
+      serviceAccountName: crawl4ai-sa
+      restartPolicy: Always
+      # Chromium is memory-heavy; prefer nodes with more headroom (avoid talos1).
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["talos3", "talos4"]
+
+      containers:
+        - name: crawl4ai
+          image: unclecode/crawl4ai:0.9.0
+          imagePullPolicy: IfNotPresent
+          env:
+            # Setting this both enables the server's bearer-token auth gate
+            # (enforced on every route, incl. MCP SSE/WS) and is what allows
+            # entrypoint.sh to bind beyond loopback — without it, the
+            # container refuses to expose itself on the pod network.
+            - name: CRAWL4AI_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: crawl4ai-secret
+                  key: CRAWL4AI_API_TOKEN
+          ports:
+            - containerPort: 11235
+              name: http
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            # Replaces the image's own /app/config.yml (fixed path, no env
+            # override) with our homelab-tuned version — see configmap.yaml.
+            - name: config
+              mountPath: /app/config.yml
+              subPath: config.yml
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 11235
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 11235
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "3Gi"
+              cpu: "1"
+
+      volumes:
+        # Chromium crashes tabs under load without real /dev/shm — the default
+        # container-runtime shm (64Mi) is too small.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+        - name: config
+          configMap:
+            name: crawl4ai-config

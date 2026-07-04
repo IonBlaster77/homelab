@@ -133,3 +133,47 @@ spec:
         - ports:
             - port: "2222"
               protocol: TCP
+---
+# Egress to the Crawl4AI MCP backend. hermes-allow-internet (443/80 CIDR-only)
+# does not cover this — it's a distinct in-cluster port, allowed by
+# namespace+label selector (toEndpoints) rather than CIDR so it survives pod
+# IP churn.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-crawl4ai-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: crawl4ai
+            app: crawl4ai
+      toPorts:
+        - ports:
+            - port: "11235"
+              protocol: TCP
+---
+# Egress to the SearXNG MCP bridge (not the SearXNG core service directly —
+# Hermes only ever talks to the bridge).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-searxng-mcp-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: searxng
+            app: searxng-mcp
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP

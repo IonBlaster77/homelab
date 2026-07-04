@@ -1,0 +1,40 @@
+# Fragment merged into ~/.hermes/config.yaml's mcp_servers: key by the
+# merge-mcp-config initContainer in deployment.yaml. Non-secret by design —
+# bearer tokens are injected via Hermes' native ${VAR} substitution, reading
+# from env vars sourced from hermes-secret (see deployment.yaml/secret.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-mcp-servers
+  namespace: hermes
+data:
+  mcp-servers-fragment.yaml: |
+    mcp_servers:
+      crawl4ai:
+        url: "http://crawl4ai.crawl4ai.svc.cluster.local:11235/mcp/sse"
+        headers:
+          Authorization: "Bearer ${CRAWL4AI_AUTH_TOKEN}"
+        tools:
+          # md's `f` param (fit/raw/bm25/llm) and `q` param (BM25 query) are
+          # the main extraction levers — call md with q set to get
+          # query-relevant content instead of the whole page; f=raw is the
+          # fallback if fit/bm25 drop something needed. execute_js is
+          # excluded: arbitrary JS execution inside the crawler is out of
+          # scope for a read-only web-reading tool.
+          include: [md, html, crawl, screenshot, pdf]
+          resources: false
+          prompts: false
+        supports_parallel_tool_calls: true
+      searxng:
+        # mcp-searxng speaks Streamable HTTP at /mcp (not SSE at /sse) — verify
+        # this path again if the bridge image is upgraded past 1.10.0.
+        url: "http://searxng-mcp.searxng.svc.cluster.local:3000/mcp"
+        headers:
+          Authorization: "Bearer ${SEARXNG_MCP_AUTH_TOKEN}"
+        tools:
+          # web_url_read is excluded on purpose — Crawl4AI is the one "read
+          # this URL" tool (main sheet §2); this bridge is discovery-only.
+          exclude: [web_url_read]
+          resources: false
+          prompts: false
+        supports_parallel_tool_calls: true

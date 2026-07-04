@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-mcp-config
+  namespace: searxng
+data:
+  SEARXNG_URL: "http://searxng.searxng.svc.cluster.local:8080"
+  MCP_HTTP_PORT: "3000"
+  # Top-k trimming lives here, not in SearXNG itself — fetching fewer, better
+  # URLs is a bigger token win than any page-level filter (addendum §2).
+  SEARXNG_MAX_RESULTS: "3"
+  SEARXNG_MAX_RESULT_CHARS: "1500"

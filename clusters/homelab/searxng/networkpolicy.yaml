@@ -1,0 +1,166 @@
+---
+# Default deny all ingress and egress for the searxng namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-default-deny
+  namespace: searxng
+spec:
+  endpointSelector: {}
+  ingress: []
+  egress: []
+---
+# DNS resolution via kube-dns (both searxng core and the mcp bridge).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-dns
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["searxng", "searxng-mcp"]
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Outbound internet access — searxng core needs to reach upstream search engines.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-internet
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchLabels:
+      app: searxng
+  egress:
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Reply-traffic allows (see clusters/homelab/hermes/networkpolicy.yaml for the
+# native-routing-mode explanation this mirrors) — needed on both pods since
+# both have egress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-node-egress
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["searxng", "searxng-mcp"]
+  egress:
+    - toCIDR:
+        - 10.77.20.0/24
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-pod-egress
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values: ["searxng", "searxng-mcp"]
+  egress:
+    - toCIDR:
+        - 10.0.0.0/8
+---
+# The MCP bridge only ever talks to the in-cluster SearXNG core Service —
+# no internet-allow rule for it.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-mcp-allow-egress-to-core
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchLabels:
+      app: searxng-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: searxng
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Accept that traffic on the searxng core side.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-ingress-from-bridge
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchLabels:
+      app: searxng
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: searxng-mcp
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# MCP ingress from Hermes (namespace+label selector — survives IP churn).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-mcp-allow-ingress-from-hermes
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchLabels:
+      app: searxng-mcp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# LAN ingress to the searxng web UI via the Cilium Gateway (core only, not
+# the bridge — the bridge has no UI and no LAN route).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-lan-ingress
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchLabels:
+      app: searxng
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
