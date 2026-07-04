@@ -6,6 +6,9 @@ metadata:
 data:
   SEARXNG_URL: "http://searxng.searxng.svc.cluster.local:8080"
   MCP_HTTP_PORT: "3000"
+  # Defaults to 127.0.0.1 — unreachable from other pods (incl. Hermes and the
+  # kubelet's own readiness probe) without this.
+  MCP_HTTP_HOST: "0.0.0.0"
   # Top-k trimming lives here, not in SearXNG itself — fetching fewer, better
   # URLs is a bigger token win than any page-level filter (addendum §2).
   SEARXNG_MAX_RESULTS: "3"
