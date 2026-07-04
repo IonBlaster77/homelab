@@ -19,6 +19,12 @@ spec:
     spec:
       serviceAccountName: searxng-sa
       restartPolicy: Always
+      # SearXNG's entrypoint reads $SEARXNG_PORT to set its listen port.
+      # Kubernetes auto-injects a same-named Docker-links-style env var
+      # (SEARXNG_PORT=tcp://<clusterIP>:8080) for the "searxng" Service in
+      # this namespace, which collides and breaks the container unless
+      # service-link injection is disabled.
+      enableServiceLinks: false
       containers:
         - name: searxng
           image: searxng/searxng:2026.7.3-747cec4c2
@@ -93,6 +99,9 @@ spec:
     spec:
       serviceAccountName: searxng-sa
       restartPolicy: Always
+      # Same class of collision risk as the core deployment above — disabled
+      # defensively even though MCP_HTTP_PORT/SEARXNG_URL don't collide today.
+      enableServiceLinks: false
       containers:
         - name: searxng-mcp
           image: isokoliuk/mcp-searxng:1.10.0
@@ -122,7 +131,12 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 30
           securityContext:
+            # Image's default user is the symbolic "node" (uid 1000), not a
+            # numeric UID kubelet can verify on its own — same class of issue
+            # as crawl4ai's "appuser", confirmed by running `id` in the image.
             runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]

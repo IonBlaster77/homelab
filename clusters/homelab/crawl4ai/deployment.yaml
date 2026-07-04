@@ -19,6 +19,13 @@ spec:
     spec:
       serviceAccountName: crawl4ai-sa
       restartPolicy: Always
+      # entrypoint.sh reads $CRAWL4AI_PORT for its bind port. Kubernetes
+      # auto-injects a same-named Docker-links-style env var
+      # (CRAWL4AI_PORT=tcp://<clusterIP>:11235) for the "crawl4ai" Service in
+      # this namespace, which collides and breaks the container unless
+      # service-link injection is disabled (same bug hit searxng — see its
+      # deployment.yaml).
+      enableServiceLinks: false
       # Chromium is memory-heavy; prefer nodes with more headroom (avoid talos1).
       affinity:
         nodeAffinity:
@@ -69,7 +76,14 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
           securityContext:
+            # The image's Dockerfile sets USER appuser (a symbolic name, not a
+            # numeric UID) — kubelet can't verify runAsNonRoot against that on
+            # its own and refuses to start (CreateContainerConfigError).
+            # 999:999 is appuser's actual UID:GID, confirmed by running `id`
+            # in the pulled image.
             runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
