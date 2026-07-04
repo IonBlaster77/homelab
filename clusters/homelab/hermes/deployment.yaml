@@ -177,6 +177,17 @@ spec:
                   key: API_SERVER_KEY
             - name: HERMES_WEBUI_AGENT_DIR
               value: /home/hermeswebui/.hermes/hermes-agent
+            # Routes browser chat through the real Hermes Gateway (same
+            # runtime/tool path as the CLI, incl. MCP servers) instead of the
+            # in-process run_agent.py fallback, which has no MCP support.
+            # HERMES_WEBUI_GATEWAY_BASE_URL defaults to http://127.0.0.1:8642,
+            # already correct since both containers share this pod's network
+            # and the agent's gateway API server is already enabled
+            # (API_SERVER_ENABLED/API_SERVER_PORT in hermes-config). No
+            # separate HERMES_WEBUI_GATEWAY_API_KEY needed — it falls back to
+            # the API_SERVER_KEY already set on this container below.
+            - name: HERMES_WEBUI_CHAT_BACKEND
+              value: "gateway"
           ports:
             - containerPort: 8787
               name: webui
