@@ -56,7 +56,12 @@ spec:
 ---
 # Reply-traffic allows (see clusters/homelab/hermes/networkpolicy.yaml for the
 # native-routing-mode explanation this mirrors) — needed on both pods since
-# both have egress.
+# both have egress. EXCEPT the K8s API VIP: a plain toCIDR here is a blanket
+# allow for new connections on any port to the whole node subnet, not just
+# replies — verified this would otherwise let these pods reach the API
+# server on 6443 (got a real 401 back, not a timeout). No legitimate reason
+# for a scraper to talk to the API server, per the requirement sheet's
+# explicit guardrail.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -69,8 +74,10 @@ spec:
         operator: In
         values: ["searxng", "searxng-mcp"]
   egress:
-    - toCIDR:
-        - 10.77.20.0/24
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

@@ -54,7 +54,13 @@ spec:
 ---
 # Allow response traffic back to the node subnet for cross-node Envoy
 # connections (see clusters/homelab/hermes/networkpolicy.yaml for the
-# native-routing-mode explanation this mirrors).
+# native-routing-mode explanation this mirrors) — EXCEPT the K8s API VIP.
+# A plain toCIDR here (as hermes' own policy has it) is a blanket allow for
+# new connections on any port to the whole node subnet, not just replies —
+# it would otherwise let this scraper reach the API server on 6443 (verified
+# by curling it and getting a real 401 back, not a timeout). Scrapers have no
+# legitimate reason to talk to the API server, per the requirement sheet's
+# explicit guardrail, so carve it out.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -65,8 +71,10 @@ spec:
     matchLabels:
       app: crawl4ai
   egress:
-    - toCIDR:
-        - 10.77.20.0/24
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
 ---
 # Allow response traffic back to the pod subnet for same-node connections.
 apiVersion: cilium.io/v2
