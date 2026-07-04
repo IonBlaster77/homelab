@@ -61,3 +61,5 @@ spec:
               add_rewrite "jellyseerr.jupitertech.net" "10.77.20.60"
               add_rewrite "bazarr.jupitertech.net"    "10.77.20.60"
               add_rewrite "hermes.jupitertech.net"   "10.77.20.60"
+              add_rewrite "crawl4ai.jupitertech.net" "10.77.20.60"
+              add_rewrite "searxng.jupitertech.net"  "10.77.20.60"
