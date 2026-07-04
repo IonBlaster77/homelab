@@ -12,6 +12,16 @@ data:
     mcp_servers:
       crawl4ai:
         url: "http://crawl4ai.crawl4ai.svc.cluster.local:11235/mcp/sse"
+        # Crawl4AI's mcp_bridge.py implements the legacy dual-endpoint HTTP+SSE
+        # transport (GET /mcp/sse for events, POST to a session-scoped
+        # /mcp/messages/?session_id=... endpoint discovered from the initial
+        # "endpoint" SSE event) rather than the newer single-endpoint
+        # Streamable HTTP transport. Hermes' MCP client defaults to Streamable
+        # HTTP for any url: entry and silently hangs/times out against an
+        # SSE-only server unless told otherwise — confirmed by manually
+        # replaying the SSE handshake + JSON-RPC initialize round-trip by hand
+        # (worked fine) while `hermes mcp test crawl4ai` timed out without this.
+        transport: sse
         headers:
           Authorization: "Bearer ${CRAWL4AI_AUTH_TOKEN}"
         tools:
