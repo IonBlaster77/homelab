@@ -150,26 +150,6 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-          # GATEWAY_HEALTH_URL in hermes-config points here too. Without this
-          # probe, ArgoCD/kubelet only see pod phase, not whether the gateway
-          # API server is actually serving — which is how the pod was
-          # reported "Healthy" during an outage where chat could not be served.
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8642
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8642
-            initialDelaySeconds: 30
-            periodSeconds: 20
-            timeoutSeconds: 3
-            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"
@@ -229,24 +209,6 @@ spec:
               mountPath: /home/hermes/.hermes
             - name: agent-share
               mountPath: /home/hermeswebui/.hermes/hermes-agent
-          # Plain /health (not ?deep=1) — cheap enough for frequent polling;
-          # deep checks are for manual/supervisor use only.
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8787
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 3
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8787
-            initialDelaySeconds: 30
-            periodSeconds: 20
-            timeoutSeconds: 3
-            failureThreshold: 3
           resources:
             requests:
               memory: "128Mi"
