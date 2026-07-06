@@ -79,7 +79,7 @@ spec:
         # venv — different Python version/ABI than the webui image, would
         # break compiled deps) out of the agent image into a shared volume.
         - name: share-agent-src
-          image: nousresearch/hermes-agent:latest
+          image: nousresearch/hermes-agent:v2026.7.1@sha256:b6c019227889e6675424a2b6223b2cafdd36bf7d1048d1ddd8e043b880d6cc0f
           command:
             - sh
             - -c
@@ -113,8 +113,8 @@ spec:
 
       containers:
         - name: hermes-agent
-          image: nousresearch/hermes-agent:latest
-          imagePullPolicy: Always
+          image: nousresearch/hermes-agent:v2026.7.1@sha256:b6c019227889e6675424a2b6223b2cafdd36bf7d1048d1ddd8e043b880d6cc0f
+          imagePullPolicy: IfNotPresent
           args: ["gateway", "run"]
           envFrom:
             - configMapRef:
@@ -150,6 +150,26 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
+          # GATEWAY_HEALTH_URL in hermes-config points here too. Without this
+          # probe, ArgoCD/kubelet only see pod phase, not whether the gateway
+          # API server is actually serving — which is how the pod was
+          # reported "Healthy" during an outage where chat could not be served.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8642
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8642
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
           resources:
             requests:
               memory: "256Mi"
@@ -159,8 +179,8 @@ spec:
               cpu: "500m"
 
         - name: hermes-webui
-          image: ghcr.io/nesquena/hermes-webui:latest
-          imagePullPolicy: Always
+          image: ghcr.io/nesquena/hermes-webui:0.51.900@sha256:75ee9c74964443b495d32be642e66201e04c5fe6a53c74863ca65970093d9da0
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: hermes-config
@@ -188,6 +208,19 @@ spec:
             # the API_SERVER_KEY already set on this container below.
             - name: HERMES_WEBUI_CHAT_BACKEND
               value: "gateway"
+            # Opts into the runs API gateway path (/v1/runs +
+            # /v1/runs/{id}/events) instead of the legacy
+            # /v1/chat/completions path. The legacy path silently closes the
+            # SSE stream with no error frame when the agent aborts a turn on
+            # a non-retryable provider error (e.g. OpenRouter 402), leaving
+            # the UI stuck on "Processing" forever. The runs API relays
+            # run.failed events, which the WebUI surfaces as a visible
+            # apperror bubble. Only takes effect if the gateway also
+            # advertises approval capability (see hermes-agent image pin
+            # below) — otherwise the WebUI silently falls back to the
+            # legacy path and this has no effect.
+            - name: HERMES_WEBUI_GATEWAY_USE_RUNS_API
+              value: "1"
           ports:
             - containerPort: 8787
               name: webui
@@ -196,6 +229,24 @@ spec:
               mountPath: /home/hermes/.hermes
             - name: agent-share
               mountPath: /home/hermeswebui/.hermes/hermes-agent
+          # Plain /health (not ?deep=1) — cheap enough for frequent polling;
+          # deep checks are for manual/supervisor use only.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8787
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8787
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
           resources:
             requests:
               memory: "128Mi"
