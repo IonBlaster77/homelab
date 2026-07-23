@@ -27,6 +27,13 @@ spec:
     helm:
       values: |
         installCRDs: true
+        # Use public resolvers for the DNS-01 zone/SOA lookup instead of
+        # in-cluster CoreDNS. In-cluster resolution was returning an empty
+        # Cloudflare zone ID during challenge cleanup (DELETE /zones//dns_records
+        # -> CF error 7003), wedging renewals in the "Renewing" state.
+        extraArgs:
+          - --dns01-recursive-nameservers-only=true
+          - --dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53
         # Tolerate control-plane taints so cert-manager can run on all nodes
         tolerations:
           - key: "node-role.kubernetes.io/control-plane"
