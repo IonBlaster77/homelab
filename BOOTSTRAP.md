@@ -26,7 +26,6 @@ Before starting, confirm you have:
 | Item | Where |
 |---|---|
 | Age private key | Password manager |
-| GitHub PAT | Password manager |
 | ArgoCD admin password | Password manager |
 | `talosctl` installed and configured (`~/.talos/config`) | Local machine |
 | `kubectl` installed | Local machine |
@@ -267,19 +266,17 @@ sops -d clusters/homelab/bootstrap/argocd-secrets.yaml | kubectl apply -f -
 
 ### 7d. GitHub repo credentials
 
-Retrieve the GitHub PAT from your password manager, then:
-```bash
-kubectl create secret generic argocd-repo-homelab \
-  --namespace argocd \
-  --from-literal=type=git \
-  --from-literal=url=https://github.com/IonBlaster77/homelab.git \
-  --from-literal=username=IonBlaster77 \
-  --from-literal=password=<GITHUB_PAT_FROM_PASSWORD_MANAGER>
+**Not required.** `IonBlaster77/homelab` is a **public** repo, so ArgoCD's repo-server
+reads and clones it anonymously — no `repository` Secret is needed.
 
-kubectl label secret argocd-repo-homelab \
-  --namespace argocd \
-  argocd.argoproj.io/secret-type=repository
-```
+Do **not** create an `argocd-repo-homelab` credential. A static PAT here only rots: once
+it expires or is revoked, repo-server fails every fetch with
+`list refs: authentication required: Invalid username or token` and **all git-backed
+Applications freeze on their last-cached revision** (they still show "Synced" but stop
+picking up new commits). Anonymous read of a public repo has none of that failure mode.
+
+> If the repo is ever made **private**, add a credential here — preferably a GitHub App
+> installation token via External Secrets Operator (auto-rotating), not a static PAT.
 
 ### 7e. GHCR pull secret (for ArgoCD to pull from GitHub Container Registry)
 
