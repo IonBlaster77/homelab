@@ -8,8 +8,17 @@ metadata:
   namespace: cloudflared
 spec:
   endpointSelector: {}
-  ingress: []
-  egress: []
+  # An empty LIST (ingress: []) is rejected by Cilium as a malformed rule
+  # ("rule must have at least one of Ingress/IngressDeny/Egress/EgressDeny"),
+  # which silently drops the whole policy and leaves the namespace unprotected.
+  # A list with one EMPTY RULE (- {}) is the canonical deny-all: it selects no
+  # peers, so it allows nothing, and its mere presence puts every endpoint into
+  # default-deny for that direction. Exceptions are granted additively by the
+  # *-allow-* policies below. (cf. Cilium examples/policies/l3/egress-default-deny)
+  ingress:
+    - {}
+  egress:
+    - {}
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
