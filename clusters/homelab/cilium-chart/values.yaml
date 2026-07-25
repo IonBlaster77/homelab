@@ -13,8 +13,13 @@ cilium:
   kubeProxyReplacement: true
   socketLB:
     hostNamespaceOnly: true
-  k8sServiceHost: 10.77.20.10
-  k8sServicePort: 6443
+  # Point Cilium at KubePrism (per-node local API load-balancer on 127.0.0.1:7445,
+  # enabled in the Talos machineconfig) rather than the control-plane VIP.
+  # KubePrism forwards to any healthy apiserver, so Cilium no longer blocks on the
+  # single VIP being assigned during a cold boot — this is what makes the datapath
+  # come up cleanly after a full rack power-cycle. See bootstrap/cilium-values.yaml.
+  k8sServiceHost: localhost
+  k8sServicePort: 7445
   routingMode: native
   autoDirectNodeRoutes: true
   ipv4NativeRoutingCIDR: 10.0.0.0/8
