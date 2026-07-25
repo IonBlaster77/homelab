@@ -69,7 +69,10 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: labeler
-          image: bitnami/kubectl:1.31
+          # bitnami/* public Docker Hub tags were sunset (Aug 2025); use the
+          # maintained rancher/kubectl image instead. Skew vs the API server is
+          # irrelevant for a simple `get volumes` + `label` on a CRD.
+          image: rancher/kubectl:v1.31.0
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
