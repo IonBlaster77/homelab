@@ -10,8 +10,11 @@ argocd-linux-amd64
 *.zst
 *.zip
 
-# Windows NTFS alternate data streams (created when files are downloaded on Windows)
+# Windows NTFS alternate data streams (created when files are downloaded on Windows).
+# WSL can't store the ':' in a Linux filename, so it maps it to U+F03A — the
+# colon-form glob below won't match those, hence the colon-free pattern too.
 *:Zone.Identifier
+*Zone.Identifier
 
 # Credential files
 *PAT*
