@@ -23,7 +23,12 @@ spec:
   source:
     repoURL: https://charts.jetstack.io
     chart: cert-manager
-    targetRevision: v1.16.3
+    # v1.20.3: upgraded from v1.16.3 to fix the Cloudflare DNS-01 cleanup bug.
+    # Cloudflare stopped returning per-record zone_id in list responses; pre-1.17.1
+    # cert-manager built DELETE /zones//dns_records/<id> (empty zone -> CF 7003),
+    # so challenge TXT records were never cleaned up. Fixed upstream in v1.17.1
+    # (cert-manager/cert-manager#7549). v1.20.3 is current + security-patched.
+    targetRevision: v1.20.3
     helm:
       values: |
         installCRDs: true
