@@ -70,8 +70,10 @@ spec:
       containers:
         - name: labeler
           # bitnami/* public Docker Hub tags were sunset (Aug 2025); use the
-          # maintained rancher/kubectl image instead. Skew vs the API server is
-          # irrelevant for a simple `get volumes` + `label` on a CRD.
+          # maintained rancher/kubectl image instead. It is FROM scratch — only
+          # /bin/kubectl, no shell and no xargs — so the labeler must be a single
+          # shell-free `kubectl label --all` call (not a get|xargs pipeline), run
+          # directly via the image's /bin/kubectl entrypoint.
           image: rancher/kubectl:v1.31.0
           securityContext:
             allowPrivilegeEscalation: false
@@ -84,10 +86,11 @@ spec:
               drop: ["ALL"]
             seccompProfile:
               type: RuntimeDefault
-          command: ["/bin/sh", "-c"]
           args:
-            - |
-              kubectl get volumes -n longhorn-system -o name | \
-                xargs -I{} kubectl label {} \
-                  recurring-job-group.longhorn.io/default=enabled \
-                  -n longhorn-system --overwrite
+            - label
+            - volumes.longhorn.io
+            - --all
+            - recurring-job-group.longhorn.io/default=enabled
+            - -n
+            - longhorn-system
+            - --overwrite
