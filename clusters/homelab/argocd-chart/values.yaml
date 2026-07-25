@@ -11,7 +11,10 @@
 
 argo-cd:
   global:
-    domain: ""
+    # Sets configs.cm.url (https://<domain>) — used for web-UI generated links
+    # and OIDC/SSO callback URLs. Empty renders a hostless "https://". This is the
+    # Cilium Gateway HTTPRoute host (argocd.jupitertech.net).
+    domain: "argocd.jupitertech.net"
 
   server:
     service:

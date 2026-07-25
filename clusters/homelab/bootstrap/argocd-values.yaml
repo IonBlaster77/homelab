@@ -1,6 +1,6 @@
 # argocd-values.yaml
 global:
-  domain: ""  # can leave empty for now
+  domain: "argocd.jupitertech.net"  # sets configs.cm.url; empty renders a hostless https://
 
 server:
   service:
