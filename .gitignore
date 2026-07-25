@@ -16,6 +16,9 @@ argocd-linux-amd64
 *:Zone.Identifier
 *Zone.Identifier
 
+# Claude Code local settings
+.claude/
+
 # Credential files
 *PAT*
 *token*
