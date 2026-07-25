@@ -20,8 +20,13 @@ spec:
       containers:
         - name: mikrotik-exporter
           image: nshttpd/mikrotik-exporter:1.0.11
-          args:
-            - -config-file=/config/config.yaml
+          # The image entrypoint (scripts/start.sh) ignores container args and
+          # branches on the CONFIG_FILE env var: if unset it runs broken
+          # single-device mode ("missing required param..."); if set it runs
+          # `-config-file $CONFIG_FILE`. So this MUST be an env var, not args.
+          env:
+            - name: CONFIG_FILE
+              value: /config/config.yaml
           ports:
             - containerPort: 9436
               name: metrics
