@@ -76,6 +76,10 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            # rancher/kubectl declares its user by name (USER kubectl), which
+            # kubelet can't verify against runAsNonRoot; pin the numeric UID the
+            # image assigns that user (useradd -u 1000) so the check passes.
+            runAsUser: 1000
             capabilities:
               drop: ["ALL"]
             seccompProfile:
