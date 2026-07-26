@@ -1,0 +1,88 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki
+    targetRevision: 7.1.0
+    helm:
+      releaseName: loki
+      # Single-binary Loki on filesystem storage (Longhorn PVC). The SimpleScalable
+      # read/write/backend components and the memcached caches / minio are disabled —
+      # they need object storage and multi-GB RAM, overkill for a homelab. 30d retention.
+      values: |
+        deploymentMode: SingleBinary
+        loki:
+          auth_enabled: false
+          commonConfig:
+            replication_factor: 1
+          storage:
+            type: filesystem
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
+          limits_config:
+            retention_period: 720h
+            reject_old_samples: true
+            reject_old_samples_max_age: 168h
+            volume_enabled: true
+          compactor:
+            retention_enabled: true
+            delete_request_store: filesystem
+          pattern_ingester:
+            enabled: false
+          ruler:
+            enable_api: false
+
+        singleBinary:
+          replicas: 1
+          persistence:
+            enabled: true
+            storageClass: longhorn-ssd
+            size: 20Gi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+
+        read:
+          replicas: 0
+        write:
+          replicas: 0
+        backend:
+          replicas: 0
+
+        chunksCache:
+          enabled: false
+        resultsCache:
+          enabled: false
+        minio:
+          enabled: false
+        lokiCanary:
+          enabled: false
+        test:
+          enabled: false
+        gateway:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: logging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

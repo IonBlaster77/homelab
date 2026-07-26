@@ -1,0 +1,29 @@
+---
+# LoadBalancer that fronts the Alloy DaemonSet's syslog listener so network gear
+# (MikroTik, switches, APs) can ship syslog to a stable LAN IP. Devices point at
+# 10.77.20.64:514 (standard syslog port); Cilium maps it to Alloy's unprivileged
+# :1514. Alloy parses RFC5424 over TCP and forwards to Loki (job="syslog").
+#
+# To use: on each device set the remote syslog target to 10.77.20.64 port 514 TCP,
+# RFC5424 format. (Left ready — no devices are pointed here yet.)
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy-syslog
+  namespace: logging
+  labels:
+    app.kubernetes.io/name: alloy-syslog
+  annotations:
+    lbipam.cilium.io/ips: "10.77.20.64"
+spec:
+  type: LoadBalancer
+  # Preserve the client (device) source IP so it shows up as a label in Loki.
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/instance: alloy
+  ports:
+    - name: syslog-tcp
+      port: 514
+      targetPort: 1514
+      protocol: TCP
