@@ -33,6 +33,22 @@ data:
                   - WEBRip-1080p
               - name: HDTV-1080p
 
+          - name: SQP-1 (2160p)
+            reset_unmatched_scores:
+              enabled: true
+            upgrade:
+              allowed: true
+              until_quality: Bluray-2160p
+              until_score: 10000
+            min_format_score: 0
+            quality_sort: top
+            qualities:
+              - name: Bluray-2160p
+              - name: WEB 2160p
+                qualities:
+                  - WEBDL-2160p
+                  - WEBRip-2160p
+
         custom_formats:
           - trash_ids:
               # Unwanted
@@ -45,6 +61,8 @@ data:
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: -10000
+              - name: SQP-1 (2160p)
+                score: -10000
 
           - trash_ids:
               # HDR Formats
@@ -54,6 +72,10 @@ data:
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: 10
+              # HDR matters far more at 2160p than 1080p, so it's weighted
+              # much higher here.
+              - name: SQP-1 (2160p)
+                score: 50
 
           - trash_ids:
               # Standalone "DV" was retired in favor of "DV Boost".
@@ -61,6 +83,8 @@ data:
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: 15
+              - name: SQP-1 (2160p)
+                score: 60
 
           - trash_ids:
               - 9170d55c319f4fe40da8711ba9d8050d  # x265 (HD)
@@ -90,12 +114,36 @@ data:
                   - WEBRip-1080p
               - name: HDTV-1080p
 
+          - name: WEB-2160p
+            reset_unmatched_scores:
+              enabled: true
+            upgrade:
+              allowed: true
+              until_quality: WEB 2160p
+              until_score: 10000
+            min_format_score: 0
+            quality_sort: top
+            qualities:
+              - name: WEB 2160p
+                qualities:
+                  - WEBDL-2160p
+                  - WEBRip-2160p
+
         custom_formats:
           - trash_ids:
-              # Unwanted
+              # Unwanted, common to both profiles
               - 85c61753df5da1fb2aab6f2a47426b09  # BR-DISK
-              - 9c11cd3f07101cdba90a2d81cf0e56b4  # x265 (HD)
               - 47435ece6b99a0b477caf360e79ba0bb  # x265 (no HDR/DV)
+            assign_scores_to:
+              - name: WEB-1080p
+                score: -10000
+              - name: WEB-2160p
+                score: -10000
+
+          - trash_ids:
+              # x265 (HD) only matches HD releases, so it's scoped to the
+              # 1080p profile only.
+              - 9c11cd3f07101cdba90a2d81cf0e56b4  # x265 (HD)
             assign_scores_to:
               - name: WEB-1080p
                 score: -10000
@@ -111,6 +159,8 @@ data:
             assign_scores_to:
               - name: WEB-1080p
                 score: 15
+              - name: WEB-2160p
+                score: 20
 
           - trash_ids:
               # HDR
@@ -118,6 +168,10 @@ data:
             assign_scores_to:
               - name: WEB-1080p
                 score: 10
+              # HDR matters far more at 2160p than 1080p, so it's weighted
+              # much higher here.
+              - name: WEB-2160p
+                score: 50
 ---
 apiVersion: batch/v1
 kind: CronJob
