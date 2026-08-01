@@ -1,0 +1,61 @@
+# Brings the previously Talos-bootstrapped `coredns` ConfigMap under GitOps
+# management. Talos applies this once at cluster bootstrap (and potentially
+# resets it to stock during a future `talosctl upgrade-k8s`), but does not
+# continuously reconcile it — so ArgoCD selfHeal owning it is a net win: if a
+# k8s upgrade ever reverts it to the default forward target, ArgoCD's next
+# reconcile silently restores this config, rather than the change being lost.
+#
+# Only the ConfigMap is managed here, not the coredns Deployment — Talos still
+# owns the CoreDNS image/version across k8s upgrades.
+#
+# Change from stock: `forward . /etc/resolv.conf` -> `forward . 10.77.20.53 10.77.20.1`
+#   - 10.77.20.53 (adguard-dns LoadBalancer) is primary: gives every pod
+#     ad-blocking and the *.jupitertech.net rewrites, not just clients that
+#     query AdGuard directly.
+#   - 10.77.20.1 (the router) is the secondary upstream. CoreDNS's forward
+#     plugin health-checks upstreams and automatically fails over — if AdGuard
+#     is down or still booting (e.g. cold start after a full power outage,
+#     waiting on its Longhorn PVC), pod DNS keeps working via the router
+#     without any manual intervention, then prefers AdGuard again once it's
+#     healthy. Node-level DNS is untouched (nodes still point at 10.77.20.1
+#     directly per clusters/homelab/talos/*.yaml) — that's the literal
+#     "boot off the router" fallback and requires no change.
+#   - Both are IPs, not hostnames: forwarding to a hostname CoreDNS itself
+#     would need to resolve is circular.
+#
+# `reload` is already enabled below, so this takes effect within ~45s of
+# the ConfigMap changing — no coredns pod restart required.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+        }
+        ready
+        log . {
+            class error
+        }
+        prometheus :9153
+
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+            pods insecure
+            fallthrough in-addr.arpa ip6.arpa
+            ttl 30
+        }
+        forward . 10.77.20.53 10.77.20.1 {
+           max_concurrent 1000
+        }
+        cache 30 {
+           disable success cluster.local
+           disable denial cluster.local
+        }
+        loop
+        reload
+        loadbalance
+    }
