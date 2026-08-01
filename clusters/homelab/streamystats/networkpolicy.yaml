@@ -90,7 +90,9 @@ spec:
             - port: "3000"
               protocol: TCP
 ---
-# Web UI -> job server (JOB_SERVER_URL) and -> database.
+# Web UI -> job server (JOB_SERVER_URL), database, and Jellyfin. The web UI
+# validates the Jellyfin API key itself (POST /api/servers), not just via the
+# job server, so it needs its own direct egress to Jellyfin's container port.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -121,6 +123,14 @@ spec:
       toPorts:
         - ports:
             - port: "11434"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            app: jellyfin
+      toPorts:
+        - ports:
+            - port: "8096"
               protocol: TCP
 ---
 # Job server ingress from the web UI.
