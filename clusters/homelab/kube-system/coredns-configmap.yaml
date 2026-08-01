@@ -22,6 +22,13 @@
 #     "boot off the router" fallback and requires no change.
 #   - Both are IPs, not hostnames: forwarding to a hostname CoreDNS itself
 #     would need to resolve is circular.
+#   - `policy sequential` is required: the forward plugin's DEFAULT policy is
+#     `random` load-balancing across all listed upstreams per query, not
+#     "primary then failover". Without `sequential` this was observed live —
+#     CoreDNS randomly picked the router for ~half of queries, and since the
+#     router has no *.jupitertech.net rewrites those resolved NXDOMAIN. Only
+#     `sequential` tries 10.77.20.53 first and falls through to 10.77.20.1
+#     when (and only when) the current upstream is unhealthy.
 #
 # `reload` is already enabled below, so this takes effect within ~45s of
 # the ConfigMap changing — no coredns pod restart required.
@@ -49,6 +56,7 @@ data:
             ttl 30
         }
         forward . 10.77.20.53 10.77.20.1 {
+           policy sequential
            max_concurrent 1000
         }
         cache 30 {
