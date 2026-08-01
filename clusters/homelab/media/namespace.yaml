@@ -2,3 +2,10 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: media
+  labels:
+    # Cluster-wide default PodSecurity enforcement is "baseline", which forbids
+    # both NET_ADMIN capability additions and hostPath volumes — both required
+    # by the Gluetun VPN sidecar (qbittorrent.yaml) for its WireGuard tunnel
+    # (NET_ADMIN) and TUN device access (/dev/net/tun hostPath). Scoped to this
+    # namespace only; every other namespace stays on the baseline default.
+    pod-security.kubernetes.io/enforce: privileged

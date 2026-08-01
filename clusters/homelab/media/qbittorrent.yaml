@@ -31,7 +31,72 @@ spec:
         app: qbittorrent
         app.kubernetes.io/name: qbittorrent
     spec:
+      # Route DNS through Gluetun's own DNS-over-TLS resolver (127.0.0.1) instead
+      # of the cluster's default (CoreDNS -> AdGuard -> internet). Both containers
+      # in a Pod share one network namespace, so localhost reaches Gluetun's
+      # resolver directly. Without this, qBittorrent's tracker hostname lookups
+      # would leak outside the VPN tunnel even though the torrent traffic itself
+      # is protected — DNS queries are as revealing as the traffic they precede.
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 127.0.0.1
       containers:
+        - name: gluetun
+          image: qmcgaw/gluetun:v3.41.3
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: mullvad
+            - name: VPN_TYPE
+              value: wireguard
+            - name: WIREGUARD_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-secret
+                  key: WIREGUARD_PRIVATE_KEY
+            - name: WIREGUARD_ADDRESSES
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-secret
+                  key: WIREGUARD_ADDRESSES
+            # Required for Kubernetes sidecars per Gluetun's own docs: without this,
+            # the outbound killswitch also blocks inbound connections arriving via
+            # the pod's default interface, which would cut Sonarr/Radarr off from
+            # qBittorrent's WebUI.
+            - name: FIREWALL_INPUT_PORTS
+              value: "8080"
+            - name: TZ
+              value: Australia/Adelaide
+          volumeMounts:
+            - name: dev-net-tun
+              mountPath: /dev/net/tun
+          # Gluetun's own image bakes in `CMD-SHELL /gluetun-entrypoint healthcheck`
+          # as its Docker HEALTHCHECK (verified against the published image config,
+          # not the docs) — it checks the internal health server at 127.0.0.1:9999,
+          # which is loopback-only and unreachable via a kubelet-side httpGet probe.
+          # Reusing the exact command as an exec probe avoids guessing at ports/paths.
+          startupProbe:
+            exec:
+              command: ["/gluetun-entrypoint", "healthcheck"]
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            exec:
+              command: ["/gluetun-entrypoint", "healthcheck"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: 50m
+            limits:
+              memory: 256Mi
+              cpu: 500m
         - name: qbittorrent
           image: lscr.io/linuxserver/qbittorrent:5.2.3_v2.0.13-ls469
           ports:
@@ -76,6 +141,10 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: media-nfs
+        - name: dev-net-tun
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
 ---
 apiVersion: v1
 kind: Service
