@@ -180,3 +180,25 @@ spec:
         - ports:
             - port: "8080"
               protocol: TCP
+---
+# Homepage's siteMonitor/KubernetesStatus widgets call the Service directly
+# (bypassing the Gateway), so they need their own ingress allow — fromEntities:
+# ingress above only covers Gateway-sourced traffic.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: searxng-allow-homepage-ingress
+  namespace: searxng
+spec:
+  endpointSelector:
+    matchLabels:
+      app: searxng
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+            app.kubernetes.io/name: homepage
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

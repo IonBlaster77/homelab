@@ -88,6 +88,28 @@ spec:
             - port: "8787"
               protocol: TCP
 ---
+# Homepage's siteMonitor/KubernetesStatus widgets call the Service directly
+# (bypassing the Gateway), so they need their own ingress allow — fromEntities:
+# ingress above only covers Gateway-sourced traffic.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-homepage-ingress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+            app.kubernetes.io/name: homepage
+      toPorts:
+        - ports:
+            - port: "8787"
+              protocol: TCP
+---
 # Allow response traffic back to the node subnet for cross-node Envoy connections.
 # In native-routing mode without overlay, Cilium's egress BPF evaluates reply
 # traffic for cross-node connections separately from the CT table. Without this,
