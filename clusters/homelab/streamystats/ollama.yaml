@@ -1,0 +1,122 @@
+# Ollama — local, CPU-only embedding server for Streamystats' recommendations.
+#
+# Exposes an OpenAI-compatible API at /v1/embeddings, which is what Streamystats
+# expects ("OpenAI-compatible API"). Running it here keeps the library metadata
+# and watch history entirely in-cluster — nothing is sent to a cloud provider.
+#
+# Model: nomic-embed-text (137M params, 768-dim). Embedding models are tiny next
+# to chat LLMs and run comfortably on the cluster's Kaby Lake CPUs; no GPU is
+# needed. Larger models buy little for short media metadata while costing much
+# slower initial embedding and more vector storage.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: streamystats
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-ssd
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: streamystats
+spec:
+  type: ClusterIP
+  selector:
+    app: ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: streamystats
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+        app.kubernetes.io/name: ollama
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.32.5
+          ports:
+            - name: http
+              containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: 0.0.0.0:11434
+            # Keep the (small) embedding model resident so each embedding batch
+            # does not pay a cold-load penalty.
+            - name: OLLAMA_KEEP_ALIVE
+              value: 1h
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "1"
+            - name: TZ
+              value: Australia/Adelaide
+          # Ollama does not pull models on its own. postStart waits for the API
+          # to accept connections, then pulls; the model lands on the PVC, so on
+          # later restarts this is a no-op that returns immediately.
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    for i in $(seq 1 60); do
+                      if ollama list >/dev/null 2>&1; then
+                        ollama pull nomic-embed-text && exit 0
+                      fi
+                      sleep 5
+                    done
+                    echo "ollama: model pull did not complete" >&2
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          startupProbe:
+            tcpSocket:
+              port: 11434
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 4Gi
+              cpu: 2000m
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models

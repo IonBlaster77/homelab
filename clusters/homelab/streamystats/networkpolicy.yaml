@@ -1,0 +1,229 @@
+---
+# Default deny all ingress and egress for the streamystats namespace.
+# See clusters/homelab/crawl4ai/networkpolicy.yaml for why this is a list with
+# one EMPTY RULE (- {}) rather than an empty list: `ingress: []` is rejected by
+# Cilium as malformed and would silently leave the namespace unprotected.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-default-deny
+  namespace: streamystats
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution via kube-dns, for every pod in the namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-dns
+  namespace: streamystats
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Allow response traffic back to the pod subnet for same-node connections and
+# cross-node Envoy replies (native routing mode) — mirrors the crawl4ai policy.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-pod-egress
+  namespace: streamystats
+spec:
+  endpointSelector: {}
+  egress:
+    - toCIDR:
+        - 10.0.0.0/8
+---
+# LAN ingress to the dashboard via the Cilium Gateway. Gateway traffic arrives
+# with the reserved:ingress identity, so fromEntities is required here —
+# fromCIDR/remote-node does not match it.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-lan-ingress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: streamystats
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Web UI -> job server (JOB_SERVER_URL) and -> database.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-app-egress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: streamystats
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: job-server
+      toPorts:
+        - ports:
+            - port: "3005"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app: vectorchord
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app: ollama
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP
+---
+# Job server ingress from the web UI.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-jobserver-ingress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: job-server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: streamystats
+      toPorts:
+        - ports:
+            - port: "3005"
+              protocol: TCP
+---
+# Job server egress: database, the local embedding server, Jellyfin in the
+# media namespace, and the internet (TMDb metadata / IP geolocation lookups).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-jobserver-egress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: job-server
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: vectorchord
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            app: ollama
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP
+    # Jellyfin lives in the media namespace; port is the pod's container port.
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            app: jellyfin
+      toPorts:
+        - ports:
+            - port: "8096"
+              protocol: TCP
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Database ingress from the web UI and the job server only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-db-ingress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: vectorchord
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: streamystats
+        - matchLabels:
+            app: job-server
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+# Ollama ingress from the job server (embedding generation) and the web UI
+# (connection test / semantic search from the dashboard).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-ollama-ingress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: ollama
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: job-server
+        - matchLabels:
+            app: streamystats
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP
+---
+# Ollama egress to the internet — required to pull the embedding model from
+# registry.ollama.ai on first start.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-allow-ollama-egress
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      app: ollama
+  egress:
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP

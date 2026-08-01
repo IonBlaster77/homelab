@@ -216,6 +216,13 @@ spec:
                     siteMonitor: https://hermes.jupitertech.net
                     namespace: hermes
                     podSelector: app=hermes
+                - Streamystats:
+                    href: https://streamystats.jupitertech.net
+                    description: Jellyfin watch stats & AI recommendations
+                    icon: mdi-chart-box-outline
+                    siteMonitor: https://streamystats.jupitertech.net
+                    namespace: streamystats
+                    podSelector: app=streamystats
 
             - Network Hardware:
                 - MikroTik CCR1036:

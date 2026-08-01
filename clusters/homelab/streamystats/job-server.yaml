@@ -1,0 +1,79 @@
+# Streamystats job server — runs the scheduled syncs against Jellyfin
+# (activity, items, users, embeddings, cleanup). The Next.js UI talks to it
+# over JOB_SERVER_URL; it is not exposed outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-server
+  namespace: streamystats
+spec:
+  type: ClusterIP
+  selector:
+    app: job-server
+  ports:
+    - name: http
+      port: 3005
+      targetPort: 3005
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-server
+  namespace: streamystats
+  labels:
+    app: job-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: job-server
+  template:
+    metadata:
+      labels:
+        app: job-server
+        app.kubernetes.io/name: job-server
+    spec:
+      containers:
+        - name: job-server
+          image: ghcr.io/fredrikburmester/streamystats-job-server:v2.18.1
+          ports:
+            - name: http
+              containerPort: 3005
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3005"
+            - name: HOST
+              value: 0.0.0.0
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: streamystats-secret
+                  key: DATABASE_URL
+            - name: TZ
+              value: Australia/Adelaide
+          startupProbe:
+            tcpSocket:
+              port: 3005
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 3005
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 3005
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 1000m

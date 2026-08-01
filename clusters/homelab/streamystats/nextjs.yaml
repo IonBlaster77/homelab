@@ -1,0 +1,90 @@
+# Streamystats web UI (Next.js) — the dashboard served at
+# streamystats.jupitertech.net via the shared Cilium Gateway.
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamystats
+  namespace: streamystats
+spec:
+  type: ClusterIP
+  selector:
+    app: streamystats
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamystats
+  namespace: streamystats
+  labels:
+    app: streamystats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamystats
+  template:
+    metadata:
+      labels:
+        app: streamystats
+        app.kubernetes.io/name: streamystats
+    spec:
+      containers:
+        - name: streamystats
+          image: ghcr.io/fredrikburmester/streamystats-nextjs:v2.18.1
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: HOSTNAME
+              value: 0.0.0.0
+            - name: JOB_SERVER_URL
+              value: http://job-server:3005
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: streamystats-secret
+                  key: DATABASE_URL
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: streamystats-secret
+                  key: SESSION_SECRET
+            # Stable across redeploys — regenerating this invalidates every
+            # in-flight server action closure and logs users out.
+            - name: NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: streamystats-secret
+                  key: NEXT_SERVER_ACTIONS_ENCRYPTION_KEY
+            - name: TZ
+              value: Australia/Adelaide
+          startupProbe:
+            tcpSocket:
+              port: 3000
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 1000m
