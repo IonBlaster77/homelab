@@ -64,6 +64,11 @@ spec:
                 style: row
                 columns: 5
                 icon: mdi-cog-play
+              Tools & AI:
+                tab: Apps
+                style: row
+                columns: 3
+                icon: mdi-toolbox
               Quick Links:
                 tab: Apps
                 icon: mdi-bookmark-multiple
@@ -130,13 +135,13 @@ spec:
                     siteMonitor: https://jellyfin.jupitertech.net
                     namespace: media
                     app: jellyfin
-                - Jellyseerr:
-                    href: https://jellyseerr.jupitertech.net
-                    description: Media request management
+                - Seerr:
+                    href: https://seerr.jupitertech.net
+                    description: Media requests (Jellyseerr/Overseerr successor)
                     icon: jellyseerr.png
-                    siteMonitor: https://jellyseerr.jupitertech.net
+                    siteMonitor: https://seerr.jupitertech.net
                     namespace: media
-                    app: jellyseerr
+                    app: seerr
 
             - Media Management:
                 - Radarr:
@@ -167,6 +172,13 @@ spec:
                     siteMonitor: https://qbittorrent.jupitertech.net
                     namespace: media
                     app: qbittorrent
+                - NZBGet:
+                    href: https://nzbget.jupitertech.net
+                    description: Usenet download client
+                    icon: nzbget.png
+                    siteMonitor: https://nzbget.jupitertech.net
+                    namespace: media
+                    app: nzbget
                 - Bazarr:
                     href: https://bazarr.jupitertech.net
                     description: Subtitle automation
@@ -174,6 +186,36 @@ spec:
                     siteMonitor: https://bazarr.jupitertech.net
                     namespace: media
                     app: bazarr
+                - Arr Dashboard:
+                    href: https://arrdashboard.jupitertech.net
+                    description: Unified *arr management dashboard
+                    icon: mdi-view-dashboard-variant
+                    siteMonitor: https://arrdashboard.jupitertech.net
+                    namespace: media
+                    app: arr-dashboard
+
+            - Tools & AI:
+                - SearXNG:
+                    href: https://searxng.jupitertech.net
+                    description: Privacy-respecting metasearch engine
+                    icon: searxng.png
+                    siteMonitor: https://searxng.jupitertech.net
+                    namespace: searxng
+                    podSelector: app=searxng
+                - Crawl4AI:
+                    href: https://crawl4ai.jupitertech.net
+                    description: LLM-friendly web crawler & scraper
+                    icon: mdi-spider-web
+                    siteMonitor: https://crawl4ai.jupitertech.net
+                    namespace: crawl4ai
+                    podSelector: app=crawl4ai
+                - Hermes:
+                    href: https://hermes.jupitertech.net
+                    description: Self-hosted AI chat
+                    icon: mdi-robot-happy-outline
+                    siteMonitor: https://hermes.jupitertech.net
+                    namespace: hermes
+                    podSelector: app=hermes
 
             - Network Hardware:
                 - MikroTik CCR1036:
