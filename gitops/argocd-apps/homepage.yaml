@@ -86,28 +86,28 @@ spec:
                     href: https://pgadmin.jupitertech.net
                     description: PostgreSQL database administration
                     icon: pgadmin.png
-                    siteMonitor: https://pgadmin.jupitertech.net
+                    siteMonitor: http://pgadmin4.pgadmin.svc.cluster.local:80
                     namespace: pgadmin
                     app: pgadmin4
                 - ArgoCD:
                     href: https://argocd.jupitertech.net
                     description: GitOps continuous delivery
                     icon: argocd.png
-                    siteMonitor: https://argocd.jupitertech.net
+                    siteMonitor: http://argocd-server.argocd.svc.cluster.local:80
                     namespace: argocd
                     app: argocd-server
                 - Grafana:
                     href: https://grafana.jupitertech.net
                     description: Metrics & dashboards
                     icon: grafana.png
-                    siteMonitor: https://grafana.jupitertech.net
+                    siteMonitor: http://monitoring-grafana.monitoring.svc.cluster.local:80
                     namespace: monitoring
                     app: grafana
                 - Longhorn:
                     href: https://longhorn.jupitertech.net
                     description: Distributed block storage
                     icon: longhorn.png
-                    siteMonitor: https://longhorn.jupitertech.net
+                    siteMonitor: http://longhorn-frontend.longhorn-system.svc.cluster.local:80
                     namespace: longhorn-system
                     app: longhorn
 
@@ -116,14 +116,14 @@ spec:
                     href: https://auth.jupitertech.net
                     description: Identity provider — SSO, LDAP, RADIUS
                     icon: authentik.png
-                    siteMonitor: https://auth.jupitertech.net
+                    siteMonitor: http://authentik-server.authentik.svc.cluster.local:80
                     namespace: authentik
                     app: authentik
                 - AdGuard Home:
                     href: https://adguard.jupitertech.net
                     description: Network-wide DNS filtering & ad blocking
                     icon: adguard-home.png
-                    siteMonitor: https://adguard.jupitertech.net
+                    siteMonitor: http://adguard-ui.adguard.svc.cluster.local:3000
                     namespace: adguard
                     app: adguard
 
@@ -132,14 +132,14 @@ spec:
                     href: https://jellyfin.jupitertech.net
                     description: Media server
                     icon: jellyfin.png
-                    siteMonitor: https://jellyfin.jupitertech.net
+                    siteMonitor: http://jellyfin.media.svc.cluster.local:8096
                     namespace: media
                     app: jellyfin
                 - Seerr:
                     href: https://seerr.jupitertech.net
                     description: Media requests (Jellyseerr/Overseerr successor)
                     icon: jellyseerr.png
-                    siteMonitor: https://seerr.jupitertech.net
+                    siteMonitor: http://seerr.media.svc.cluster.local:5055
                     namespace: media
                     app: seerr
 
@@ -148,49 +148,49 @@ spec:
                     href: https://radarr.jupitertech.net
                     description: Movie automation
                     icon: radarr.png
-                    siteMonitor: https://radarr.jupitertech.net
+                    siteMonitor: http://radarr.media.svc.cluster.local:7878
                     namespace: media
                     app: radarr
                 - Sonarr:
                     href: https://sonarr.jupitertech.net
                     description: TV show automation
                     icon: sonarr.png
-                    siteMonitor: https://sonarr.jupitertech.net
+                    siteMonitor: http://sonarr.media.svc.cluster.local:8989
                     namespace: media
                     app: sonarr
                 - Prowlarr:
                     href: https://prowlarr.jupitertech.net
                     description: Indexer management
                     icon: prowlarr.png
-                    siteMonitor: https://prowlarr.jupitertech.net
+                    siteMonitor: http://prowlarr.media.svc.cluster.local:9696
                     namespace: media
                     app: prowlarr
                 - qBittorrent:
                     href: https://qbittorrent.jupitertech.net
                     description: Torrent client
                     icon: qbittorrent.png
-                    siteMonitor: https://qbittorrent.jupitertech.net
+                    siteMonitor: http://qbittorrent.media.svc.cluster.local:8080
                     namespace: media
                     app: qbittorrent
                 - NZBGet:
                     href: https://nzbget.jupitertech.net
                     description: Usenet download client
                     icon: nzbget.png
-                    siteMonitor: https://nzbget.jupitertech.net
+                    siteMonitor: http://nzbget.media.svc.cluster.local:6789
                     namespace: media
                     app: nzbget
                 - Bazarr:
                     href: https://bazarr.jupitertech.net
                     description: Subtitle automation
                     icon: bazarr.png
-                    siteMonitor: https://bazarr.jupitertech.net
+                    siteMonitor: http://bazarr.media.svc.cluster.local:6767
                     namespace: media
                     app: bazarr
                 - Arr Dashboard:
                     href: https://arrdashboard.jupitertech.net
                     description: Unified *arr management dashboard
                     icon: mdi-view-dashboard-variant
-                    siteMonitor: https://arrdashboard.jupitertech.net
+                    siteMonitor: http://arr-dashboard.media.svc.cluster.local:3000
                     namespace: media
                     app: arr-dashboard
 
@@ -199,28 +199,28 @@ spec:
                     href: https://searxng.jupitertech.net
                     description: Privacy-respecting metasearch engine
                     icon: searxng.png
-                    siteMonitor: https://searxng.jupitertech.net
+                    siteMonitor: http://searxng.searxng.svc.cluster.local:8080
                     namespace: searxng
                     podSelector: app=searxng
                 - Crawl4AI:
                     href: https://crawl4ai.jupitertech.net
                     description: LLM-friendly web crawler & scraper
                     icon: mdi-spider-web
-                    siteMonitor: https://crawl4ai.jupitertech.net
+                    siteMonitor: http://crawl4ai.crawl4ai.svc.cluster.local:11235
                     namespace: crawl4ai
                     podSelector: app=crawl4ai
                 - Hermes:
                     href: https://hermes.jupitertech.net
                     description: Self-hosted AI chat
                     icon: mdi-robot-happy-outline
-                    siteMonitor: https://hermes.jupitertech.net
+                    siteMonitor: http://hermes-webui.hermes.svc.cluster.local:8787
                     namespace: hermes
                     podSelector: app=hermes
                 - Streamystats:
                     href: https://streamystats.jupitertech.net
                     description: Jellyfin watch stats & AI recommendations
                     icon: mdi-chart-box-outline
-                    siteMonitor: https://streamystats.jupitertech.net
+                    siteMonitor: http://streamystats.streamystats.svc.cluster.local:3000
                     namespace: streamystats
                     podSelector: app=streamystats
 
