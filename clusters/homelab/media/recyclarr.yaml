@@ -6,8 +6,9 @@ metadata:
 data:
   recyclarr.yml: |
     # Recyclarr configuration
-    # Fill in the api_key fields before deploying.
-    # Retrieve API keys from each app's Settings > General > Security.
+    # api_key values come from recyclarr-secret via !env_var (RADARR_API_KEY /
+    # SONARR_API_KEY), sourced from each app's own config.xml — see
+    # recyclarr-secret.yaml for details.
 
     radarr:
       main-radarr:
