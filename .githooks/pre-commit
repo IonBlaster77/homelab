@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#
+# Pre-commit hook: block commits that add unencrypted secrets to YAML.
+# Tracked in the repo (unlike .git/hooks/) and shared via core.hooksPath —
+# see .githooks/README.md for the one-time enable step on a fresh clone.
+#
+# Delegates to scripts/scan-secrets.sh so local and CI enforcement stay identical.
+#
+set -e
+
+root="$(git rev-parse --show-toplevel)"
+staged="$(git diff --cached --name-only --diff-filter=d -- '*.yaml' '*.yml')"
+
+[ -z "$staged" ] && exit 0
+
+# shellcheck disable=SC2086
+exec "$root/scripts/scan-secrets.sh" $staged
