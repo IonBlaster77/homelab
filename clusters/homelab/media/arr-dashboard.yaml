@@ -44,6 +44,12 @@ spec:
               value: "1000"
             - name: TZ
               value: Australia/Adelaide
+            # Required for OIDC: the app validates that any submitted redirect_uri's
+            # origin matches this exactly (open-redirect protection). Without it,
+            # OIDC setup fails with "Redirect URI must match the application URL
+            # origin" against whatever internal default the app falls back to.
+            - name: APP_URL
+              value: https://arrdashboard.jupitertech.net
           volumeMounts:
             - name: config
               mountPath: /config
