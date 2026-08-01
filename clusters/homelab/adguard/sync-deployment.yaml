@@ -15,7 +15,18 @@ spec:
     spec:
       containers:
         - name: sync
-          image: lscr.io/linuxserver/adguardhome-sync:latest
+          # Pinned, and deliberately held one release back. Upstream v0.9.2
+          # raised its minimum supported AdGuard Home from v0.107.40 to
+          # v0.107.68 (internal/versions: MinAgh); because this tag was
+          # floating on :latest it silently rolled onto v0.9.2 and every sync
+          # since failed with "Origin AdGuard Home version must be >= v0.107.68"
+          # against the v0.107.52 instances. That left the replica stale, so the
+          # DNS LoadBalancer answered recently-added rewrites only when the
+          # query happened to land on the primary.
+          # v0.9.1 still requires only v0.107.40, so it works with v0.107.52.
+          # Revisit and move to :v0.9.2-lsNNN when AdGuard Home itself is
+          # upgraded to >= v0.107.68.
+          image: lscr.io/linuxserver/adguardhome-sync:v0.9.1-ls167
           volumeMounts:
             - name: config
               mountPath: /config/adguardhome-sync.yaml
