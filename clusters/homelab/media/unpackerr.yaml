@@ -32,11 +32,17 @@ spec:
             - name: UN_SONARR_0_URL
               value: http://sonarr:8989
             - name: UN_SONARR_0_API_KEY
-              value: CHANGEME
+              valueFrom:
+                secretKeyRef:
+                  name: unpackerr-secret
+                  key: UN_SONARR_0_API_KEY
             - name: UN_RADARR_0_URL
               value: http://radarr:7878
             - name: UN_RADARR_0_API_KEY
-              value: CHANGEME
+              valueFrom:
+                secretKeyRef:
+                  name: unpackerr-secret
+                  key: UN_RADARR_0_API_KEY
           volumeMounts:
             - name: media
               mountPath: /data
