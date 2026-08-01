@@ -45,6 +45,21 @@ spec:
                 fi
               }
 
+              del_rewrite() {
+                domain=$1
+                answer=$2
+                LIST=$(curl -sf -u "$ADGUARD_USER:$ADGUARD_PASSWORD" "$API/control/rewrite/list")
+                if echo "$LIST" | grep -q "\"domain\":\"$domain\""; then
+                  curl -sf -u "$ADGUARD_USER:$ADGUARD_PASSWORD" \
+                    -H 'Content-Type: application/json' \
+                    -d "{\"domain\":\"$domain\",\"answer\":\"$answer\"}" \
+                    "$API/control/rewrite/delete"
+                  echo "removed $domain -> $answer"
+                else
+                  echo "rewrite $domain not present, skipping"
+                fi
+              }
+
               add_rewrite "nas.jupitertech.net"      "10.77.20.20"
               add_rewrite "argocd.jupitertech.net"   "10.77.20.60"
               add_rewrite "grafana.jupitertech.net"  "10.77.20.60"
@@ -58,8 +73,16 @@ spec:
               add_rewrite "prowlarr.jupitertech.net"  "10.77.20.60"
               add_rewrite "qbittorrent.jupitertech.net" "10.77.20.60"
               add_rewrite "jellyfin.jupitertech.net"  "10.77.20.60"
-              add_rewrite "jellyseerr.jupitertech.net" "10.77.20.60"
+              add_rewrite "seerr.jupitertech.net"     "10.77.20.60"
               add_rewrite "bazarr.jupitertech.net"    "10.77.20.60"
+              add_rewrite "nzbget.jupitertech.net"    "10.77.20.60"
+              add_rewrite "arrdashboard.jupitertech.net" "10.77.20.60"
+              add_rewrite "streamystats.jupitertech.net" "10.77.20.60"
               add_rewrite "hermes.jupitertech.net"   "10.77.20.60"
               add_rewrite "crawl4ai.jupitertech.net" "10.77.20.60"
               add_rewrite "searxng.jupitertech.net"  "10.77.20.60"
+
+              # Retired hostnames. add_rewrite never updates or removes an
+              # existing record, so renames leave the old name resolving to
+              # the gateway, where it matches no HTTPRoute and returns 404.
+              del_rewrite "jellyseerr.jupitertech.net" "10.77.20.60"
