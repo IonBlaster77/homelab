@@ -92,7 +92,7 @@ spec:
                 - ArgoCD:
                     href: https://argocd.jupitertech.net
                     description: GitOps continuous delivery
-                    icon: argocd.png
+                    icon: argo-cd.png
                     siteMonitor: http://argocd-server.argocd.svc.cluster.local:80
                     namespace: argocd
                     app: argocd-server
@@ -201,6 +201,7 @@ spec:
                     icon: searxng.png
                     siteMonitor: http://searxng.searxng.svc.cluster.local:8080
                     namespace: searxng
+                    app: searxng
                     podSelector: app=searxng
                 - Crawl4AI:
                     href: https://crawl4ai.jupitertech.net
@@ -208,6 +209,7 @@ spec:
                     icon: mdi-spider-web
                     siteMonitor: http://crawl4ai.crawl4ai.svc.cluster.local:11235
                     namespace: crawl4ai
+                    app: crawl4ai
                     podSelector: app=crawl4ai
                 - Hermes:
                     href: https://hermes.jupitertech.net
@@ -215,6 +217,7 @@ spec:
                     icon: mdi-robot-happy-outline
                     siteMonitor: http://hermes-webui.hermes.svc.cluster.local:8787
                     namespace: hermes
+                    app: hermes
                     podSelector: app=hermes
                 - Streamystats:
                     href: https://streamystats.jupitertech.net
@@ -222,6 +225,7 @@ spec:
                     icon: mdi-chart-box-outline
                     siteMonitor: http://streamystats.streamystats.svc.cluster.local:3000
                     namespace: streamystats
+                    app: streamystats
                     podSelector: app=streamystats
 
             - Network Hardware:
