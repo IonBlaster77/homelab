@@ -36,8 +36,10 @@ data:
         custom_formats:
           - trash_ids:
               # Unwanted
+              # EVO (no WEBDL) was removed from the current TRaSH guide (no
+              # replacement) — release-group-specific unwanted formats fell out
+              # of favor and this one is no longer part of the collection.
               - ed38b889b31be83fda192888e2286d83  # BR-DISK
-              - 90cedc1fea7ea5d11298bebd3d1d3223  # EVO (no WEBDL)
               - 90a6f9a284dff5103f6346090e6280c8  # LQ
               - b8cd450cbfa689c0259a01d9e29ba3d6  # LQ (Release Title)
             assign_scores_to:
@@ -46,13 +48,16 @@ data:
 
           - trash_ids:
               # HDR Formats
-              - dfb86d5941bc9075d6af23b09c2aeecd  # HDR10
+              # Standalone "HDR10" was retired in favor of the general "HDR"
+              # format, which matches HDR10/HDR10+/HLG/PQ/DV-with-fallback.
+              - 493b6d1dbec3c3364c59d7607f7e3405  # HDR
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: 10
 
           - trash_ids:
-              - e61e28db917a7f8927dd2fc372970a79  # DV
+              # Standalone "DV" was retired in favor of "DV Boost".
+              - b337d6812e06c200ec9a2d3cfa9d20a7  # DV Boost
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: 15
@@ -97,12 +102,12 @@ data:
 
           - trash_ids:
               # Streaming services
-              - d660701077794679fd59e8bdf4ce3a5b  # AMZN
+              - d660701077794679fd59e8bdf4ce3a29  # AMZN
               - f67c9ca88f463a48346062e8ad07713f  # ATVP
               - 77a7b25585c18af08f60b1547bb9b4fb  # CC
               - 36b72f59f4ea20aad9316f475f2d9fbb  # NF
-              - 1656adc036ab352571bb4c03e4f25e8d  # PCOK
-              - c2863d2a50c9acad1fb50e53ece60817  # PMTP
+              - 1656adc6d7bb2c8cca6acfb6592db421  # PCOK
+              - c67a75ae4a1715f2bb4d492755ba4195  # PMTP
             assign_scores_to:
               - name: WEB-1080p
                 score: 15
