@@ -48,7 +48,12 @@ spec:
       containers:
         - name: postgres
           image: tensorchord/vchord-postgres:pg17-v0.4.1
-          command: ["postgres", "-c", "log_checkpoints=off"]
+          # args, NOT command: upstream's compose sets `command:`, which in
+          # Compose overrides CMD and leaves docker-entrypoint.sh (ENTRYPOINT)
+          # in place. In Kubernetes `command:` overrides ENTRYPOINT instead,
+          # which skips the entrypoint's root->postgres drop and makes the
+          # server refuse to start ("root execution ... is not permitted").
+          args: ["postgres", "-c", "log_checkpoints=off"]
           ports:
             - name: postgres
               containerPort: 5432
