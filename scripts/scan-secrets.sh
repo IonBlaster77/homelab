@@ -21,7 +21,7 @@
 # WHAT IS IGNORED (not secrets)
 #   - SOPS-encrypted files (ENC[AES256_GCM...] / a sops: block)
 #   - empty values                e.g.  password: ""
-#   - template / env references   e.g.  {{VAR}}, ${VAR}, $VAR, $__env{VAR}
+#   - template / env references   e.g.  {{VAR}}, ${VAR}, $VAR, $__env{VAR}, !env_var VAR
 #   - reference-style keys that name a secret rather than contain one:
 #     secretName, secretKeyRef, existingSecret, privateKeySecretRef, ...
 #   - vendored CRDs under clusters/homelab/gateway-api-crds/
@@ -51,7 +51,7 @@ is_placeholder() {
   v=$(printf '%s' "$v" | tr -d "\"'")
   [ -z "$v" ] && return 0
   case "$v" in
-    '{{'*|'${'*|'$'[A-Za-z_]*|'$__env'*) return 0 ;;   # {{VAR}} ${VAR} $VAR $__env{}
+    '{{'*|'${'*|'$'[A-Za-z_]*|'$__env'*|'!env_var '*) return 0 ;;   # {{VAR}} ${VAR} $VAR $__env{} !env_var VAR (Recyclarr)
     '__'*'__') return 0 ;;                              # __DB_PASSWORD__ substitution marker
     '[]'|'{}'|null|Null|NULL|'~') return 0 ;;           # empty structure / explicit null
     true|false|True|False|TRUE|FALSE|yes|no|Yes|No) return 0 ;;  # boolean flags

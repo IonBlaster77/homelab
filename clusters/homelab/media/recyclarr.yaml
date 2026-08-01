@@ -12,7 +12,7 @@ data:
     radarr:
       main-radarr:
         base_url: http://radarr:7878
-        api_key: CHANGEME  # Replace with Radarr API key
+        api_key: !env_var RADARR_API_KEY
 
         quality_profiles:
           - name: SQP-1 (1080p)
@@ -65,7 +65,7 @@ data:
     sonarr:
       main-sonarr:
         base_url: http://sonarr:8989
-        api_key: CHANGEME  # Replace with Sonarr API key
+        api_key: !env_var SONARR_API_KEY
 
         quality_profiles:
           - name: WEB-1080p
@@ -136,6 +136,9 @@ spec:
               env:
                 - name: TZ
                   value: Australia/Adelaide
+              envFrom:
+                - secretRef:
+                    name: recyclarr-secret
               volumeMounts:
                 - name: config
                   mountPath: /config
