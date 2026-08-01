@@ -48,6 +48,11 @@ spec:
               mountPath: /config
             - name: media
               mountPath: /data
+          startupProbe:
+            tcpSocket:
+              port: 6767
+            periodSeconds: 10
+            failureThreshold: 30
           livenessProbe:
             tcpSocket:
               port: 6767
