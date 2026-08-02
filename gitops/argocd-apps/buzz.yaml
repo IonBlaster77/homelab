@@ -3,10 +3,15 @@
 # route yet), relay membership requirement off until the owner's pubkey is
 # known (Stage 2).
 #
-# Pinned to a specific commit rather than `main` — this project ships no
-# stable release, and images only publish `sha-<commit>` tags (confirmed:
-# GHCR has no image for every commit, so the chart revision and image.tag
-# below were deliberately picked as a matched, known-good pair).
+# Compromise on pinning: the chart itself (deploy/charts/buzz) is too new —
+# no commit that has both the chart AND a published GHCR image tag exists
+# yet (checked ~10 recent sha-<commit> image tags, none had the chart path;
+# the chart only exists on `main` as of this commit). So the chart source
+# floats on `main` (unavoidable for now), but image.tag below is still
+# pinned to the newest confirmed-published tag — the actual running binary
+# won't change on its own, only the chart's templates/values schema might.
+# Revisit pinning the chart source once an image build catches up to a
+# commit that includes it.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -16,7 +21,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/block/buzz.git
-    targetRevision: 1fa63badad283cff753ab403105344060fa74efa
+    targetRevision: main
     path: deploy/charts/buzz
     helm:
       releaseName: buzz
