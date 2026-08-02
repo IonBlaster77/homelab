@@ -47,7 +47,7 @@ cilium:
         - flow
         - icmp
         - http
-        - policy-verdict
+        - policy
       serviceMonitor:
         enabled: true
         labels:
