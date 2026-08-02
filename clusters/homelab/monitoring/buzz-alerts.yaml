@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: buzz-stack-health
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: buzz-stack
+      rules:
+        - alert: BuzzRelayDown
+          expr: up{job=~"buzz.*"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Buzz relay exporter target {{ $labels.job }} is down"
+            description: "Prometheus can't scrape the Buzz relay — it may be crash-looping or unreachable."
+        - alert: RedisDown
+          expr: redis_up == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Redis ({{ $labels.namespace }}/{{ $labels.pod }}) is down"
+            description: "Affects everything using this shared Redis instance — currently just Buzz."
+        - alert: MinioTenantDown
+          expr: up{job=~".*minio.*"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "MinIO target {{ $labels.job }} is unreachable"
+            description: "Buzz media storage may be affected."

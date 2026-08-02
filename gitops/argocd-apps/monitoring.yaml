@@ -118,6 +118,10 @@ spec:
                 gnetId: 20417
                 revision: 4
                 datasource: Prometheus
+              redis:
+                gnetId: 763
+                revision: 6
+                datasource: Prometheus
 
         alertmanager:
           enabled: true

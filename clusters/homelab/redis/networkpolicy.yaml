@@ -54,3 +54,22 @@ spec:
         - ports:
             - port: "6379"
               protocol: TCP
+---
+# Prometheus scraping the redis_exporter sidecar.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-allow-ingress-from-monitoring
+  namespace: redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app: redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9121"
+              protocol: TCP

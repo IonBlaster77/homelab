@@ -85,6 +85,36 @@ spec:
               command: ["sh", "-c", "REDISCLI_AUTH=$REDIS_PASSWORD redis-cli ping"]
             initialDelaySeconds: 15
             periodSeconds: 20
+        # Redis has no built-in Prometheus endpoint — redis_exporter connects
+        # to Redis over the same protocol redis-cli uses and translates INFO/
+        # stats output into /metrics for Prometheus to scrape. Runs as a
+        # sidecar (same pod, talks to Redis over localhost) rather than a
+        # separate Deployment, since it only ever needs to monitor this one
+        # instance.
+        - name: redis-exporter
+          image: oliver006/redis_exporter:v1.66.0-alpine
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
+            - name: REDIS_ADDR
+              value: "redis://localhost:6379"
+          ports:
+            - containerPort: 9121
+              name: metrics
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
   volumeClaimTemplates:
     - metadata:
         name: data

@@ -12,6 +12,10 @@ spec:
   configuration:
     name: buzz-minio-config
   requestAutoCert: false
+  # Auto-creates a Prometheus Operator ServiceMonitor for the Tenant.
+  prometheusOperator:
+    labels:
+      release: monitoring
   pools:
     - name: pool-0
       servers: 1

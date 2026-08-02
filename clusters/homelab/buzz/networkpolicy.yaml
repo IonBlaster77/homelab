@@ -185,6 +185,26 @@ spec:
             - port: "9000"
               protocol: TCP
 ---
+# Prometheus scraping MinIO's cluster metrics (same S3 port, 9000 — MinIO
+# doesn't run a separate metrics port).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-monitoring-to-minio
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
 # Relay -> MinIO (S3, same namespace).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
