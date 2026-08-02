@@ -18,10 +18,16 @@ spec:
             summary: "ArgoCD app {{ $labels.name }} has been Degraded for 10m+"
             description: "Short health flaps are normal during rollouts; this has been sustained, not transient."
         - alert: ArgoCDAppOutOfSync
-          expr: argocd_app_info{sync_status="OutOfSync"} == 1
+          # argocd/cilium are manual-sync by design (see gitops/argocd-apps/
+          # cilium.yaml) — sitting OutOfSync between deliberate syncs is
+          # their normal resting state, not drift worth paging on. cilium
+          # in particular has a known cosmetic OutOfSync on ServiceMonitor/
+          # hubble (content matches the rendered chart byte-for-byte; looks
+          # like an ArgoCD diff-cache quirk, not a real difference).
+          expr: argocd_app_info{sync_status="OutOfSync", name!~"argocd|cilium"} == 1
           for: 10m
           labels:
             severity: warning
           annotations:
             summary: "ArgoCD app {{ $labels.name }} has been OutOfSync for 10m+"
-            description: "Either a real drift, or an app with automated sync disabled (argocd/cilium) that has pending changes to sync manually."
+            description: "This app has automated sync — sustained drift means something changed live outside of git, or a sync is failing."
