@@ -12,10 +12,11 @@ spec:
   configuration:
     name: buzz-minio-config
   requestAutoCert: false
-  # Auto-creates a Prometheus Operator ServiceMonitor for the Tenant.
-  prometheusOperator:
-    labels:
-      release: monitoring
+  # prometheusOperator is just a bare boolean in this CRD version (no
+  # labels sub-field, despite some older examples showing one) — its
+  # auto-created ServiceMonitor wouldn't carry the release: monitoring
+  # label Prometheus' selector needs anyway, so hand-writing one below
+  # instead, consistent with every other ServiceMonitor in this repo.
   pools:
     - name: pool-0
       servers: 1
@@ -39,3 +40,19 @@ spec:
           drop: [ALL]
         seccompProfile:
           type: RuntimeDefault
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: buzz-minio
+  namespace: buzz
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  endpoints:
+    - port: http-minio
+      path: /minio/v2/metrics/cluster
+      interval: 30s
