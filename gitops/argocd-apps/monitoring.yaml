@@ -73,6 +73,39 @@ spec:
               password: $__env{GF_DATABASE_PASSWORD}
           service:
             type: ClusterIP
+          # Community dashboards, auto-downloaded from grafana.com at pod start
+          # by the chart's built-in sidecar. Pinned revisions so a pod restart
+          # never silently changes what's rendered.
+          dashboardProviders:
+            "dashboardproviders.yaml":
+              apiVersion: 1
+              providers:
+                - name: default
+                  orgId: 1
+                  folder: ""
+                  type: file
+                  disableDeletion: false
+                  editable: true
+                  options:
+                    path: /var/lib/grafana/dashboards/default
+          dashboards:
+            default:
+              argocd:
+                gnetId: 14584
+                revision: 1
+                datasource: Prometheus
+              cilium-agent:
+                gnetId: 16611
+                revision: 1
+                datasource: Prometheus
+              cert-manager:
+                gnetId: 20842
+                revision: 3
+                datasource: Prometheus
+              longhorn:
+                gnetId: 16888
+                revision: 14
+                datasource: Prometheus
 
         alertmanager:
           enabled: true
