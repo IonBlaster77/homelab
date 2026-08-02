@@ -84,4 +84,15 @@ spec:
             severity: warning
           annotations:
             summary: "unifi-poller can't reach or scrape the UniFi controller (10.77.10.10)"
-            description: "Either the exporter pod is down or it lost contact with the CloudKey. Per-AP offline alerting will follow once real metric names are confirmed against the live /metrics output."
+            description: "Either the exporter pod is down or it lost contact with the CloudKey."
+        - alert: UnifiAPOffline
+          # Verified live against a real offline AP: uptime reports exactly 0
+          # for a device the controller can't currently reach; a healthy AP
+          # reports its real uptime in seconds (always > 0).
+          expr: unpoller_device_uptime_seconds{type="uap"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Access point {{ $labels.name }} is offline"
+            description: "The UniFi controller reports zero uptime for this AP, meaning it's currently unreachable/disconnected."
