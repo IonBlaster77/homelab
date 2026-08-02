@@ -41,8 +41,13 @@ spec:
         seccompProfile:
           type: RuntimeDefault
 ---
+# PodMonitor, not ServiceMonitor: none of the MinIO Operator's generated
+# Services (minio, buzz-minio-hl, buzz-minio-console) carry any labels at
+# all, so a ServiceMonitor's selector (which matches on Service labels)
+# can never find them — silently dropped the target rather than erroring.
+# The pods themselves DO carry v1.min.io/tenant, so select on that instead.
 apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
+kind: PodMonitor
 metadata:
   name: buzz-minio
   namespace: buzz
@@ -52,7 +57,7 @@ spec:
   selector:
     matchLabels:
       v1.min.io/tenant: buzz-minio
-  endpoints:
-    - port: http-minio
+  podMetricsEndpoints:
+    - port: minio-port
       path: /minio/v2/metrics/cluster
       interval: 30s
