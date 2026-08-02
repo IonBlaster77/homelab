@@ -12,6 +12,24 @@ spec:
   egress:
     - {}
 ---
+# The MinIO Tenant's operator-sidecar init container ("validate-arguments")
+# calls the Kubernetes API to check the Tenant CR before MinIO itself
+# starts — without this, it times out dialing the apiserver and the pod
+# never leaves Init. toEntities: kube-apiserver is Cilium's reserved
+# identity for the API server, robust regardless of ClusterIP/KubePrism.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-egress-to-apiserver
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
