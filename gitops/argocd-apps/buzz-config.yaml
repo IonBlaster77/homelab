@@ -1,0 +1,26 @@
+# Namespace, CNPG database, MinIO Tenant, and secrets for Buzz — separate
+# from the buzz.yaml Application (the relay chart itself), same split as
+# authentik/authentik-config. Must sync before (or CreateNamespace=true
+# alongside) buzz.yaml, since the relay's namespace/DB/tenant/secrets all
+# come from here.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: buzz-config
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/buzz
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: buzz
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
