@@ -14,3 +14,17 @@ spec:
       owner: authentik
       secret:
         name: authentik-db-credentials
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: authentik-db
+  namespace: authentik
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: authentik-db
+  podMetricsEndpoints:
+    - port: metrics

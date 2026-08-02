@@ -114,6 +114,10 @@ spec:
                 gnetId: 11314
                 revision: 10
                 datasource: Prometheus
+              cloudnative-pg:
+                gnetId: 20417
+                revision: 4
+                datasource: Prometheus
 
         alertmanager:
           enabled: true

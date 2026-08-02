@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: authentik-health
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: authentik
+      rules:
+        - alert: AuthentikDown
+          # job name pattern kept loose (authentik.*) since it's derived from
+          # the chart's generated metrics Service name — confirm/tighten once
+          # live against actual `up{}` labels.
+          expr: up{job=~"authentik.*"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "authentik component {{ $labels.job }} is down"
+            description: "Authentik is the SSO gateway most services here sit behind — sustained downtime can lock you out of anything using it for auth."

@@ -33,6 +33,12 @@ spec:
                   key: password
 
         server:
+          metrics:
+            enabled: true
+            serviceMonitor:
+              enabled: true
+              labels:
+                release: monitoring
           replicas: 2
           affinity:
             podAntiAffinity:
@@ -46,6 +52,12 @@ spec:
                     topologyKey: kubernetes.io/hostname
 
         worker:
+          metrics:
+            enabled: true
+            serviceMonitor:
+              enabled: true
+              labels:
+                release: monitoring
           replicas: 1
 
         postgresql:

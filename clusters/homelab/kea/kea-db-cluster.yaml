@@ -24,3 +24,17 @@ spec:
         comment: "Read-only Grafana datasource user"
         passwordSecret:
           name: kea-db-grafana-credentials
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kea-db
+  namespace: kea
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: kea-db
+  podMetricsEndpoints:
+    - port: metrics

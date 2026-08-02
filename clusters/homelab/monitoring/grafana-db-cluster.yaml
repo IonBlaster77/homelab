@@ -14,3 +14,19 @@ spec:
       owner: grafana
       secret:
         name: grafana-db-credentials
+---
+# spec.monitoring.enablePodMonitor is deprecated in CNPG — hand-rolled
+# PodMonitor per the project's own current recommendation.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: grafana-db
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: grafana-db
+  podMetricsEndpoints:
+    - port: metrics
