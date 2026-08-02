@@ -183,3 +183,7 @@ spec:
       kind: CustomResourceDefinition
       jsonPointers:
         - /metadata/labels/helm.sh~1chart
+    - group: monitoring.coreos.com
+      kind: ServiceMonitor
+      jsonPointers:
+        - /metadata/labels/helm.sh~1chart
