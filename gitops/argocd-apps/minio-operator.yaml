@@ -11,7 +11,7 @@ spec:
   project: default
   source:
     repoURL: https://operator.min.io/
-    chart: minio-operator
+    chart: operator
     targetRevision: 7.1.1
     helm:
       releaseName: minio-operator
