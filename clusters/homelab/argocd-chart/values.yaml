@@ -31,6 +31,9 @@ argo-cd:
       # Traffic stays on your local network; the LB IP is only reachable inside 10.77.20.0/24.
       server.insecure: "true"
     cm:
+      # Local service account for the Claude Code CLI integration — apiKey-only
+      # (no "login" capability, so it can never authenticate with a password).
+      accounts.claude-code: apiKey
       application.resourceTrackingMethod: annotation
       # Kubernetes 1.35 adds terminatingReplicas to StatefulSet status but the field
       # is not yet in the schema ArgoCD uses for structured merge diff — suppress globally.
@@ -52,6 +55,16 @@ argo-cd:
         hs.status = "Progressing"
         hs.message = "Waiting for Prometheus to become available"
         return hs
+    rbac:
+      # Scoped role for the claude-code account: read + trigger sync only.
+      # No access to accounts/projects/repos management, no admin fallback.
+      policy.csv: |
+        p, role:claude-code, applications, get, */*, allow
+        p, role:claude-code, applications, sync, */*, allow
+        p, role:claude-code, logs, get, */*, allow
+        p, role:claude-code, projects, get, *, allow
+        p, role:claude-code, repositories, get, *, allow
+        g, claude-code, role:claude-code
 
   repoServer:
     volumes:
