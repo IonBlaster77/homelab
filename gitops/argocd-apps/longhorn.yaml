@@ -59,6 +59,11 @@ spec:
           enabled: false
         preUpgradeChecker:
           jobEnabled: false
+        metrics:
+          serviceMonitor:
+            enabled: true
+            additionalLabels:
+              release: monitoring
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system

@@ -54,6 +54,11 @@ spec:
             - key: "node-role.kubernetes.io/control-plane"
               operator: "Exists"
               effect: "NoSchedule"
+        prometheus:
+          servicemonitor:
+            enabled: true
+            labels:
+              release: monitoring
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

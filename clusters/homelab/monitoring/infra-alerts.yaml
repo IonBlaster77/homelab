@@ -1,0 +1,76 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: infra-health
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: cert-expiry
+      rules:
+        - alert: CertificateExpiringSoon
+          expr: (certmanager_certificate_expiration_timestamp_seconds - time()) < 14 * 86400
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} expires in under 14 days"
+            description: "If this is the wildcard cert, a renewal failure here takes down every public *.jupitertech.net hostname — check `kubectl describe certificate` for the stuck challenge."
+        - alert: CertificateNotReady
+          expr: certmanager_certificate_ready_status{condition="False"} == 1
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} has been NotReady for 1h+"
+            description: "Renewal is stuck (e.g. the Cloudflare DNS-01 challenge issue seen before) — sustained NotReady means it's not just mid-renewal."
+
+    - name: cloudflare-tunnel
+      rules:
+        - alert: CloudflareTunnelDown
+          expr: cloudflared_tunnel_ha_connections == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "cloudflared has zero active connections to the Cloudflare edge"
+            description: "Every public *.jupitertech.net hostname is unreachable from outside your network while this is firing."
+
+    - name: longhorn-health
+      rules:
+        - alert: LonghornBackupFailed
+          expr: longhorn_backup_state == 4
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn backup for volume {{ $labels.volume }} is in Error state"
+            description: "The hourly backup job ran but this backup failed — check `kubectl get backups -n longhorn-system` for details."
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness == 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} ({{ $labels.pvc }}) is Faulted"
+            description: "All replicas for this volume are unavailable — data on this PVC is currently inaccessible."
+
+    - name: network-services
+      rules:
+        - alert: AdGuardDNSProbeFailed
+          expr: probe_success{target="adguard-dns"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "AdGuard DNS (10.77.20.53) is not resolving queries"
+            description: "This is the DNS resolver for the whole LAN — sustained failure breaks name resolution network-wide."
+        - alert: KeaControlAgentProbeFailed
+          expr: probe_success{target="kea-ctrl-agent"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kea DHCP control-agent API is not responding"
+            description: "The control-agent (lease/config API) is down. This doesn't necessarily mean DHCP itself (UDP/67) has stopped — kube-prometheus-stack's default pod-health rules cover the kea-dhcp4 pod separately."

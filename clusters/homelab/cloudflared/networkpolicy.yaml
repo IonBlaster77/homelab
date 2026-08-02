@@ -78,3 +78,22 @@ spec:
         - ports:
             - port: "443"
               protocol: TCP
+---
+# Prometheus scraping the :2000 metrics endpoint (see service-metrics.yaml).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared-allow-ingress-from-monitoring
+  namespace: cloudflared
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cloudflared
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "2000"
+              protocol: TCP

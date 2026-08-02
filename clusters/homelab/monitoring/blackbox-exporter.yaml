@@ -1,0 +1,123 @@
+# blackbox_exporter — active probes for services with no native /metrics
+# endpoint (AdGuard's DNS resolution, Kea's control-agent API). Prometheus
+# Operator's Probe CRD (below) tells Prometheus to hit this exporter, which
+# in turn performs the actual check against the target.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: blackbox-exporter-config
+  namespace: monitoring
+data:
+  config.yml: |
+    modules:
+      dns_udp:
+        prober: dns
+        timeout: 5s
+        dns:
+          transport_protocol: "udp"
+          query_name: "jupitertech.net."
+          query_type: "A"
+          valid_rcodes:
+            - NOERROR
+      kea_ctrl_agent:
+        prober: http
+        timeout: 5s
+        http:
+          method: POST
+          headers:
+            Content-Type: application/json
+          body: '{"command":"list-commands"}'
+          valid_status_codes: [200]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+  labels:
+    app: blackbox-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blackbox-exporter
+  template:
+    metadata:
+      labels:
+        app: blackbox-exporter
+    spec:
+      containers:
+        - name: blackbox-exporter
+          image: prom/blackbox-exporter:v0.25.0
+          args:
+            - --config.file=/config/config.yml
+          ports:
+            - containerPort: 9115
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+      volumes:
+        - name: config
+          configMap:
+            name: blackbox-exporter-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blackbox-exporter
+  namespace: monitoring
+  labels:
+    app: blackbox-exporter
+spec:
+  selector:
+    app: blackbox-exporter
+  ports:
+    - port: 9115
+      targetPort: 9115
+      name: http
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: adguard-dns
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  module: dns_udp
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - adguard-dns.adguard.svc.cluster.local:53
+      labels:
+        target: adguard-dns
+  interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: kea-ctrl-agent
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  module: kea_ctrl_agent
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - kea-ctrl-agent.kea.svc.cluster.local:8000
+      labels:
+        target: kea-ctrl-agent
+  interval: 30s
