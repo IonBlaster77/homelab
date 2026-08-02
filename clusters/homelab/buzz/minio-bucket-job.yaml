@@ -34,6 +34,11 @@ spec:
             capabilities:
               drop: [ALL]
           env:
+            # mc defaults to writing its config under $HOME/.mc; the image's
+            # default HOME isn't writable under our runAsUser/restricted
+            # securityContext, so point it at /tmp instead.
+            - name: HOME
+              value: /tmp
             - name: ACCESS_KEY
               valueFrom:
                 secretKeyRef:
