@@ -25,11 +25,14 @@ spec:
           annotations:
             summary: "Redis ({{ $labels.namespace }}/{{ $labels.pod }}) is down"
             description: "Affects everything using this shared Redis instance — currently just Buzz."
-        - alert: MinioTenantDown
-          expr: up{job=~".*minio.*"} == 0
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "MinIO target {{ $labels.job }} is unreachable"
-            description: "Buzz media storage may be affected."
+        # No MinIO alert yet: its /minio/v2/metrics/cluster scrape target
+        # is stuck on a 403 even with a token from `mc admin prometheus
+        # generate` and what should be root credentials (mc admin info
+        # itself gets Access Denied with the same creds, despite basic S3
+        # ops like bucket creation working fine — root-vs-scoped-user
+        # mismatch somewhere in the Tenant's bootstrap I haven't chased
+        # down). up{} for this target would be permanently 0 regardless of
+        # real MinIO health, so it'd false-page rather than mean anything
+        # — deliberately left out rather than shipped broken. Tenant health
+        # (buzz-minio Healthy/green) is still checked via `kubectl get
+        # tenant` in the meantime, just not alertable yet.
