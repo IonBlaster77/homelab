@@ -85,6 +85,18 @@ spec:
           annotations:
             summary: "unifi-poller can't reach or scrape the UniFi controller (10.77.10.10)"
             description: "Either the exporter pod is down or it lost contact with the CloudKey."
+        - alert: UnifiCloudKeyUnreachable
+          # unpoller keeps serving its last-good snapshot even when the
+          # controller itself is unreachable, so `up{job="unifi-poller"}`
+          # alone would stay green through a CloudKey outage. This metric
+          # reflects the actual last poll result against the controller.
+          expr: unpoller_controller_up{source="https://10.77.10.10"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudKey Gen2+ (10.77.10.10) is unreachable"
+            description: "unpoller's last poll of the controller failed — the CloudKey itself may be down, not just an individual AP."
         - alert: UnifiAPOffline
           # Verified live against a real offline AP: uptime reports exactly 0
           # for a device the controller can't currently reach; a healthy AP
