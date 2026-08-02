@@ -74,3 +74,14 @@ spec:
           annotations:
             summary: "Kea DHCP control-agent API is not responding"
             description: "The control-agent (lease/config API) is down. This doesn't necessarily mean DHCP itself (UDP/67) has stopped — kube-prometheus-stack's default pod-health rules cover the kea-dhcp4 pod separately."
+
+    - name: unifi
+      rules:
+        - alert: UnifiPollerDown
+          expr: up{job="unifi-poller"} == 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "unifi-poller can't reach or scrape the UniFi controller (10.77.10.10)"
+            description: "Either the exporter pod is down or it lost contact with the CloudKey. Per-AP offline alerting will follow once real metric names are confirmed against the live /metrics output."

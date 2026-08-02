@@ -106,6 +106,14 @@ spec:
                 gnetId: 16888
                 revision: 14
                 datasource: Prometheus
+              unifi-poller-sites:
+                gnetId: 11311
+                revision: 5
+                datasource: Prometheus
+              unifi-poller-aps:
+                gnetId: 11314
+                revision: 10
+                datasource: Prometheus
 
         alertmanager:
           enabled: true
