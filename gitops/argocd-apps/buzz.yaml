@@ -47,8 +47,12 @@ spec:
         externalRedis:
           url: ""
 
+        # The MinIO Operator names the Tenant's S3-facing Service "minio"
+        # regardless of the Tenant's own name — not "<tenant-name>", as I'd
+        # assumed. Verified against the live Service list. Port 80, not
+        # 9000 — that's the Service's port (which targets 9000 on the pod).
         s3:
-          endpoint: "http://buzz-minio.buzz.svc.cluster.local:9000"
+          endpoint: "http://minio.buzz.svc.cluster.local"
           bucket: "buzz-media"
           addressingStyle: path
 

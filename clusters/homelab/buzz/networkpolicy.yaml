@@ -91,6 +91,29 @@ spec:
             - port: "5432"
               protocol: TCP
 ---
+# Ingress half of relay -> Postgres. Default-deny is per-pod on both
+# directions, so the egress rule above (on the relay) isn't enough by
+# itself — buzz-db-1 also needs an explicit allow for incoming connections
+# from the relay. Missed this the first time (only realized when a debug
+# pod with the relay's label still timed out connecting to buzz-db-rw).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-to-db
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: buzz-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: buzz
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
 # Relay -> Redis (cross-namespace; the redis app's own policy grants the
 # matching ingress half of this).
 apiVersion: cilium.io/v2
@@ -126,6 +149,25 @@ spec:
     - toEndpoints:
         - matchLabels:
             v1.min.io/tenant: buzz-minio
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# Ingress half of relay -> MinIO, same reason as the Postgres one above.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-to-minio
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: buzz
       toPorts:
         - ports:
             - port: "9000"
