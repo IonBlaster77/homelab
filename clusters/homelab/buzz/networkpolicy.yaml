@@ -109,6 +109,33 @@ spec:
     - fromEndpoints:
         - matchLabels:
             app.kubernetes.io/name: buzz
+        # Replica-join / streaming replication: buzz-db pods connect to
+        # each other (primary <-> replica), not just the relay. Missed this
+        # too — the replica-join Job kept retrying/timing out against
+        # buzz-db-rw even after the relay itself connected fine, because it
+        # carries cnpg.io/cluster labels, not app.kubernetes.io/name: buzz.
+        - matchLabels:
+            cnpg.io/cluster: buzz-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+# Egress half of CNPG-to-CNPG replication traffic (the replica connects
+# out to the primary as a client).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-egress-db-to-db
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: buzz-db
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: buzz-db
       toPorts:
         - ports:
             - port: "5432"
