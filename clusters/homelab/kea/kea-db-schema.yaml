@@ -3,6 +3,15 @@ kind: ConfigMap
 metadata:
   name: kea-db-schema
   namespace: kea
+  annotations:
+    # This ConfigMap is ~288KB of raw SQL. Regular apply computes a
+    # kubectl.kubernetes.io/last-applied-configuration annotation containing
+    # the whole payload (JSON-escaped, so larger still), which blows past
+    # Kubernetes' 256KB annotation size limit and fails every sync
+    # ("metadata.annotations: Too long"). Replace=true tells ArgoCD to PUT
+    # the object directly instead of computing that patch, sidestepping the
+    # annotation entirely — the standard fix for oversized ConfigMaps/Secrets.
+    argocd.argoproj.io/sync-options: Replace=true
 data:
   dhcpdb_create.pgsql: |
     -- Copyright (C) 2012-2025 Internet Systems Consortium, Inc. ("ISC")
