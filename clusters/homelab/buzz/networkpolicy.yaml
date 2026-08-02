@@ -50,6 +50,28 @@ spec:
             - port: "53"
               protocol: TCP
 ---
+# The CNPG operator (cnpg-system namespace) polls each instance's status
+# API to report Cluster health — without this it can't tell if buzz-db is
+# actually up ("Instance Status Extraction Error: HTTP communication
+# issue" even though the pod itself is Running).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-cnpg-operator
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: buzz-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+---
 # Relay -> Postgres (CNPG, same namespace).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
