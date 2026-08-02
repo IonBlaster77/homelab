@@ -61,3 +61,9 @@ spec:
     - port: minio-port
       path: /minio/v2/metrics/cluster
       interval: 30s
+      # Without this, MinIO returns 403 — this endpoint requires the
+      # scoped bearer token from `mc admin prometheus generate`, generated
+      # once and stored in minio-metrics-secret.yaml.
+      bearerTokenSecret:
+        name: buzz-minio-metrics-token
+        key: token
