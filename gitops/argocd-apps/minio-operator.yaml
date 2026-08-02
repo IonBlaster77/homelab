@@ -1,0 +1,27 @@
+# MinIO Operator — cluster-wide, shared like the CNPG operator. Each app that
+# needs S3-compatible storage gets its own cheap `Tenant` CR in its own
+# namespace (see clusters/homelab/buzz/minio-tenant.yaml for the first one),
+# rather than a new MinIO deployment per app.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minio-operator
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://operator.min.io/
+    chart: minio-operator
+    targetRevision: 7.1.1
+    helm:
+      releaseName: minio-operator
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: minio-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

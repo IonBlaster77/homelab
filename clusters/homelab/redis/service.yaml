@@ -1,0 +1,18 @@
+# Headless (clusterIP: None) since there's only one pod and StatefulSet DNS
+# (redis-0.redis.redis.svc.cluster.local) is enough — no load-balancing
+# needed across a single backend.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  clusterIP: None
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis

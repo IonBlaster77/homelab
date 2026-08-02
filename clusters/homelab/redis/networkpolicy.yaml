@@ -1,0 +1,56 @@
+---
+# Default deny all ingress and egress for the redis namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-default-deny
+  namespace: redis
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-allow-dns
+  namespace: redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app: redis
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Ingress from any app that's been granted access — starting with Buzz.
+# Add another fromEndpoints entry here (namespace + app label) for each
+# future app that wants to share this Redis instance.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-allow-ingress-from-buzz
+  namespace: redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app: redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: buzz
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP

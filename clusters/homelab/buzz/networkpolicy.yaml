@@ -1,0 +1,112 @@
+---
+# Default deny all ingress and egress for the buzz namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-default-deny
+  namespace: buzz
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-dns
+  namespace: buzz
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Relay -> Postgres (CNPG, same namespace).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-egress-to-db
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: buzz
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: buzz-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+# Relay -> Redis (cross-namespace; the redis app's own policy grants the
+# matching ingress half of this).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-egress-to-redis
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: buzz
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: redis
+            app: redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+---
+# Relay -> MinIO (S3, same namespace).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-egress-to-minio
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: buzz
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            v1.min.io/tenant: buzz-minio
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# Prometheus scraping the relay's metrics/health endpoints.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-monitoring
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: buzz
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9102"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP

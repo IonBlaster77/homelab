@@ -1,0 +1,37 @@
+# Single-node MinIO Tenant, dedicated to Buzz. requestAutoCert: false — plain
+# HTTP on the in-cluster Service, matching how other internal-only traffic
+# in this cluster is handled (e.g. Grafana's DB connection); avoids dealing
+# with the operator's self-signed cert for traffic that never leaves the
+# cluster network.
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: buzz-minio
+  namespace: buzz
+spec:
+  configuration:
+    name: buzz-minio-config
+  requestAutoCert: false
+  pools:
+    - name: pool-0
+      servers: 1
+      volumesPerServer: 4
+      volumeClaimTemplate:
+        metadata:
+          name: data
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: longhorn-ssd
+          resources:
+            requests:
+              storage: 5Gi
+      containerSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        seccompProfile:
+          type: RuntimeDefault

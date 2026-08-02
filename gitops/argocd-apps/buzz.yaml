@@ -1,0 +1,68 @@
+# Buzz — self-hosted Nostr-based agent/team workspace. Stage 1 of a staged
+# rollout (see the plan): core platform only, internal-only (no Gateway
+# route yet), relay membership requirement off until the owner's pubkey is
+# known (Stage 2).
+#
+# Pinned to a specific commit rather than `main` — this project ships no
+# stable release, and images only publish `sha-<commit>` tags (confirmed:
+# GHCR has no image for every commit, so the chart revision and image.tag
+# below were deliberately picked as a matched, known-good pair).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: buzz
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/block/buzz.git
+    targetRevision: 1fa63badad283cff753ab403105344060fa74efa
+    path: deploy/charts/buzz
+    helm:
+      releaseName: buzz
+      values: |
+        image:
+          tag: "sha-1fa63ba"
+
+        replicaCount: 1
+
+        relayUrl: "wss://buzz.jupitertech.net"
+
+        # Stage 2: once the owner installs a Buzz client and shares their
+        # pubkey, set ownerPubkey here and flip requireRelayMembership back
+        # to true (the chart default) to lock the relay down.
+        relay:
+          requireRelayMembership: false
+
+        secrets:
+          existingSecret: buzz-relay-secrets
+
+        externalPostgresql:
+          url: ""
+        externalRedis:
+          url: ""
+
+        s3:
+          endpoint: "http://buzz-minio.buzz.svc.cluster.local:9000"
+          bucket: "buzz-media"
+          addressingStyle: path
+
+        ingress:
+          enabled: false
+        httproute:
+          enabled: false
+
+        serviceMonitor:
+          enabled: true
+          labels:
+            release: monitoring
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: buzz
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

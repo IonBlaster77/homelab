@@ -1,0 +1,96 @@
+# Redis, shared infra (multiple apps can use it, isolated by DB number).
+#
+# Why a StatefulSet instead of a Deployment: Redis is a single stateful
+# process that owns a data file on disk. A Deployment's pods are
+# interchangeable and can be recreated with a fresh name/IP at any time —
+# fine for stateless apps, wrong here because Redis needs the *same* PVC
+# reattached to the *same* pod identity across restarts (StatefulSets give
+# each pod a stable name — "redis-0" — and a matching PVC that follows it).
+# We're only running one replica, but the same primitive is what you'd
+# scale out with real Redis Cluster/replica sets later.
+#
+# Persistence: --appendonly yes turns on AOF (Append-Only File) — Redis logs
+# every write to disk as it happens, so a pod restart replays the log and
+# you don't lose data that was only in memory. The alternative (RDB
+# snapshots) is faster but can lose the last few minutes of writes; AOF is
+# the safer default for anything you'd be annoyed to lose.
+#
+# Auth: --requirepass reads from the mounted secret via a shell wrapper,
+# since Redis' command-line flags can't reference a Secret directly the way
+# an env var can — the container command has to read the file itself first.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          command:
+            - sh
+            - -c
+            - 'exec redis-server --requirepass "$REDIS_PASSWORD" --appendonly yes --appendfsync everysec'
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
+          ports:
+            - containerPort: 6379
+              name: redis
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          # redis-cli reads REDISCLI_AUTH from the environment automatically,
+          # so the probe doesn't need to embed the password in the command.
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "REDISCLI_AUTH=$REDIS_PASSWORD redis-cli ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "REDISCLI_AUTH=$REDIS_PASSWORD redis-cli ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-ssd
+        resources:
+          requests:
+            storage: 4Gi

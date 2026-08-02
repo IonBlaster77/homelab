@@ -1,0 +1,30 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: buzz-db
+  namespace: buzz
+spec:
+  instances: 2
+  storage:
+    storageClass: longhorn-ssd
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: buzz
+      owner: buzz
+      secret:
+        name: buzz-db-credentials
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: buzz-db
+  namespace: buzz
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: buzz-db
+  podMetricsEndpoints:
+    - port: metrics
