@@ -162,6 +162,29 @@ spec:
             - port: "6379"
               protocol: TCP
 ---
+# The MinIO Operator itself (minio-operator namespace) polls each Tenant's
+# health endpoint (GET /minio/health/cluster) — same class of gap as the
+# CNPG operator's status-port check above. Without this the Tenant sits at
+# availableReplicas: 0 / "Waiting for Tenant to be healthy" forever even
+# though the pod itself is 2/2 Running.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-minio-operator
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: minio-operator
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
 # Relay -> MinIO (S3, same namespace).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
