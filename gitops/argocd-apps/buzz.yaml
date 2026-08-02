@@ -13,7 +13,7 @@ metadata:
   name: buzz
   namespace: argocd
 spec:
-  project: homelab
+  project: default
   source:
     repoURL: https://github.com/block/buzz.git
     targetRevision: 1fa63badad283cff753ab403105344060fa74efa
