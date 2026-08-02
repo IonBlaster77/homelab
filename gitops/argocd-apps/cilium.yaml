@@ -183,7 +183,22 @@ spec:
       kind: CustomResourceDefinition
       jsonPointers:
         - /metadata/labels/helm.sh~1chart
+    # Diff source unconfirmed (argocd CLI unavailable to inspect cleanly) —
+    # ignoring the whole labels/annotations maps like the GatewayClass rule
+    # above, rather than guessing the exact field.
     - group: monitoring.coreos.com
       kind: ServiceMonitor
+      name: hubble
+      namespace: kube-system
+      jqPathExpressions:
+        - .metadata.labels
+        - .metadata.annotations
+
+    # certgen regenerates fresh cert values on every render (see cilium-ca /
+    # hubble-server-certs above) — same deal for the relay client cert.
+    - group: ""
+      kind: Secret
+      name: hubble-relay-client-certs
+      namespace: kube-system
       jsonPointers:
-        - /metadata/labels/helm.sh~1chart
+        - /data
