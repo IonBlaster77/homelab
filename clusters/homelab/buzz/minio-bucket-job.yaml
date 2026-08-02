@@ -1,0 +1,49 @@
+# One-off: creates the buzz-media bucket the relay expects. PostSync hook —
+# runs after the Tenant is applied, but note per this repo's own experience
+# elsewhere (AdGuard rewrites) that PostSync hook Jobs are immutable once
+# created; a plain `argocd app sync` won't re-run this if it needs changing
+# later, the Job has to be deleted first.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: buzz-minio-bucket
+  namespace: buzz
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    metadata:
+      # Reuses the relay's existing NetworkPolicy allow-rules for
+      # DNS/MinIO egress rather than writing new ones just for this Job.
+      labels:
+        app.kubernetes.io/name: buzz
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: create-bucket
+          image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: buzz-relay-secrets
+                  key: BUZZ_S3_ACCESS_KEY
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: buzz-relay-secrets
+                  key: BUZZ_S3_SECRET_KEY
+          command: ["/bin/sh", "-c"]
+          args:
+            - mc alias set buzz http://minio.buzz.svc.cluster.local "$ACCESS_KEY" "$SECRET_KEY" && mc mb --ignore-existing buzz/buzz-media
