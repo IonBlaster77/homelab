@@ -24,6 +24,20 @@ argo-cd:
         lbipam.cilium.io/ips: "10.77.20.50"
     ingress:
       enabled: false
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: monitoring
+
+  controller:
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: monitoring
 
   configs:
     params:

@@ -1,0 +1,23 @@
+# ReferenceGrant — allow networking namespace to route to kube-system/hubble-ui
+#
+# Gateway API cross-namespace security: a Service can only be used as a backend
+# by an HTTPRoute in a different namespace if a ReferenceGrant in the Service's
+# namespace explicitly permits it.
+#
+# This grant says: HTTPRoutes in the "networking" namespace may reference
+# Services in the "kube-system" namespace.
+
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-networking-to-kube-system
+  namespace: kube-system
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: networking
+  to:
+    - group: ""
+      kind: Service
+      name: hubble-ui

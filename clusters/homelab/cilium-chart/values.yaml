@@ -34,6 +34,24 @@ cilium:
     enabled: true
   operator:
     replicas: 1
+  hubble:
+    relay:
+      enabled: true
+    ui:
+      enabled: true
+    metrics:
+      enabled:
+        - dns
+        - drop
+        - tcp
+        - flow
+        - icmp
+        - http
+        - policy-verdict
+      serviceMonitor:
+        enabled: true
+        labels:
+          release: monitoring
   cgroup:
     autoMount:
       enabled: false

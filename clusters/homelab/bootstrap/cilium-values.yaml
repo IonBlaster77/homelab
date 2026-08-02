@@ -140,6 +140,32 @@ operator:
   replicas: 1
 
 # =============================================================================
+# HUBBLE  (network flow visibility)
+# =============================================================================
+# hubble.enabled (the base agent-side flow recorder) is already true by chart
+# default. relay + ui add the aggregation API and web UI on top of that.
+# metrics.serviceMonitor picks up kube-prometheus-stack's `release: monitoring`
+# selector convention (see clusters/homelab/monitoring/mikrotik-exporter.yaml).
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - http
+      - policy-verdict
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: monitoring
+
+# =============================================================================
 # TALOS-SPECIFIC SETTINGS
 # =============================================================================
 # Talos runs with a hardened, immutable OS. These settings are required

@@ -1,0 +1,30 @@
+# The ServiceMonitor for hubble-metrics is created by the cilium chart itself
+# (hubble.metrics.serviceMonitor.enabled: true in cilium-chart/values.yaml) —
+# this file only adds the alerting rules on top of those metrics.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: hubble-network-health
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: hubble-network-health
+      rules:
+        - alert: HubbleElevatedDropRate
+          expr: sum(rate(hubble_drop_total[5m])) > 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Cilium is dropping an elevated rate of packets cluster-wide"
+            description: "{{ $value | printf \"%.1f\" }} drops/sec over the last 5m, sustained for 10m+. Check Hubble UI for the source/reason breakdown."
+        - alert: HubbleElevatedPolicyDenyRate
+          expr: sum(rate(hubble_policy_verdict_total{verdict="DENIED"}[5m])) > 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CiliumNetworkPolicy is denying an elevated rate of connections"
+            description: "{{ $value | printf \"%.1f\" }} policy denies/sec over the last 5m, sustained for 10m+. Could be a misconfigured policy or a real intrusion attempt worth checking in Hubble UI."
