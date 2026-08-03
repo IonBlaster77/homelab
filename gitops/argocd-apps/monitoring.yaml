@@ -135,13 +135,23 @@ spec:
                   resources:
                     requests:
                       storage: 2Gi
-            # Mounted at /etc/alertmanager/secrets/pushover-credentials/{user_key,token}
+            # pushover-credentials was never actually created (the Secret
+            # object didn't exist), which meant the pod sat at Init:0/1
+            # forever waiting on a volume mount for a Secret that would
+            # never appear — no alerts were ever delivered, on any severity,
+            # the whole time this app has been "Synced/Healthy". Pushover
+            # is on hold indefinitely; dropping the mount so the pod can
+            # actually start. Re-add the secrets/receivers/route below
+            # (see git history on this file) once real Pushover credentials
+            # are provided.
+            #
+            # Mounted at /etc/alertmanager/secrets/buzz-webhook-secret/critical-alerts-url
             secrets:
-              - pushover-credentials
+              - buzz-webhook-secret
           config:
             global: {}
             route:
-              receiver: pushover-default
+              receiver: "null"
               group_by: ["alertname", "namespace"]
               group_wait: 30s
               group_interval: 5m
@@ -149,18 +159,14 @@ spec:
               routes:
                 - matchers:
                     - severity="critical"
-                  receiver: pushover-critical
+                  receiver: buzz-critical
+                  repeat_interval: 1h
             receivers:
-              - name: pushover-default
-                pushover_configs:
-                  - user_key_file: /etc/alertmanager/secrets/pushover-credentials/user_key
-                    token_file: /etc/alertmanager/secrets/pushover-credentials/token
-                    priority: "0"
-              - name: pushover-critical
-                pushover_configs:
-                  - user_key_file: /etc/alertmanager/secrets/pushover-credentials/user_key
-                    token_file: /etc/alertmanager/secrets/pushover-credentials/token
-                    priority: "1"
+              - name: "null"
+              - name: buzz-critical
+                webhook_configs:
+                  - url_file: /etc/alertmanager/secrets/buzz-webhook-secret/critical-alerts-url
+                    send_resolved: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
