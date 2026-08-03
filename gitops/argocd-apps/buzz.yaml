@@ -5,13 +5,18 @@
 #
 # Compromise on pinning: the chart itself (deploy/charts/buzz) is too new —
 # no commit that has both the chart AND a published GHCR image tag exists
-# yet (checked ~10 recent sha-<commit> image tags, none had the chart path;
-# the chart only exists on `main` as of this commit). So the chart source
-# floats on `main` (unavoidable for now), but image.tag below is still
-# pinned to the newest confirmed-published tag — the actual running binary
-# won't change on its own, only the chart's templates/values schema might.
-# Revisit pinning the chart source once an image build catches up to a
-# commit that includes it.
+# yet, so the chart source floats on `main` (unavoidable for now).
+#
+# image.tag was originally pinned to a specific sha (sha-1fa63ba) for
+# reproducibility, but that build predates a multi-tenant "communities"
+# schema refactor that the current `main` migrations require (confirmed:
+# the pinned binary had zero references to `communities`/`community_id`,
+# vs. current migrations making community_id NOT NULL on every tenant-
+# scoped table — every event insert was failing FK/not-null checks).
+# Floating image.tag on `main` too keeps the binary and the schema it
+# expects from drifting apart, at the cost of losing image reproducibility
+# (same tradeoff already accepted for the chart source above). Revisit
+# pinning both to a single immutable commit once one exists.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -27,7 +32,7 @@ spec:
       releaseName: buzz
       values: |
         image:
-          tag: "sha-1fa63ba"
+          tag: "main"
 
         replicaCount: 1
 
