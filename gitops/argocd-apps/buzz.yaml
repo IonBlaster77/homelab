@@ -37,6 +37,15 @@ spec:
 
         relayUrl: "wss://buzz.jupitertech.net"
 
+        # Mobile QR pairing needs this dedicated stateless relay (separate
+        # buzz-pair-relay binary/port) — without it the client falls back to
+        # a "legacy same-host /pair" convention the current relay no longer
+        # serves (404). Routed at /pair-relay on the same hostname via the
+        # gateway HTTPRoute, prefix stripped before forwarding.
+        pairingRelay:
+          enabled: true
+          url: "wss://buzz.jupitertech.net/pair-relay"
+
         # Owner's Nostr pubkey (Krishna's account, created via the desktop
         # client's onboarding flow, confirmed against the live `users`
         # table). requireRelayMembership left at the chart default (true) —

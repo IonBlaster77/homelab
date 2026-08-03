@@ -16,3 +16,6 @@ spec:
     - group: ""
       kind: Service
       name: buzz-minio-console
+    - group: ""
+      kind: Service
+      name: buzz-pairing

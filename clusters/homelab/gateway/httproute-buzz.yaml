@@ -11,6 +11,24 @@ spec:
   hostnames:
     - "buzz.jupitertech.net"
   rules:
+    # Dedicated NIP-AB pairing relay (buzz-pair-relay binary) — a separate,
+    # stateless raw-websocket service the client uses for mobile QR pairing.
+    # It only speaks websocket at its own root, so the matched prefix is
+    # rewritten away before forwarding.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /pair-relay
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: buzz-pairing
+          namespace: buzz
+          port: 5000
     - backendRefs:
         - name: buzz
           namespace: buzz
