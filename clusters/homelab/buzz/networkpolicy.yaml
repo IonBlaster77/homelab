@@ -265,6 +265,27 @@ spec:
             - port: "3000"
               protocol: TCP
 ---
+# Gateway -> pairing relay, port 5000. Same fromEntities: ingress reasoning
+# as the main relay rule above — separate rule because the pairing relay
+# is a distinct component (app.kubernetes.io/component: pairing-relay)
+# listening on its own port, even though it shares app.kubernetes.io/name.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-gateway-to-pairing
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/component: pairing-relay
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "5000"
+              protocol: TCP
+---
 # Gateway -> MinIO Console, port 9090. Same fromEntities: ingress reasoning.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
