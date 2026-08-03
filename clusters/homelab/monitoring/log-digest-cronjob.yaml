@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: log-digest
+  namespace: monitoring
+spec:
+  schedule: "0 7 * * *"
+  timeZone: "Australia/Adelaide"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: log-digest
+              image: curlimages/curl:8.7.1
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: ["ALL"]
+              env:
+                - name: WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: log-digest-webhook-secret
+                      key: webhook-url
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -e
+                  NOW_NS=$(( $(date +%s) * 1000000000 ))
+                  RESP=$(curl -sG "http://loki.logging.svc.cluster.local:3100/loki/api/v1/query" \
+                    --data-urlencode 'query=sum by (namespace) (count_over_time({namespace=~".+"} |~ "(?i)error" [24h]))' \
+                    --data-urlencode "time=$NOW_NS")
+
+                  PAIRS=$(echo "$RESP" | grep -o '"namespace":"[^"]*"},"value":\[[0-9.]*,"[0-9]*"\]' \
+                    | sed -E 's/"namespace":"([^"]*)"\},"value":\[[0-9.]*,"([0-9]*)"\]/\1: \2/' \
+                    | sort -t: -k2 -rn)
+
+                  if [ -z "$PAIRS" ]; then
+                    DIGEST="✅ No errors logged in the last 24h across any namespace."
+                  else
+                    DIGEST="📋 Daily log digest — errors in the last 24h:
+                  $PAIRS"
+                  fi
+
+                  DIGEST_ESCAPED=$(printf '%s' "$DIGEST" | sed ':a;N;$!ba;s/\\/\\\\/g;s/"/\\"/g;s/\n/\\n/g')
+
+                  curl -sf -X POST -H "Content-Type: application/json" \
+                    -d "{\"digest\":\"$DIGEST_ESCAPED\"}" \
+                    "$WEBHOOK_URL"
