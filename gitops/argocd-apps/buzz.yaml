@@ -47,6 +47,15 @@ spec:
         externalRedis:
           url: ""
 
+        # migrate.autoMigrate alone never actually ran anything — no
+        # _sqlx_migrations table, only one stray table (audit_log) existed
+        # after 20h of uptime, and the relay was silently failing background
+        # jobs the whole time ("relation channels/workflows/events does not
+        # exist"). The dedicated pre-upgrade Job is the reliable path.
+        migrate:
+          preUpgradeJob:
+            enabled: true
+
         # The MinIO Operator names the Tenant's S3-facing Service "minio"
         # regardless of the Tenant's own name — not "<tenant-name>", as I'd
         # assumed. Verified against the live Service list. Port 80, not
