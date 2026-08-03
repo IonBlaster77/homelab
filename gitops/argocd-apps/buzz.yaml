@@ -1,7 +1,6 @@
-# Buzz — self-hosted Nostr-based agent/team workspace. Stage 1 of a staged
-# rollout (see the plan): core platform only, internal-only (no Gateway
-# route yet), relay membership requirement off until the owner's pubkey is
-# known (Stage 2).
+# Buzz — self-hosted Nostr-based agent/team workspace. Stage 2 of a staged
+# rollout (see the plan): core platform + owner-locked relay, internal-only
+# (no Gateway route yet).
 #
 # Compromise on pinning: the chart itself (deploy/charts/buzz) is too new —
 # no commit that has both the chart AND a published GHCR image tag exists
@@ -38,11 +37,12 @@ spec:
 
         relayUrl: "wss://buzz.jupitertech.net"
 
-        # Stage 2: once the owner installs a Buzz client and shares their
-        # pubkey, set ownerPubkey here and flip requireRelayMembership back
-        # to true (the chart default) to lock the relay down.
-        relay:
-          requireRelayMembership: false
+        # Owner's Nostr pubkey (Krishna's account, created via the desktop
+        # client's onboarding flow, confirmed against the live `users`
+        # table). requireRelayMembership left at the chart default (true) —
+        # only the owner is a member until explicitly added via
+        # `buzz-admin add-member` or a relay invite.
+        ownerPubkey: "6310be1fb6afb6152cfc9aa688673bce59c9742b48f7124661c45e0f34541f31"
 
         secrets:
           existingSecret: buzz-relay-secrets
