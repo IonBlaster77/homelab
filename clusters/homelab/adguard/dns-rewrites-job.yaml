@@ -81,6 +81,9 @@ spec:
               add_rewrite "hermes.jupitertech.net"   "10.77.20.60"
               add_rewrite "crawl4ai.jupitertech.net" "10.77.20.60"
               add_rewrite "searxng.jupitertech.net"  "10.77.20.60"
+              add_rewrite "hubble.jupitertech.net"   "10.77.20.60"
+              add_rewrite "buzz.jupitertech.net"     "10.77.20.60"
+              add_rewrite "minio.jupitertech.net"    "10.77.20.60"
 
               # Retired hostnames. add_rewrite never updates or removes an
               # existing record, so renames leave the old name resolving to
