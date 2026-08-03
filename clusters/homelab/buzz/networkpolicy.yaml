@@ -243,6 +243,46 @@ spec:
             - port: "9000"
               protocol: TCP
 ---
+# Gateway (public route) -> relay web UI, port 3000. Gateway-routed traffic
+# arrives under Cilium's reserved:ingress identity, not the client pod's own
+# identity — fromEntities: ingress is required here, not a namespace-based
+# fromEndpoints selector (that gotcha's already bitten this cluster before,
+# see feedback_cilium_gateway_ingress_entity in memory).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-gateway
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: buzz
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Gateway -> MinIO Console, port 9090. Same fromEntities: ingress reasoning.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-gateway-to-minio-console
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
+---
 # Prometheus scraping the relay's metrics/health endpoints.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

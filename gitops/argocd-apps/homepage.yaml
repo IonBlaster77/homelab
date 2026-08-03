@@ -110,6 +110,20 @@ spec:
                     siteMonitor: http://longhorn-frontend.longhorn-system.svc.cluster.local:80
                     namespace: longhorn-system
                     app: longhorn
+                - Hubble:
+                    href: https://hubble.jupitertech.net
+                    description: Cilium network flow visibility
+                    icon: mdi-lan-check
+                    siteMonitor: http://hubble-ui.kube-system.svc.cluster.local:80
+                    namespace: kube-system
+                    app: hubble-ui
+                - MinIO Console:
+                    href: https://minio.jupitertech.net
+                    description: Buzz's S3-compatible object storage
+                    icon: minio.png
+                    siteMonitor: http://buzz-minio-console.buzz.svc.cluster.local:9090
+                    namespace: buzz
+                    podSelector: v1.min.io/tenant=buzz-minio
 
             - Network & Security:
                 - Authentik:
@@ -227,6 +241,13 @@ spec:
                     namespace: streamystats
                     app: streamystats
                     podSelector: app=streamystats
+                - Buzz:
+                    href: https://buzz.jupitertech.net
+                    description: Self-hosted human/agent chat workspace
+                    icon: mdi-forum-outline
+                    siteMonitor: http://buzz.buzz.svc.cluster.local:3000
+                    namespace: buzz
+                    app: buzz
 
             - Network Hardware:
                 - MikroTik CCR1036:
@@ -238,6 +259,11 @@ spec:
                       type: prometheus
                       url: http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090
                       query: mikrotik_system_cpu_load{name="homelab"}
+                - UniFi Network:
+                    href: https://10.77.10.10
+                    description: CloudKey Gen2+ — wireless AP management
+                    icon: unifi.png
+                    siteMonitor: https://10.77.10.10
                 - Dell N1148P-ON:
                     href: http://10.77.10.2
                     description: Core switch
