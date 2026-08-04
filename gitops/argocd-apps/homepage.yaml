@@ -24,6 +24,8 @@ spec:
         envFrom:
           - secretRef:
               name: homepage-synology
+          - secretRef:
+              name: homepage-arr-keys
 
         service:
           main:
@@ -36,7 +38,7 @@ spec:
             title: Jupiter Tech
             theme: dark
             color: zinc
-            headerStyle: clean
+            headerStyle: boxedWidgets
             cardBlur: sm
             layout:
               Cluster Management:
@@ -83,6 +85,7 @@ spec:
           services:
             - Cluster Management:
                 - pgAdmin:
+                    id: pgadmin-card
                     href: https://pgadmin.jupitertech.net
                     description: PostgreSQL database administration
                     icon: pgadmin.png
@@ -90,6 +93,7 @@ spec:
                     namespace: pgadmin
                     app: pgadmin4
                 - ArgoCD:
+                    id: argocd-card
                     href: https://argocd.jupitertech.net
                     description: GitOps continuous delivery
                     icon: argo-cd.png
@@ -97,6 +101,7 @@ spec:
                     namespace: argocd
                     app: argocd-server
                 - Grafana:
+                    id: grafana-card
                     href: https://grafana.jupitertech.net
                     description: Metrics & dashboards
                     icon: grafana.png
@@ -104,6 +109,7 @@ spec:
                     namespace: monitoring
                     app: grafana
                 - Longhorn:
+                    id: longhorn-card
                     href: https://longhorn.jupitertech.net
                     description: Distributed block storage
                     icon: longhorn.png
@@ -111,6 +117,7 @@ spec:
                     namespace: longhorn-system
                     app: longhorn
                 - Hubble:
+                    id: hubble-card
                     href: https://hubble.jupitertech.net
                     description: Cilium network flow visibility
                     icon: mdi-lan-check
@@ -118,6 +125,7 @@ spec:
                     namespace: kube-system
                     app: hubble-ui
                 - MinIO Console:
+                    id: minio-card
                     href: https://minio.jupitertech.net
                     description: S3-compatible object storage
                     icon: minio.png
@@ -127,6 +135,7 @@ spec:
 
             - Network & Security:
                 - Authentik:
+                    id: authentik-card
                     href: https://auth.jupitertech.net
                     description: Identity provider — SSO, LDAP, RADIUS
                     icon: authentik.png
@@ -137,6 +146,7 @@ spec:
                     namespace: authentik
                     app: authentik
                 - AdGuard Home:
+                    id: adguard-card
                     href: https://adguard.jupitertech.net
                     description: Network-wide DNS filtering & ad blocking
                     icon: adguard-home.png
@@ -144,6 +154,7 @@ spec:
                     namespace: adguard
                     app: adguard
                 - Kea:
+                    id: kea-card
                     description: DHCP server
                     icon: isc-kea.png
                     siteMonitor: http://kea-ctrl-agent.kea.svc.cluster.local:8000
@@ -153,6 +164,7 @@ spec:
 
             - Media:
                 - Jellyfin:
+                    id: jellyfin-card
                     href: https://jellyfin.jupitertech.net
                     description: Media server
                     icon: jellyfin.png
@@ -160,6 +172,7 @@ spec:
                     namespace: media
                     app: jellyfin
                 - Seerr:
+                    id: seerr-card
                     href: https://seerr.jupitertech.net
                     description: Media requests (Jellyseerr/Overseerr successor)
                     icon: jellyseerr.png
@@ -169,48 +182,81 @@ spec:
 
             - Media Management:
                 - Radarr:
+                    id: radarr-card
                     href: https://radarr.jupitertech.net
                     description: Movie automation
                     icon: radarr.png
                     siteMonitor: http://radarr.media.svc.cluster.local:7878
                     namespace: media
                     app: radarr
+                    widget:
+                      type: radarr
+                      url: http://radarr.media.svc.cluster.local:7878
+                      key: "{{HOMEPAGE_VAR_RADARR_KEY}}"
                 - Sonarr:
+                    id: sonarr-card
                     href: https://sonarr.jupitertech.net
                     description: TV show automation
                     icon: sonarr.png
                     siteMonitor: http://sonarr.media.svc.cluster.local:8989
                     namespace: media
                     app: sonarr
+                    widget:
+                      type: sonarr
+                      url: http://sonarr.media.svc.cluster.local:8989
+                      key: "{{HOMEPAGE_VAR_SONARR_KEY}}"
                 - Prowlarr:
+                    id: prowlarr-card
                     href: https://prowlarr.jupitertech.net
                     description: Indexer management
                     icon: prowlarr.png
                     siteMonitor: http://prowlarr.media.svc.cluster.local:9696
                     namespace: media
                     app: prowlarr
+                    widget:
+                      type: prowlarr
+                      url: http://prowlarr.media.svc.cluster.local:9696
+                      key: "{{HOMEPAGE_VAR_PROWLARR_KEY}}"
                 - qBittorrent:
+                    id: qbittorrent-card
                     href: https://qbittorrent.jupitertech.net
                     description: Torrent client
                     icon: qbittorrent.png
                     siteMonitor: http://qbittorrent.media.svc.cluster.local:8080
                     namespace: media
                     app: qbittorrent
+                    widget:
+                      type: qbittorrent
+                      url: http://qbittorrent.media.svc.cluster.local:8080
+                      username: "{{HOMEPAGE_VAR_QBIT_USER}}"
+                      password: "{{HOMEPAGE_VAR_QBIT_PASSWORD}}"
                 - NZBGet:
+                    id: nzbget-card
                     href: https://nzbget.jupitertech.net
                     description: Usenet download client
                     icon: nzbget.png
                     siteMonitor: http://nzbget.media.svc.cluster.local:6789
                     namespace: media
                     app: nzbget
+                    widget:
+                      type: nzbget
+                      url: http://nzbget.media.svc.cluster.local:6789
+                      username: "{{HOMEPAGE_VAR_NZBGET_USER}}"
+                      password: "{{HOMEPAGE_VAR_NZBGET_PASSWORD}}"
                 - Bazarr:
+                    id: bazarr-card
                     href: https://bazarr.jupitertech.net
                     description: Subtitle automation
                     icon: bazarr.png
                     siteMonitor: http://bazarr.media.svc.cluster.local:6767
                     namespace: media
                     app: bazarr
+                    widget:
+                      type: bazarr
+                      url: http://bazarr.media.svc.cluster.local:6767
+                      key: "{{HOMEPAGE_VAR_BAZARR_KEY}}"
                 - Arr Dashboard:
+                    id: arrdashboard-card
                     href: https://arrdashboard.jupitertech.net
                     description: Unified *arr management dashboard
                     icon: mdi-view-dashboard-variant
@@ -220,6 +266,7 @@ spec:
 
             - Tools & AI:
                 - SearXNG:
+                    id: searxng-card
                     href: https://searxng.jupitertech.net
                     description: Privacy-respecting metasearch engine
                     icon: searxng.png
@@ -228,6 +275,7 @@ spec:
                     app: searxng
                     podSelector: app=searxng
                 - Crawl4AI:
+                    id: crawl4ai-card
                     href: https://crawl4ai.jupitertech.net
                     description: LLM-friendly web crawler & scraper
                     icon: mdi-spider-web
@@ -236,6 +284,7 @@ spec:
                     app: crawl4ai
                     podSelector: app=crawl4ai
                 - Hermes:
+                    id: hermes-card
                     href: https://hermes.jupitertech.net
                     description: Self-hosted AI chat
                     icon: mdi-robot-happy-outline
@@ -244,6 +293,7 @@ spec:
                     app: hermes
                     podSelector: app=hermes
                 - Streamystats:
+                    id: streamystats-card
                     href: https://streamystats.jupitertech.net
                     description: Jellyfin watch stats & AI recommendations
                     icon: mdi-chart-box-outline
@@ -252,6 +302,7 @@ spec:
                     app: streamystats
                     podSelector: app=streamystats
                 - Buzz:
+                    id: buzz-card
                     href: https://buzz.jupitertech.net
                     description: Self-hosted human/agent chat workspace
                     icon: mdi-forum-outline
@@ -261,6 +312,7 @@ spec:
 
             - Network Hardware:
                 - MikroTik CCR1036:
+                    id: mikrotik-core-card
                     href: http://10.77.10.1
                     description: Core router — AS 65530
                     icon: mikrotik.png
@@ -270,26 +322,31 @@ spec:
                       url: http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090
                       query: mikrotik_system_cpu_load{name="homelab"}
                 - UniFi Network:
+                    id: unifi-card
                     href: https://10.77.10.10
                     description: CloudKey Gen2+ — wireless AP management
                     icon: unifi.png
                     siteMonitor: https://10.77.10.10
                 - MikroTik Aggregation Switch:
+                    id: mikrotik-agg-card
                     href: http://10.77.10.2
                     description: SFP+ aggregation switch
                     icon: mikrotik.png
                     siteMonitor: http://10.77.10.2
                 - Dell N1148P-ON:
+                    id: dell-switch-card
                     href: http://10.77.10.3
                     description: Core switch
                     icon: dell.png
                     siteMonitor: http://10.77.10.3
                 - HP 1930 Instant On:
+                    id: hp-switch-card
                     href: http://10.77.10.5
                     description: PoE access switch
                     icon: hp.png
                     siteMonitor: http://10.77.10.5
                 - rack01:
+                    id: synology-card
                     href: http://10.77.10.20:5000
                     description: Synology DiskStation
                     icon: synology.png
