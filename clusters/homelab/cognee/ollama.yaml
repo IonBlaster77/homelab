@@ -45,7 +45,7 @@ metadata:
   labels:
     app: cognee-ollama
 spec:
-  replicas: 1
+  replicas: 0 # scaled down - model pull traffic implicated in router instability, see task notes
   strategy:
     type: Recreate
   selector:
