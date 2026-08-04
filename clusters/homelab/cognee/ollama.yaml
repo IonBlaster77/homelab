@@ -57,17 +57,21 @@ spec:
         app: cognee-ollama
         app.kubernetes.io/name: cognee-ollama
     spec:
-      # Ollama's registry (and its Cloudflare-fronted blob storage) resolves
-      # AAAA records, but this cluster only has IPv4 masquerading enabled
-      # (cilium status: "Masquerading: IPv6 Disabled") - Go's dialer tried
-      # the IPv6 address first, got no response since there's no egress path
-      # for it, and just hung indefinitely instead of falling back to the
-      # working IPv4 address. Disabling IPv6 in the pod's netns forces IPv4
-      # immediately rather than waiting out a dead-end connection attempt.
-      securityContext:
-        sysctls:
-          - name: net.ipv6.conf.all.disable_ipv6
-            value: "1"
+      # Ollama's registry resolves AAAA records, but this cluster only has
+      # IPv4 masquerading enabled (cilium status: "Masquerading: IPv6
+      # Disabled") - Go's dialer tried the IPv6 address first, got no
+      # response since there's no egress path for it, and hung indefinitely
+      # instead of falling back to the working IPv4 address. Tried disabling
+      # IPv6 via a pod securityContext sysctl first - rejected outright by
+      # this namespace's baseline PodSecurity level (forbidden sysctls), not
+      # just slow. hostAliases stays within baseline and pins the one
+      # hostname that was actually observed hanging (manifest pull); if a
+      # blob-download stage hits a different Cloudflare-fronted hostname
+      # later, it'll need its own entry the same way.
+      hostAliases:
+        - ip: "104.18.17.170"
+          hostnames:
+            - registry.ollama.ai
       affinity:
         nodeAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
