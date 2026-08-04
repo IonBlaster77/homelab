@@ -271,11 +271,16 @@ spec:
                     description: CloudKey Gen2+ — wireless AP management
                     icon: unifi.png
                     siteMonitor: https://10.77.10.10
-                - Dell N1148P-ON:
+                - MikroTik Aggregation Switch:
                     href: http://10.77.10.2
+                    description: SFP+ aggregation switch
+                    icon: mikrotik.png
+                    siteMonitor: http://10.77.10.2
+                - Dell N1148P-ON:
+                    href: http://10.77.10.3
                     description: Core switch
                     icon: dell.png
-                    siteMonitor: http://10.77.10.2
+                    siteMonitor: http://10.77.10.3
                 - HP 1930 Instant On:
                     href: http://10.77.10.5
                     description: PoE access switch
