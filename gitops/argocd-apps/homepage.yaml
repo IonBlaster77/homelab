@@ -130,7 +130,10 @@ spec:
                     href: https://auth.jupitertech.net
                     description: Identity provider — SSO, LDAP, RADIUS
                     icon: authentik.png
-                    siteMonitor: http://authentik-server.authentik.svc.cluster.local:80
+                    # Poll the lightweight health endpoint rather than /, which
+                    # 302-redirects into the flow interface and runs Authentik's
+                    # full ~20-layer Django middleware stack (~400ms vs ~100ms).
+                    siteMonitor: http://authentik-server.authentik.svc.cluster.local:80/-/health/live/
                     namespace: authentik
                     app: authentik
                 - AdGuard Home:
