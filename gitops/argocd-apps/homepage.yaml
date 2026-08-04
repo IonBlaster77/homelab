@@ -140,6 +140,12 @@ spec:
                     siteMonitor: http://adguard-ui.adguard.svc.cluster.local:3000
                     namespace: adguard
                     app: adguard
+                - Kea:
+                    description: DHCP server
+                    icon: isc-kea.png
+                    siteMonitor: http://kea-ctrl-agent.kea.svc.cluster.local:8000
+                    namespace: kea
+                    app: kea-dhcp4
 
             - Media:
                 - Jellyfin:
