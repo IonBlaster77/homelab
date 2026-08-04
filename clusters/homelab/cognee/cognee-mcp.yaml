@@ -86,6 +86,8 @@ spec:
               value: ollama
             - name: EMBEDDING_MODEL
               value: nomic-embed-text:latest
+            - name: EMBEDDING_DIMENSIONS
+              value: "768"
             - name: EMBEDDING_ENDPOINT
               value: http://cognee-ollama.cognee.svc.cluster.local:11434/v1
             - name: TZ
