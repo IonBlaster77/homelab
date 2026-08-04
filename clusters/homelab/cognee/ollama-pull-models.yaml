@@ -12,6 +12,10 @@ metadata:
   name: cognee-ollama-pull-models
   namespace: cognee
 spec:
+  suspend: true # paused - likely hitting Cloudflare per-IP rate limiting on
+  # parallel chunk downloads after many retries tonight (see task #25).
+  # Letting the rate-limit window cool down before resuming, rather than
+  # continuing to hammer it. Progress already on disk is preserved.
   backoffLimit: 5
   ttlSecondsAfterFinished: 3600
   template:
