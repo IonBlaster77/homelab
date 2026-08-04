@@ -82,6 +82,28 @@ spec:
     - toEntities:
         - kube-apiserver
 ---
+# cognee-ollama needs to reach the internet to pull models from Ollama's
+# registry (registry.ollama.ai). Scoped to just the ollama pod, not
+# namespace-wide - default-deny silently drops (not rejects) blocked
+# egress, which is why `ollama pull` just hung at "pulling manifest"
+# instead of failing fast.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ollama-egress-to-internet
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-ollama
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
 # CNPG-to-CNPG replication traffic (primary <-> replica).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
