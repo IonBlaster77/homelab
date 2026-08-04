@@ -61,6 +61,6 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: adguard-config
+            claimName: adguard-primary-config
         - name: work
           emptyDir: {}
