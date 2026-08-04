@@ -183,16 +183,16 @@ spec:
       kind: CustomResourceDefinition
       jsonPointers:
         - /metadata/labels/helm.sh~1chart
-    # Diff source unconfirmed (argocd CLI unavailable to inspect cleanly) —
-    # ignoring the whole labels/annotations maps like the GatewayClass rule
-    # above, rather than guessing the exact field.
+    # Root-caused: the Prometheus Operator/API server defaults
+    # relabelings[].action to "replace" when the chart template omits it,
+    # so live always has one more field than desired. Not a labels/annotations
+    # issue (that was an earlier, incorrect guess) — ignore the actual field.
     - group: monitoring.coreos.com
       kind: ServiceMonitor
       name: hubble
       namespace: kube-system
       jqPathExpressions:
-        - .metadata.labels
-        - .metadata.annotations
+        - .spec.endpoints[].relabelings[].action
 
     # certgen regenerates fresh cert values on every render (see cilium-ca /
     # hubble-server-certs above) — same deal for the relay client cert.
