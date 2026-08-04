@@ -74,6 +74,14 @@ spec:
           annotations:
             summary: "Kea DHCP control-agent API is not responding"
             description: "The control-agent (lease/config API) is down. This doesn't necessarily mean DHCP itself (UDP/67) has stopped — kube-prometheus-stack's default pod-health rules cover the kea-dhcp4 pod separately."
+        - alert: NASNFSUnreachable
+          expr: probe_success{target="nas-nfs"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Synology NAS (10.77.20.20) NFS port is unreachable"
+            description: "media-nfs's backing server is down — jellyfin/sonarr/radarr/etc. will hang on any I/O rather than error. See NAS-AND-SWITCH-MAINTENANCE.md: if this was an unplanned outage (not you doing NAS/switch maintenance under the runbook), consider scaling the affected media Deployments to 0 (kubectl scale deploy -n media bazarr jellyfin nzbget qbittorrent radarr sonarr unpackerr --replicas=0) until it's back, since a node reboot while this is firing risks the hard-NFS-hang failure mode documented there."
 
     - name: unifi
       rules:

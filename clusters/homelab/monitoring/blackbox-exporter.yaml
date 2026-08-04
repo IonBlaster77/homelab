@@ -28,6 +28,9 @@ data:
             Content-Type: application/json
           body: '{"command":"list-commands"}'
           valid_status_codes: [200]
+      tcp_connect:
+        prober: tcp
+        timeout: 5s
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -120,4 +123,27 @@ spec:
         - kea-ctrl-agent.kea.svc.cluster.local:8000
       labels:
         target: kea-ctrl-agent
+  interval: 30s
+---
+# TCP connect check against the Synology's NFS port. This is the earliest
+# possible signal that media-nfs (see NAS-AND-SWITCH-MAINTENANCE.md) has
+# gone unreachable — well before it'd show up as pod errors, and in time to
+# scale down consumers before anyone attempts a node reboot into a hang.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: nas-nfs
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  module: tcp_connect
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - 10.77.20.20:2049
+      labels:
+        target: nas-nfs
   interval: 30s
