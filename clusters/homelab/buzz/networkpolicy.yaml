@@ -328,6 +328,50 @@ spec:
             - port: "9090"
               protocol: TCP
 ---
+# Homepage dashboard -> relay, port 3000. Homepage's siteMonitor polls the
+# ClusterIP directly (not through the Gateway route), so it carries the
+# homepage pod's own identity, not reserved:ingress — needs a namespace-based
+# fromEndpoints rule alongside the fromEntities: ingress one above, same
+# pattern as hermes-allow-homepage-ingress.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-homepage-ingress
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: buzz
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: homepage
+            io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Homepage dashboard -> MinIO Console, port 9090. Same reasoning as above.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-homepage-ingress-to-minio-console
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app.kubernetes.io/name: homepage
+            io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
+---
 # Prometheus scraping the relay's metrics/health endpoints.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
