@@ -1,4 +1,27 @@
 ---
+# Gateway (public route, cognee.jupitertech.net) -> cognee-mcp, port 8000.
+# Gateway-routed traffic arrives under Cilium's reserved:ingress identity,
+# not the client pod's own identity - fromEntities: ingress is required
+# here, not a namespace-based fromEndpoints selector (see
+# feedback_cilium_gateway_ingress_entity in memory - this exact gotcha has
+# bitten this cluster before, e.g. buzz-allow-ingress-from-gateway).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ingress-from-gateway
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+---
 # Default deny all ingress and egress for the cognee namespace.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
