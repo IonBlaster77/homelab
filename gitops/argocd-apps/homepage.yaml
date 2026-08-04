@@ -245,7 +245,7 @@ spec:
                     href: https://buzz.jupitertech.net
                     description: Self-hosted human/agent chat workspace
                     icon: mdi-forum-outline
-                    siteMonitor: http://buzz.buzz.svc.cluster.local:3000
+                    siteMonitor: http://buzz.buzz.svc.cluster.local:3000/health
                     namespace: buzz
                     app: buzz
 
