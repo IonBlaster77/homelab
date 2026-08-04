@@ -1,0 +1,19 @@
+# Per-instance config volume, ReadWriteOnce, Longhorn-native (no NFS
+# share-manager involved). Replaces the old shared RWX pvc.yaml — adguard-sync
+# (sync-deployment.yaml) keeps primary/replica config aligned over the
+# AdGuardHome API instead of a shared filesystem. The RWX+in-cluster-NFS
+# combination could hang a node's shutdown indefinitely during a network
+# partition (see 2026-08-04 talos4 incident) since "hard" NFS mounts block
+# forever rather than erroring when the server becomes unreachable.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: adguard-primary-config
+  namespace: adguard
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 1Gi
