@@ -1,10 +1,18 @@
-# Switch Maintenance Runbook
+# NAS & Switch Maintenance Runbook
 
-Procedure for rebooting, power-cycling, or firmware-updating any switch the
-Talos nodes hang off (Dell N1148P-ON core switch, MikroTik aggregation
-switch, HP Instant On access switch). All four nodes share this physical
-path, so a switch reboot is a **full-cluster network partition**, not an
-isolated event.
+Procedure for anything that makes the Synology NAS (`10.77.20.20`)
+unreachable from the Talos nodes on purpose: rebooting/power-cycling/
+firmware-updating any switch in the path (Dell N1148P-ON core switch,
+MikroTik aggregation switch, HP Instant On access switch), **or**
+rebooting/updating the NAS itself (DSM updates, etc.).
+
+The trigger condition is "the NFS server media-nfs points at becomes
+unreachable" — it doesn't matter whether that's because a switch between
+the nodes and the NAS went down, or because the NAS itself went down.
+Same mechanism, same risk, same procedure. All four Talos nodes also
+share the same switch path to reach each other, so a *switch* reboot is
+additionally a full-cluster network partition — a NAS-only reboot doesn't
+partition the cluster itself, just cuts off `media-nfs` specifically.
 
 Written after the 2026-08-04 incident: a Dell switch reboot (done because
 the switch's console was unresponsive) partitioned the network, and talos4
@@ -16,11 +24,27 @@ hit. `hard` NFS mounts retry indefinitely rather than erroring when the
 server is unreachable, and Talos's shutdown sequence does a plain
 `syncfs()`/`umount()` with no force/lazy fallback — so the unmount blocked
 forever. Talos has no shell, so there's no way to run `umount -f`/`umount
--l` by hand to break it once stuck.
+-l` by hand to break it once stuck, and no machine-config option exists to
+change this behavior (Talos has no `machine.mounts` field and no NFS
+userspace tooling of its own — NFS only exists on Talos via whatever a pod
+mounts).
+
+Passive I/O to `media-nfs` self-heals fine on its own once the NAS or
+switch comes back — `hard` mounts are designed to retry indefinitely and
+just resume. The danger is specifically a node needing to unmount (i.e.
+reboot) while the NAS is unreachable, or apparently for some period after
+— talos1 hit the identical hang hours after the original switch outage
+had already resolved, on an unrelated reboot attempt.
+
+**Long-term fix, if you ever want to stop needing this procedure at all:**
+give the Talos nodes a second NIC bonded across a genuinely independent
+second switch path to the NAS. That removes the single point of failure
+instead of scheduling around it. Real hardware work, not done as of
+2026-08-04 — this runbook is the interim answer.
 
 ---
 
-## Before touching any switch
+## Before rebooting a switch OR the NAS
 
 **1. Check what currently has `media-nfs` mounted** (the one remaining
 hard-NFS dependency in the cluster — `adguard`'s equivalent risk was
@@ -49,18 +73,21 @@ kubectl describe pvc -n media media-nfs | grep -A5 '^Used By:'
 # should be empty
 ```
 
-**4. Now it's safe to reboot/power-cycle/update the switch.**
+**4. Now it's safe to reboot/power-cycle/update the switch or the NAS.**
 
-**5. Once the switch is back up, verify basic reachability before touching
+**5. Once it's back up, verify basic reachability before touching
 anything else:**
 
 ```bash
 kubectl get nodes -o wide
 talosctl -n 10.77.20.11,10.77.20.12,10.77.20.13 etcd status
+ping -c3 10.77.20.20   # the NAS itself — for a NAS-only reboot the nodes
+                       # never go NotReady, so this is the actual signal
 ```
 
-Wait for all 4 nodes `Ready` and etcd raft indexes matching across all
-three control-plane members before proceeding.
+Wait for all 4 nodes `Ready`, etcd raft indexes matching across all
+three control-plane members, and the NAS responding to ping, before
+proceeding.
 
 **6. Scale the media Deployments back up:**
 
@@ -120,11 +147,17 @@ take down two control-plane nodes simultaneously.
 |---|---|
 | Longhorn RWO (iSCSI-backed, most workloads) | Not confirmed to have this specific hang — different attach mechanism than NFS `hard` mounts. Not verified safe under partition either; just untested. |
 | `adguard-primary-config` / `adguard-replica-config` (Longhorn RWO, since 2026-08-04) | Fixed — no NFS involved. |
-| `media-nfs` (external NFS, Synology, `hard`) | **Confirmed risk.** Follow the scale-down procedure above before switch work. |
+| `media-nfs` (external NFS, Synology, `hard`) | **Confirmed risk.** Follow the scale-down procedure above before switch *or* NAS work. |
 
 Don't change `media-nfs`'s mount options to `soft` as a shortcut around
 this procedure — `soft` returns I/O errors on timeout instead of
 blocking, which risks corrupting in-flight writes from qbittorrent/nzbget.
-`hard` is the correct choice for this workload; the switch-maintenance
-window is the only time it's a liability, and scaling down for that
-window is the right fix, not changing the mount semantics permanently.
+`hard` is the correct choice for this workload; the maintenance window is
+the only time it's a liability, and scaling down for that window is the
+right fix, not changing the mount semantics permanently. Switching the
+share type to SMB was also considered and rejected: CIFS defaults to
+`soft`-like behavior which would reduce this specific risk, but SMB
+doesn't support Unix hardlinks the way NFS does, and Sonarr/Radarr/
+qBittorrent rely on hardlinking to import completed downloads without
+duplicating multi-GB files — switching would trade a rare maintenance-
+window risk for permanently worse everyday behavior.
