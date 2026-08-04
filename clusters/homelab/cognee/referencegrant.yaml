@@ -1,0 +1,17 @@
+# Gateway API requires the target namespace to explicitly opt in to
+# cross-namespace HTTPRoute backend references - same requirement already
+# hit for authentik (see gateway/referencegrant-authentik.yaml).
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-networking-to-cognee
+  namespace: cognee
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: networking
+  to:
+    - group: ""
+      kind: Service
+      name: cognee-mcp
