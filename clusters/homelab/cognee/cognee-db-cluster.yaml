@@ -1,0 +1,43 @@
+# CNPG cluster for Cognee's central memory store — all-in-one Postgres+pgvector
+# (graph, vectors, sessions, and metadata all live here; no separate graph DB).
+# pgvector via CNPG 1.29 Image Volume Extensions — the extension binary is
+# mounted from a separate image, not baked into the base Postgres image, so
+# this stays on the same ghcr.io/cloudnative-pg/postgresql:18.3-system-trixie
+# base as every other cluster in this repo.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: cognee-db
+  namespace: cognee
+spec:
+  instances: 2
+  storage:
+    storageClass: longhorn-ssd
+    size: 5Gi
+  postgresql:
+    extensions:
+      - name: pgvector
+        image:
+          reference: ghcr.io/cloudnative-pg/pgvector:0.8.1-18-trixie
+  bootstrap:
+    initdb:
+      database: cognee
+      owner: cognee
+      secret:
+        name: cognee-db-credentials
+      postInitSQL:
+        - CREATE EXTENSION IF NOT EXISTS vector;
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cognee-db
+  namespace: cognee
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: cognee-db
+  podMetricsEndpoints:
+    - port: metrics

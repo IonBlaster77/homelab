@@ -1,0 +1,110 @@
+---
+# Default deny all ingress and egress for the cognee namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-default-deny
+  namespace: cognee
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# CNPG operator polls each instance's status API to report Cluster health.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ingress-from-cnpg-operator
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: cognee-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+---
+# Prometheus scraping CNPG's built-in Postgres exporter (port 9187). Added
+# upfront this time - buzz-db went without this for its first two days and
+# fired BuzzRelayDown/TargetDown continuously as a result.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ingress-from-monitoring-to-db
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: cognee-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-dns
+  namespace: cognee
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-egress-to-apiserver
+  namespace: cognee
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# CNPG-to-CNPG replication traffic (primary <-> replica).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-db-to-db
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: cognee-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: cognee-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: cognee-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP

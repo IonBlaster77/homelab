@@ -1,0 +1,26 @@
+# Namespace, CNPG database (Postgres + pgvector, all-in-one - graph, vectors,
+# sessions, and metadata in one instance, no separate graph DB), and
+# NetworkPolicy for Cognee's central memory store. Separate from the future
+# cognee.yaml Application (the Cognee app + MCP server chart itself), same
+# split as authentik/authentik-config and buzz/buzz-config.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cognee-config
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/cognee
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cognee
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
