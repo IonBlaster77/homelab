@@ -1,0 +1,38 @@
+# Pulls the models into the running cognee-ollama Deployment via its API -
+# deliberately NOT a postStart hook (see ollama.yaml's header comment for
+# why: kubelet kills hooks that run too long, an 18GB pull always does).
+# A plain Job has no such deadline, only backoffLimit if it genuinely fails.
+#
+# `ollama pull` from the CLI just tells the already-running `ollama serve`
+# (in the Deployment pod) to do the actual download - this Job pod only
+# needs to reach that server's API on port 11434, not the internet itself.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cognee-ollama-pull-models
+  namespace: cognee
+spec:
+  backoffLimit: 5
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: cognee-ollama-puller
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: pull
+          image: ollama/ollama:0.32.5
+          env:
+            - name: OLLAMA_HOST
+              value: cognee-ollama.cognee.svc.cluster.local:11434
+          command: ["/bin/sh", "-c"]
+          args:
+            - ollama pull gemma4:26b && ollama pull nomic-embed-text
+          resources:
+            requests:
+              memory: 128Mi
+              cpu: 100m
+            limits:
+              memory: 256Mi
+              cpu: 500m

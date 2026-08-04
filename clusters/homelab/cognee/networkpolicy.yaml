@@ -102,6 +102,46 @@ spec:
       toPorts:
         - ports:
             - port: "443"
+---
+# The model-pull Job's ollama CLI talks to the running server's API, not
+# the internet directly - the server does the actual download using the
+# egress rule above. Job pod needs egress to the server; server needs
+# ingress from the Job pod. Both halves required, same as every other
+# pod-to-pod rule in this namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ollama-puller-egress
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-ollama-puller
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: cognee-ollama
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ingress-from-puller
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-ollama
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: cognee-ollama-puller
+      toPorts:
+        - ports:
+            - port: "11434"
               protocol: TCP
 ---
 # CNPG-to-CNPG replication traffic (primary <-> replica).
