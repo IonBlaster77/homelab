@@ -146,6 +146,7 @@ spec:
                     siteMonitor: http://kea-ctrl-agent.kea.svc.cluster.local:8000
                     namespace: kea
                     app: kea-dhcp4
+                    podSelector: app=kea-dhcp4
 
             - Media:
                 - Jellyfin:
