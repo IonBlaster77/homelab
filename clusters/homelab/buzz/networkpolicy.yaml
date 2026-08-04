@@ -185,6 +185,30 @@ spec:
             - port: "9000"
               protocol: TCP
 ---
+# Prometheus scraping buzz-db's CNPG-built-in Postgres exporter (port 9187).
+# Missing since Buzz was first deployed - the exporter itself was always up,
+# but default-deny silently dropped every scrape, firing BuzzRelayDown/
+# TargetDown continuously. Same class of gap as the CNPG operator status-port
+# and MinIO metrics rules above - a new scrape target needs its own explicit
+# ingress rule, the PodMonitor existing isn't enough by itself.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-from-monitoring-to-db
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: buzz-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
+---
 # Prometheus scraping MinIO's cluster metrics (same S3 port, 9000 — MinIO
 # doesn't run a separate metrics port).
 apiVersion: cilium.io/v2
