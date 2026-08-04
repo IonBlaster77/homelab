@@ -119,7 +119,7 @@ spec:
                     app: hubble-ui
                 - MinIO Console:
                     href: https://minio.jupitertech.net
-                    description: Buzz's S3-compatible object storage
+                    description: S3-compatible object storage
                     icon: minio.png
                     siteMonitor: http://buzz-minio-console.buzz.svc.cluster.local:9090
                     namespace: buzz
