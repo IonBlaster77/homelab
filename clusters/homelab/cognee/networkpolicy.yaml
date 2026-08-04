@@ -170,3 +170,77 @@ spec:
         - ports:
             - port: "5432"
               protocol: TCP
+---
+# cognee-mcp -> cognee-db.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-mcp-egress-to-db
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: cognee-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-db-ingress-from-mcp
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: cognee-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: cognee-mcp
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+# cognee-mcp -> cognee-ollama, same pattern as the puller Job.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-mcp-egress-to-ollama
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: cognee-ollama
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ollama-ingress-from-mcp
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-ollama
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: cognee-mcp
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP

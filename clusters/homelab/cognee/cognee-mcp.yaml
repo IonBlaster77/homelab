@@ -1,0 +1,116 @@
+# Cognee MCP server - the actual "central memory" endpoint Claude/ChatGPT/
+# Hermes will talk to. Deliberately just this, not a separate cognee/cognee
+# API server too: cognee-mcp embeds the cognee library directly and talks
+# to Postgres itself, so a standalone API server would just be duplicate
+# surface area for the same job. All-in-one Postgres (see cognee-db-cluster.yaml)
+# for graph+vectors+sessions+metadata, cognee-ollama for LLM+embeddings -
+# fully self-hosted, no cloud LLM dependency.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cognee-mcp
+  namespace: cognee
+spec:
+  type: ClusterIP
+  selector:
+    app: cognee-mcp
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cognee-mcp
+  namespace: cognee
+  labels:
+    app: cognee-mcp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cognee-mcp
+  template:
+    metadata:
+      labels:
+        app: cognee-mcp
+        app.kubernetes.io/name: cognee-mcp
+    spec:
+      containers:
+        - name: cognee-mcp
+          image: cognee/cognee-mcp:main
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: TRANSPORT_MODE
+              value: http
+            # All-in-one Postgres: graph, vectors, sessions, metadata.
+            - name: DB_PROVIDER
+              value: postgres
+            - name: DB_HOST
+              value: cognee-db-rw.cognee.svc.cluster.local
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: cognee
+            - name: GRAPH_DATABASE_PROVIDER
+              value: postgres
+            - name: VECTOR_DB_PROVIDER
+              value: pgvector
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cognee-db-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cognee-db-credentials
+                  key: password
+            # LLM + embeddings via the dedicated cognee-ollama instance -
+            # LLM_API_KEY is a required-but-unused dummy value for Ollama's
+            # OpenAI-compatible endpoint, not a real credential.
+            - name: LLM_PROVIDER
+              value: ollama
+            - name: LLM_MODEL
+              value: gemma4:26b
+            - name: LLM_API_KEY
+              value: ollama
+            - name: LLM_ENDPOINT
+              value: http://cognee-ollama.cognee.svc.cluster.local:11434/v1
+            - name: EMBEDDING_PROVIDER
+              value: ollama
+            - name: EMBEDDING_MODEL
+              value: nomic-embed-text:latest
+            - name: EMBEDDING_ENDPOINT
+              value: http://cognee-ollama.cognee.svc.cluster.local:11434/v1
+            - name: TZ
+              value: Australia/Adelaide
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 250m
+            limits:
+              memory: 2Gi
+              cpu: 1000m
