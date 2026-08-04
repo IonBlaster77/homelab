@@ -15,6 +15,18 @@
 #      re-announces — failover in ~15s based on the lease settings above
 #
 # Applied by: gitops/argocd-apps/cilium-config.yaml (after Cilium is running)
+#
+# nodeSelector restricts which nodes can hold the announcement lease, to
+# talos3 + talos4 only. This works around cilium/cilium#31689: external
+# traffic to a LoadBalancer VIP is dropped when the announcing node also
+# happens to host that service's own backend pod. Since backend pods for
+# Cluster-policy services (argocd-server, kea-dhcp4) are kept off talos3/
+# talos4 via nodeAffinity, the announcer can never collide with a local
+# backend. Two nodes (not one) so losing either still leaves an announcer.
+# Does not help Local-policy services (adguard-dns) — see cilium/cilium#27800,
+# L2 announcement isn't aware of externalTrafficPolicy: Local, which needs
+# the opposite (a local backend) to work at all. adguard-dns is pinned to
+# talos1/talos2 instead and reached via NodePort, bypassing L2 announcement.
 
 apiVersion: cilium.io/v2alpha1
 kind: CiliumL2AnnouncementPolicy
@@ -31,3 +43,11 @@ spec:
   # Both should be true; externalIPs alone won't announce pool-allocated IPs.
   externalIPs: true
   loadBalancerIPs: true
+
+  nodeSelector:
+    matchExpressions:
+      - key: kubernetes.io/hostname
+        operator: In
+        values:
+          - talos3
+          - talos4

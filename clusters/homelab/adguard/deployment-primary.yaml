@@ -14,7 +14,13 @@ spec:
         app: adguard-primary
         app.kubernetes.io/name: adguard
     spec:
-      # Keep primary and replica on different nodes.
+      # Keep primary and replica on different nodes, and pin primary to
+      # talos1 specifically. adguard-dns uses externalTrafficPolicy: Local
+      # (needed for real client-IP visibility in query logs), which the
+      # Cilium L2 announcement feature doesn't respect correctly (see
+      # cilium/cilium#27800) — so this service is reached via NodePort at
+      # a known node IP instead of the floating LB VIP. Pinning to a fixed
+      # node makes that IP predictable for the router-side DNAT rule.
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -22,6 +28,14 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: adguard
               topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - talos1
       containers:
         - name: adguard
           image: adguard/adguardhome:v0.107.52

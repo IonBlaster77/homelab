@@ -13,6 +13,20 @@ spec:
       labels:
         app: kea-dhcp4
     spec:
+      # kea-dhcp4 is a Cluster-policy LoadBalancer service; L2 announcement is
+      # restricted to talos3/talos4 (see clusters/homelab/cilium/l2-policy.yaml).
+      # Keeping the backend off those two nodes works around cilium/cilium#31689
+      # (external LB traffic drops when the announcer also hosts the backend).
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values:
+                      - talos3
+                      - talos4
       initContainers:
         - name: socket-perms
           image: busybox:1.36
