@@ -1,0 +1,131 @@
+# Dedicated Ollama instance for Cognee - separate from streamystats' ollama
+# (which only serves small embeddings) so a heavy LLM workload here can't
+# starve or be starved by that unrelated pipeline. Serves both the
+# memory-extraction LLM and embeddings for Cognee, self-contained.
+#
+# Model: gemma4:26b - chosen for quality over speed (async/queued extraction,
+# so CPU-only throughput of ~0.5-2 tok/s is acceptable) and strong clean-JSON
+# structured-output behavior, which is what memory extraction needs most.
+#
+# Node: talos4 is the only dedicated worker (talos1-3 are control-plane) -
+# pinning heavy application workloads off the control-plane nodes, same
+# philosophy as the CPU/memory-headroom pinning already done for hermes.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cognee-ollama-models
+  namespace: cognee
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-ssd
+  resources:
+    requests:
+      storage: 30Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cognee-ollama
+  namespace: cognee
+spec:
+  type: ClusterIP
+  selector:
+    app: cognee-ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cognee-ollama
+  namespace: cognee
+  labels:
+    app: cognee-ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: cognee-ollama
+  template:
+    metadata:
+      labels:
+        app: cognee-ollama
+        app.kubernetes.io/name: cognee-ollama
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["talos4"]
+      containers:
+        - name: ollama
+          image: ollama/ollama:0.32.5
+          ports:
+            - name: http
+              containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: 0.0.0.0:11434
+            # Keep both the LLM and embedding model resident - reloading an
+            # 18GB model from disk between calls would add real latency on
+            # top of already-slow CPU inference.
+            - name: OLLAMA_KEEP_ALIVE
+              value: 4h
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "2"
+            - name: TZ
+              value: Australia/Adelaide
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - |
+                    for i in $(seq 1 60); do
+                      if ollama list >/dev/null 2>&1; then
+                        ollama pull gemma4:26b && ollama pull nomic-embed-text && exit 0
+                      fi
+                      sleep 5
+                    done
+                    echo "ollama: model pull did not complete" >&2
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+          startupProbe:
+            tcpSocket:
+              port: 11434
+            periodSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 19Gi
+              cpu: 1000m
+            limits:
+              memory: 20Gi
+              cpu: 4000m
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: cognee-ollama-models
