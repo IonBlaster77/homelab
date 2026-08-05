@@ -28,6 +28,18 @@ spec:
         name: cognee-db-credentials
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS vector;
+  managed:
+    roles:
+      # Cognee's postgres-backed graph store creates a separate database
+      # per dataset (named by UUID) rather than using tables within one
+      # database - confirmed via the actual failure: "permission denied
+      # to create database" on CREATE DATABASE "<uuid>". The bootstrap
+      # initdb owner doesn't get CREATEDB by default.
+      - name: cognee
+        ensure: present
+        createdb: true
+        login: true
+        superuser: false
   # CNPG-native backup (task #13) - continuous WAL archiving + scheduled
   # base backups to the in-cluster MinIO tenant (buzz-minio, shared cluster
   # object storage - see cnpg-backup-minio-provision.yaml in buzz/ for the
