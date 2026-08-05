@@ -76,8 +76,14 @@ spec:
             # OpenAI-compatible endpoint, not a real credential.
             - name: LLM_PROVIDER
               value: ollama
+            # e2b, not the 26b MoE variant - that one crashes llama-server
+            # trying to load a CLIP component ("Failed to load CLIP model"),
+            # confirmed reproducible and isolated to that specific artifact/
+            # quant (e2b runs cleanly on identical infra/Ollama version).
+            # Freely swappable later per task #25's discussion - the LLM
+            # choice has zero migration cost, unlike the embedding model.
             - name: LLM_MODEL
-              value: gemma4:26b
+              value: gemma4:e2b-it-q4_K_M
             - name: LLM_API_KEY
               value: ollama
             - name: LLM_ENDPOINT
