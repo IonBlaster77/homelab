@@ -132,10 +132,17 @@ spec:
             failureThreshold: 3
           resources:
             requests:
-              memory: 19Gi
+              memory: 22Gi
               cpu: 1000m
             limits:
-              memory: 20Gi
+              # 20Gi was too tight against the 16.75GiB gemma4:26b weights -
+              # loading it (mmap + KV cache + GGUF parsing overhead)
+              # repeatedly failed with "read error: Input/output error",
+              # which looked like storage flakiness but may actually have
+              # been memory-pressure-induced page-in failures against the
+              # network-backed Longhorn volume. talos4 has 24Gi total with
+              # only ~6Gi used elsewhere, so there's real headroom to give.
+              memory: 23Gi
               cpu: 4000m
       volumes:
         - name: models
