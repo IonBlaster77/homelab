@@ -27,14 +27,26 @@ spec:
         name: cognee-db-credentials
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS vector;
-  # CNPG-native backup (task #13) - Longhorn's own hourly/daily backup
-  # already covers this PVC block-level (recurring-jobs.yaml), this adds a
-  # clean per-cluster restore path via `cnpg` tooling on top of that. Needs
-  # volumesnapshot-crds + volumesnapshot-controller (separate ArgoCD apps).
+  # CNPG-native backup (task #13) - continuous WAL archiving + scheduled
+  # base backups to the in-cluster MinIO tenant (buzz-minio, shared cluster
+  # object storage - see cnpg-backup-minio-provision.yaml in buzz/ for the
+  # dedicated bucket/user). Gives true point-in-time recovery, not just
+  # snapshot-granularity restore, and is fast (cluster-local, no NFS) for
+  # the common "cluster's fine, I broke something" case. Longhorn's own
+  # hourly/daily block-level backup to the NAS (recurring-jobs.yaml)
+  # continues unchanged as the off-cluster durability layer underneath this.
   backup:
-    volumeSnapshot:
-      className: longhorn-backup-vsc
-      online: true
+    retentionPolicy: 30d
+    barmanObjectStore:
+      destinationPath: s3://cognee-db-backups
+      endpointURL: http://minio.buzz.svc.cluster.local
+      s3Credentials:
+        accessKeyId:
+          name: cognee-db-backup-s3-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: cognee-db-backup-s3-credentials
+          key: SECRET_ACCESS_KEY
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
@@ -42,9 +54,9 @@ metadata:
   name: cognee-db-backup
   namespace: cognee
 spec:
-  schedule: "0 0 4 * * *" # 4am daily - offset from Longhorn's own daily backup (2am)
+  schedule: "0 0 4 * * *" # 4am daily base backup - WAL archiving is continuous regardless
   backupOwnerReference: self
-  method: volumeSnapshot
+  method: barmanObjectStore
   cluster:
     name: cognee-db
 ---

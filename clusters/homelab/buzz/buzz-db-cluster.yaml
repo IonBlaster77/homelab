@@ -14,14 +14,23 @@ spec:
       owner: buzz
       secret:
         name: buzz-db-credentials
-  # CNPG-native backup (task #13) - Longhorn's own hourly/daily backup
-  # already covers this PVC block-level (recurring-jobs.yaml), this adds a
-  # clean per-cluster restore path via `cnpg` tooling on top of that. Needs
-  # volumesnapshot-crds + volumesnapshot-controller (separate ArgoCD apps).
+  # CNPG-native backup (task #13) - continuous WAL archiving + scheduled
+  # base backups to the in-cluster MinIO tenant (buzz-minio, own dedicated
+  # bucket/user - see cnpg-backup-minio-provision.yaml). Longhorn's own
+  # hourly/daily block-level backup to the NAS (recurring-jobs.yaml)
+  # continues unchanged as the off-cluster durability layer underneath this.
   backup:
-    volumeSnapshot:
-      className: longhorn-backup-vsc
-      online: true
+    retentionPolicy: 30d
+    barmanObjectStore:
+      destinationPath: s3://buzz-db-backups
+      endpointURL: http://minio.buzz.svc.cluster.local
+      s3Credentials:
+        accessKeyId:
+          name: buzz-db-backup-s3-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: buzz-db-backup-s3-credentials
+          key: SECRET_ACCESS_KEY
 ---
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
@@ -29,9 +38,9 @@ metadata:
   name: buzz-db-backup
   namespace: buzz
 spec:
-  schedule: "0 30 4 * * *" # 4:30am daily - staggered after cognee-db-backup
+  schedule: "0 30 4 * * *" # 4:30am daily base backup - staggered after cognee-db-backup
   backupOwnerReference: self
-  method: volumeSnapshot
+  method: barmanObjectStore
   cluster:
     name: buzz-db
 ---

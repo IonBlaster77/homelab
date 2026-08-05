@@ -43,6 +43,30 @@ spec:
             - port: "8000"
               protocol: TCP
 ---
+# cognee-db -> MinIO in the buzz namespace (CNPG Barman Cloud WAL archiving
+# + base backups, task #13). Cross-namespace - buzz-minio is shared cluster
+# object storage, not Buzz-exclusive, even though it lives in that
+# namespace for historical reasons. Scoped to its own bucket/user
+# (cognee-db-backups), see cnpg-backup-minio-provision.yaml in buzz/.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-db-egress-to-minio
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: cognee-db
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: buzz
+            v1.min.io/tenant: buzz-minio
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
 # Default deny all ingress and egress for the cognee namespace.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

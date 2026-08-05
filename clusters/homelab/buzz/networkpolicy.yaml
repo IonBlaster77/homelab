@@ -267,6 +267,51 @@ spec:
             - port: "9000"
               protocol: TCP
 ---
+# buzz-db -> MinIO (CNPG Barman Cloud WAL archiving + base backups, task
+# #13). Separate from the relay's own egress rule above - buzz-db pods
+# carry cnpg.io/cluster, not app.kubernetes.io/name: buzz.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-db-egress-to-minio
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: buzz-db
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            v1.min.io/tenant: buzz-minio
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# Ingress half of buzz-db -> MinIO, plus cognee-db's cross-namespace WAL
+# archiving to the same tenant (cognee-db-backups is a separate bucket/user,
+# see cnpg-backup-minio-provision.yaml, but the network path is shared).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: buzz-allow-ingress-to-minio-from-cnpg
+  namespace: buzz
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: buzz-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: buzz-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: cognee
+            cnpg.io/cluster: cognee-db
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
 # Gateway (public route) -> relay web UI, port 3000. Gateway-routed traffic
 # arrives under Cilium's reserved:ingress identity, not the client pod's own
 # identity — fromEntities: ingress is required here, not a namespace-based

@@ -1,0 +1,96 @@
+# One-off: creates two dedicated buckets + least-privilege users in the
+# existing buzz-minio tenant for CNPG's Barman Cloud backups (task #13).
+# Deliberately NOT reusing buzz-relay's own S3 credentials (those are scoped
+# to buzz-media, and cognee-db has no business holding buzz's media
+# credentials anyway) - each DB gets its own bucket and its own user, scoped
+# to only that bucket, matching the per-app resource separation used
+# everywhere else in this repo.
+#
+# Same immutable-PostSync-hook caveat as buzz-minio-bucket.yaml: changing
+# this later requires deleting the Job first, a plain sync won't re-run it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cnpg-backup-minio-provision
+  namespace: buzz
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: buzz
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: provision
+          image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          env:
+            - name: HOME
+              value: /tmp
+            # buzz-minio-config has a single config.env key holding both
+            # MINIO_ROOT_USER and MINIO_ROOT_PASSWORD as shell `export`
+            # lines (MinIO Operator's own format), not separate secret
+            # keys - eval it in the script below instead of referencing
+            # MINIO_ROOT_USER/PASSWORD directly as secretKeyRefs.
+            - name: MINIO_CONFIG_ENV
+              valueFrom:
+                secretKeyRef:
+                  name: buzz-minio-config
+                  key: config.env
+            - name: COGNEE_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-provisioning-credentials
+                  key: COGNEE_ACCESS_KEY_ID
+            - name: COGNEE_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-provisioning-credentials
+                  key: COGNEE_SECRET_ACCESS_KEY
+            - name: BUZZ_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-provisioning-credentials
+                  key: BUZZ_ACCESS_KEY_ID
+            - name: BUZZ_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-backup-provisioning-credentials
+                  key: BUZZ_SECRET_ACCESS_KEY
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              eval "$MINIO_CONFIG_ENV"
+              mc alias set local http://minio.buzz.svc.cluster.local "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+
+              mc mb --ignore-existing local/cognee-db-backups
+              mc mb --ignore-existing local/buzz-db-backups
+
+              cat > /tmp/cognee-policy.json <<EOF
+              {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["arn:aws:s3:::cognee-db-backups","arn:aws:s3:::cognee-db-backups/*"]}]}
+              EOF
+              cat > /tmp/buzz-policy.json <<EOF
+              {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["arn:aws:s3:::buzz-db-backups","arn:aws:s3:::buzz-db-backups/*"]}]}
+              EOF
+
+              mc admin policy create local cognee-db-backup-policy /tmp/cognee-policy.json
+              mc admin policy create local buzz-db-backup-policy /tmp/buzz-policy.json
+
+              mc admin user add local "$COGNEE_ACCESS_KEY_ID" "$COGNEE_SECRET_ACCESS_KEY"
+              mc admin user add local "$BUZZ_ACCESS_KEY_ID" "$BUZZ_SECRET_ACCESS_KEY"
+
+              mc admin policy attach local cognee-db-backup-policy --user "$COGNEE_ACCESS_KEY_ID"
+              mc admin policy attach local buzz-db-backup-policy --user "$BUZZ_ACCESS_KEY_ID"
