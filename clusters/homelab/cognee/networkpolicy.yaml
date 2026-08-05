@@ -88,6 +88,28 @@ spec:
             - port: "11434"
               protocol: TCP
 ---
+# cognee-mcp needs to download the HuggingFace tokenizer config once
+# (config.json/tokenizer files for token-counting during chunking, see
+# HUGGINGFACE_TOKENIZER in cognee-mcp.yaml) - caches locally after the
+# first successful pull. Same scoped-to-this-app pattern as
+# cognee-allow-ollama-egress-to-internet.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-mcp-egress-to-internet
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
 # Default deny all ingress and egress for the cognee namespace.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

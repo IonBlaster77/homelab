@@ -144,6 +144,16 @@ spec:
             # gemma4:26b for the LLM side now.
             - name: EMBEDDING_ENDPOINT
               value: http://ollama.streamystats.svc.cluster.local:11434/v1
+            # Cognee's OllamaEmbeddingEngine always loads a HuggingFace
+            # tokenizer for chunk token-counting, regardless of embedding
+            # provider - EmbeddingConfig's own default is None (not the
+            # engine's more sensible "Salesforce/SFR-Embedding-Mistral"
+            # fallback), and that explicit None overrides the engine's
+            # default rather than letting it apply. Unset, this produced
+            # literal "huggingface.co/None/resolve/..." request URLs.
+            # nomic-embed-text's actual tokenizer, for accurate chunk sizing.
+            - name: HUGGINGFACE_TOKENIZER
+              value: nomic-ai/nomic-embed-text-v1.5
             - name: TZ
               value: Australia/Adelaide
             # gemma4:e2b works correctly (confirmed via direct OpenAI-compat
