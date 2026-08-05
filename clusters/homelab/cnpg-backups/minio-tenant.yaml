@@ -1,0 +1,43 @@
+# Dedicated MinIO tenant just for CNPG Barman Cloud backups (task #13) -
+# deliberately separate from buzz-minio so backup storage isn't sharing a
+# pool with Buzz's actual media uploads. Single volume, no erasure coding:
+# unlike buzz-minio's 4-drive pool, this data is already protected by
+# Longhorn's own 3x replication plus Longhorn's independent block-level
+# backup to the NAS (recurring-jobs.yaml) - MinIO-level redundancy on top
+# would be protecting against a failure mode that's already covered
+# upstream, not worth the extra 3 PVCs.
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: cnpg-backups-minio
+  namespace: cnpg-backups
+spec:
+  configuration:
+    name: cnpg-backups-minio-config
+  requestAutoCert: false
+  pools:
+    - name: pool-0
+      servers: 1
+      volumesPerServer: 1
+      volumeClaimTemplate:
+        metadata:
+          name: data
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          storageClassName: longhorn-ssd
+          resources:
+            requests:
+              storage: 20Gi
+      containerSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        seccompProfile:
+          type: RuntimeDefault
+# PodMonitor deliberately skipped for now - needs a bearer token generated
+# against the running tenant first (mc admin prometheus generate, same
+# process as buzz-minio-metrics-token). Easy follow-up, not blocking.

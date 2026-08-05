@@ -267,9 +267,12 @@ spec:
             - port: "9000"
               protocol: TCP
 ---
-# buzz-db -> MinIO (CNPG Barman Cloud WAL archiving + base backups, task
-# #13). Separate from the relay's own egress rule above - buzz-db pods
-# carry cnpg.io/cluster, not app.kubernetes.io/name: buzz.
+# buzz-db -> the dedicated cnpg-backups-minio tenant (CNPG Barman Cloud WAL
+# archiving + base backups, task #13). Cross-namespace - moved off
+# buzz-minio to a dedicated tenant so backup storage doesn't share a pool
+# with Buzz's actual media uploads. Separate from the relay's own egress
+# rule to buzz-minio above - buzz-db pods carry cnpg.io/cluster, not
+# app.kubernetes.io/name: buzz, and this targets a different namespace.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -282,31 +285,8 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            v1.min.io/tenant: buzz-minio
-      toPorts:
-        - ports:
-            - port: "9000"
-              protocol: TCP
----
-# Ingress half of buzz-db -> MinIO, plus cognee-db's cross-namespace WAL
-# archiving to the same tenant (cognee-db-backups is a separate bucket/user,
-# see cnpg-backup-minio-provision.yaml, but the network path is shared).
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: buzz-allow-ingress-to-minio-from-cnpg
-  namespace: buzz
-spec:
-  endpointSelector:
-    matchLabels:
-      v1.min.io/tenant: buzz-minio
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            cnpg.io/cluster: buzz-db
-        - matchLabels:
-            io.kubernetes.pod.namespace: cognee
-            cnpg.io/cluster: cognee-db
+            io.kubernetes.pod.namespace: cnpg-backups
+            v1.min.io/tenant: cnpg-backups-minio
       toPorts:
         - ports:
             - port: "9000"

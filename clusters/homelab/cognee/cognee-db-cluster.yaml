@@ -46,7 +46,7 @@ spec:
     retentionPolicy: 7d
     barmanObjectStore:
       destinationPath: s3://cognee-db-backups
-      endpointURL: http://minio.buzz.svc.cluster.local
+      endpointURL: http://minio.cnpg-backups.svc.cluster.local
       s3Credentials:
         accessKeyId:
           name: cognee-db-backup-s3-credentials

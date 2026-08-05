@@ -1,0 +1,112 @@
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-default-deny
+  namespace: cnpg-backups
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-allow-dns
+  namespace: cnpg-backups
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# MinIO Operator's init container + the provisioning Job both call the
+# Kubernetes API directly - same class of gap as buzz-allow-egress-to-apiserver.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-allow-egress-to-apiserver
+  namespace: cnpg-backups
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# MinIO Operator polls the Tenant's health endpoint - without this the
+# Tenant sits unhealthy forever even though the pod itself is Running
+# (same gap hit for buzz-minio, see buzz-allow-ingress-from-minio-operator).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-allow-ingress-from-minio-operator
+  namespace: cnpg-backups
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: cnpg-backups-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: minio-operator
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# cognee-db and buzz-db -> this tenant (Barman Cloud WAL archiving + base
+# backups, task #13). Cross-namespace from both.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-allow-ingress-from-cnpg
+  namespace: cnpg-backups
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: cnpg-backups-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cognee
+            cnpg.io/cluster: cognee-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: buzz
+            cnpg.io/cluster: buzz-db
+        # The provisioning Job itself (runs once, creates buckets/users).
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-backups
+            app.kubernetes.io/name: cnpg-backups-provision
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# Egress half for the provisioning Job.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-allow-provision-egress
+  namespace: cnpg-backups
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: cnpg-backups-provision
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            v1.min.io/tenant: cnpg-backups-minio
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP

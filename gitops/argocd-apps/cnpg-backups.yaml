@@ -1,0 +1,23 @@
+# Dedicated MinIO tenant + bucket/user provisioning for CNPG Barman Cloud
+# backups (task #13) - kept separate from buzz-minio so backup storage has
+# its own PVC, isolated from Buzz's media storage.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg-backups
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/cnpg-backups
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-backups
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

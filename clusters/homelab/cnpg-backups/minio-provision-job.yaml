@@ -1,18 +1,12 @@
-# One-off: creates two dedicated buckets + least-privilege users in the
-# existing buzz-minio tenant for CNPG's Barman Cloud backups (task #13).
-# Deliberately NOT reusing buzz-relay's own S3 credentials (those are scoped
-# to buzz-media, and cognee-db has no business holding buzz's media
-# credentials anyway) - each DB gets its own bucket and its own user, scoped
-# to only that bucket, matching the per-app resource separation used
-# everywhere else in this repo.
-#
-# Same immutable-PostSync-hook caveat as buzz-minio-bucket.yaml: changing
-# this later requires deleting the Job first, a plain sync won't re-run it.
+# Creates the two dedicated buckets + least-privilege users in
+# cnpg-backups-minio. Same pattern as buzz's own minio-bucket-job.yaml.
+# Immutable-PostSync-hook caveat applies here too - changing this later
+# needs the Job deleted first, a plain sync won't re-run it.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: cnpg-backup-minio-provision
-  namespace: buzz
+  name: cnpg-backups-minio-provision
+  namespace: cnpg-backups
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -20,7 +14,7 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: buzz
+        app.kubernetes.io/name: cnpg-backups-provision
     spec:
       restartPolicy: OnFailure
       securityContext:
@@ -39,15 +33,10 @@ spec:
           env:
             - name: HOME
               value: /tmp
-            # buzz-minio-config has a single config.env key holding both
-            # MINIO_ROOT_USER and MINIO_ROOT_PASSWORD as shell `export`
-            # lines (MinIO Operator's own format), not separate secret
-            # keys - eval it in the script below instead of referencing
-            # MINIO_ROOT_USER/PASSWORD directly as secretKeyRefs.
             - name: MINIO_CONFIG_ENV
               valueFrom:
                 secretKeyRef:
-                  name: buzz-minio-config
+                  name: cnpg-backups-minio-config
                   key: config.env
             - name: COGNEE_ACCESS_KEY_ID
               valueFrom:
@@ -74,7 +63,7 @@ spec:
             - |
               set -e
               eval "$MINIO_CONFIG_ENV"
-              mc alias set local http://minio.buzz.svc.cluster.local "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+              mc alias set local http://minio.cnpg-backups.svc.cluster.local "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
 
               mc mb --ignore-existing local/cognee-db-backups
               mc mb --ignore-existing local/buzz-db-backups
