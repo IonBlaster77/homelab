@@ -1,0 +1,26 @@
+# Brings the `homelab` AppProject under GitOps - it existed only as a manual
+# `kubectl apply` before this (no prior source file, confirmed via the
+# last-applied-configuration annotation on the live resource). Adding the
+# external-snapshotter repo here (task #13) is what triggered writing this
+# down instead of doing another one-off manual edit.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab
+  namespace: argocd
+spec:
+  description: HomeLab production cluster
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  destinations:
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+  sourceRepos:
+    - https://github.com/IonBlaster77/homelab.git
+    - https://charts.goauthentik.io
+    - https://helm.runix.net
+    - https://kubernetes-sigs.github.io/metrics-server/
+    - https://github.com/kubernetes-csi/external-snapshotter.git
