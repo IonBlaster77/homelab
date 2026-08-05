@@ -14,6 +14,15 @@ spec:
         defaultSettings:
           defaultReplicaCount: 3
           taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule;node-role.kubernetes.io/master:NoSchedule"
+          # When Longhorn detects a node down (via k8s node conditions), force-
+          # delete its pods (Deployments and StatefulSets) so k8s reschedules
+          # them elsewhere and Longhorn reattaches the volume there. Safe here
+          # because defaultReplicaCount: 3 spreads every volume across 3 of
+          # the 4 nodes - losing one node never means losing the only copy.
+          # Was "do-nothing" (the chart default) until a talos4 reboot left
+          # Jellyfin's pod stuck waiting for the same node to come back
+          # instead of rescheduling (task #27).
+          nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
           # createDefaultDiskLabeledNodes: true tells Longhorn to read the
           # node.longhorn.io/default-disks-config annotation on each node
           # (set in the Talos machineconfig) instead of auto-discovering disks.
