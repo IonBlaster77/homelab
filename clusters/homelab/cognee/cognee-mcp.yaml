@@ -84,6 +84,27 @@ spec:
                   key: password
             - name: VECTOR_DB_PROVIDER
               value: pgvector
+            # Same gotcha as GRAPH_DATABASE_* above - VectorConfig has its
+            # own vector_db_host/port fields (default port 1234, confirmed
+            # via source), separate from DB_HOST/DB_PORT, causing the exact
+            # same class of connect-to-localhost failure once the graph DB
+            # one was fixed.
+            - name: VECTOR_DB_HOST
+              value: cognee-db-rw.cognee.svc.cluster.local
+            - name: VECTOR_DB_PORT
+              value: "5432"
+            - name: VECTOR_DB_NAME
+              value: cognee
+            - name: VECTOR_DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cognee-db-credentials
+                  key: username
+            - name: VECTOR_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cognee-db-credentials
+                  key: password
             - name: DB_USERNAME
               valueFrom:
                 secretKeyRef:
