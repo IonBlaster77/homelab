@@ -120,14 +120,19 @@ spec:
             # OpenAI-compatible endpoint, not a real credential.
             - name: LLM_PROVIDER
               value: ollama
-            # e2b, not the 26b MoE variant - that one crashes llama-server
-            # trying to load a CLIP component ("Failed to load CLIP model"),
-            # confirmed reproducible and isolated to that specific artifact/
-            # quant (e2b runs cleanly on identical infra/Ollama version).
-            # Freely swappable later per task #25's discussion - the LLM
-            # choice has zero migration cost, unlike the embedding model.
+            # qwen2.5:7b-instruct, not gemma4 - gemma4:26b (MoE) crashes
+            # llama-server loading a CLIP component, and gemma4:e2b, while
+            # it runs fine and reasons correctly, reliably fails Cognee's
+            # prompt-based structured-JSON summarization step: it echoes
+            # back the Pydantic schema shape itself instead of filling in
+            # the `summary` field (confirmed via two full pipeline runs,
+            # same validation error both times: "Field required ... summary").
+            # Qwen2.5-Instruct is specifically tuned for strict JSON/schema
+            # compliance, which is exactly what broke. Freely swappable -
+            # the LLM choice has zero migration cost, unlike the embedding
+            # model (task #25 discussion).
             - name: LLM_MODEL
-              value: gemma4:e2b-it-q4_K_M
+              value: qwen2.5:7b-instruct-q4_K_M
             - name: LLM_API_KEY
               value: ollama
             - name: LLM_ENDPOINT
