@@ -132,7 +132,11 @@ spec:
             failureThreshold: 3
           resources:
             requests:
-              memory: 22Gi
+              # Lower than the limit on purpose - 22Gi as a request couldn't
+              # schedule on any node ("Insufficient memory"). Baseline
+              # residency doesn't need the full burst headroom the limit
+              # below provides for mmap-loading gemma4:26b.
+              memory: 19Gi
               cpu: 1000m
             limits:
               # 20Gi was too tight against the 16.75GiB gemma4:26b weights -
