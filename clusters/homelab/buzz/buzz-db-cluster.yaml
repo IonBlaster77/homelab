@@ -20,7 +20,11 @@ spec:
   # hourly/daily block-level backup to the NAS (recurring-jobs.yaml)
   # continues unchanged as the off-cluster durability layer underneath this.
   backup:
-    retentionPolicy: 30d
+    # 7d, not 30d - see cognee-db-cluster.yaml for the full reasoning
+    # (buzz-minio's pool is only ~20Gi total, full-copy daily base backups
+    # at 30d retention would risk filling it). Longhorn's NAS backup
+    # already covers 30-day off-cluster retention independently.
+    retentionPolicy: 7d
     barmanObjectStore:
       destinationPath: s3://buzz-db-backups
       endpointURL: http://minio.buzz.svc.cluster.local
