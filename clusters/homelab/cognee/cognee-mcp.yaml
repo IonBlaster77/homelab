@@ -92,6 +92,14 @@ spec:
               value: http://cognee-ollama.cognee.svc.cluster.local:11434/v1
             - name: TZ
               value: Australia/Adelaide
+            # cognee-mcp's own DNS-rebinding Host-header allowlist (mcp SDK's
+            # TransportSecuritySettings, see /app/src/server.py) - without
+            # this, only loopback Host headers pass and every non-loopback
+            # caller (Hermes via in-cluster DNS, the public Gateway route)
+            # gets a 421 Misdirected Request. No port on the public hostname
+            # since standard HTTPS (443) is omitted from the Host header.
+            - name: MCP_ALLOWED_HOSTS
+              value: "cognee-mcp.cognee.svc.cluster.local:8000,cognee-mcp.cognee.svc:8000,cognee-mcp.cognee:8000,cognee.jupitertech.net"
           startupProbe:
             tcpSocket:
               port: 8000
