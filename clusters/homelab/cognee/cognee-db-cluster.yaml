@@ -39,7 +39,14 @@ spec:
         ensure: present
         createdb: true
         login: true
-        superuser: false
+        # Cognee also runs `CREATE EXTENSION IF NOT EXISTS vector` inside
+        # each dynamically-created per-dataset database, which needs
+        # superuser regardless of database ownership - confirmed via the
+        # actual failure ("Must be superuser to create this extension").
+        # Proportionate here since this cluster is dedicated solely to
+        # Cognee - cognee is the only role, on the only tenant, of this
+        # entire CNPG cluster.
+        superuser: true
   # CNPG-native backup (task #13) - continuous WAL archiving + scheduled
   # base backups to the in-cluster MinIO tenant (buzz-minio, shared cluster
   # object storage - see cnpg-backup-minio-provision.yaml in buzz/ for the
