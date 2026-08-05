@@ -169,11 +169,18 @@ spec:
             periodSeconds: 10
             failureThreshold: 30
           livenessProbe:
+            # 3x15s (45s) tolerance was too tight - a long-running cognify
+            # call (multiple LLM round-trips against a slow-reasoning model
+            # on 1 CPU core) can plausibly tie up the process long enough to
+            # miss TCP accepts, and Kubernetes killed the pod mid-request
+            # (confirmed: a fresh pod with 0 restarts appeared right after a
+            # remember call that never returned). 20x15s (5min) gives real
+            # pipeline runs room to finish.
             tcpSocket:
               port: 8000
             initialDelaySeconds: 30
             periodSeconds: 15
-            failureThreshold: 3
+            failureThreshold: 20
           readinessProbe:
             tcpSocket:
               port: 8000
