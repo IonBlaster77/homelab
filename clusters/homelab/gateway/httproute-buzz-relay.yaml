@@ -1,0 +1,31 @@
+# Dedicated hostname for raw Nostr relay clients (task #7). buzz.jupitertech.net
+# serves the same backend but sits behind Cloudflare Access - fine for a human
+# in a browser, fatal for a raw WebSocket relay client, since it can't complete
+# Access's interactive login and the handshake just fails. Buzz already gates
+# access at the protocol layer (relay.requireAuthToken +
+# relay.requireRelayMembership, both chart defaults, confirmed in task #8), so
+# an Access gate in front of this hostname would be redundant, not additive.
+#
+# Needs no new TLS cert (existing wildcard cert on the Gateway's https listener
+# already covers any *.jupitertech.net hostname) - only a Cloudflare Tunnel
+# public hostname entry pointing at the Gateway, and an Access "Bypass"
+# application for this hostname specifically (mirrors how auth.jupitertech.net
+# is set up). Both are dashboard-only steps for Krishna; this route is inert
+# without them, same as cognee.jupitertech.net until task #4 lands.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: buzz-relay
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - "relay.jupitertech.net"
+  rules:
+    - backendRefs:
+        - name: buzz
+          namespace: buzz
+          port: 3000
