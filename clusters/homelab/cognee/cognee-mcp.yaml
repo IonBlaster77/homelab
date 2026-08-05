@@ -102,6 +102,15 @@ spec:
               value: http://ollama.streamystats.svc.cluster.local:11434/v1
             - name: TZ
               value: Australia/Adelaide
+            # gemma4:e2b works correctly (confirmed via direct OpenAI-compat
+            # endpoint test - a real response came back) but takes ~25s for
+            # even a trivial prompt, since it generates a verbose internal
+            # "reasoning" pass before every answer. That's right at the edge
+            # of Cognee's hardcoded 30s connection-test timeout, causing
+            # intermittent false-negative failures on an endpoint that
+            # actually works. Skip the check rather than fail on timing.
+            - name: COGNEE_SKIP_CONNECTION_TEST
+              value: "true"
             # cognee-mcp's own DNS-rebinding Host-header allowlist (mcp SDK's
             # TransportSecuritySettings, see /app/src/server.py) - without
             # this, only loopback Host headers pass and every non-loopback
