@@ -6,7 +6,8 @@ metadata:
 spec:
   instances: 2
   storage:
-    storageClass: longhorn-ssd
+    # nvme, not ssd - see kea-db-cluster.yaml (2026-08-05) for why.
+    storageClass: longhorn-nvme
     size: 5Gi
   bootstrap:
     initdb:
