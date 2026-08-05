@@ -25,7 +25,11 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-ssd
+  # nvme, not ssd: all 3 replicas landed on the same node (talos4) with
+  # only 1/3 actually running - the ssd pool's capacity pressure (see
+  # database migrations, 2026-08-05) blocked Longhorn from scheduling
+  # replicas onto other nodes at all. nvme has ample headroom everywhere.
+  storageClassName: longhorn-nvme
   resources:
     requests:
       storage: 30Gi
