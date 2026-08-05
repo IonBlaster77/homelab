@@ -6,7 +6,10 @@ metadata:
 spec:
   instances: 2
   storage:
-    storageClass: longhorn-ssd
+    # nvme, not ssd: the ssd pool is near its scheduling ceiling cluster-
+    # wide (see cnpg-backups migration, 2026-08-05). Existing PVCs stay on
+    # ssd until manually rolled - a spec change alone doesn't migrate them.
+    storageClass: longhorn-nvme
     size: 5Gi
   bootstrap:
     initdb:
