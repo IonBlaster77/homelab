@@ -1,0 +1,24 @@
+# Cluster-wide snapshot-controller (watches VolumeSnapshot -> creates
+# VolumeSnapshotContent). Distinct from Longhorn's own per-CSI-driver
+# csi-snapshotter sidecar, which already runs but has nothing to do without
+# this. See volumesnapshot-crds.yaml for why this exists (task #13).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: volumesnapshot-controller
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/kubernetes-csi/external-snapshotter.git
+    targetRevision: v8.6.0
+    path: deploy/kubernetes/snapshot-controller
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

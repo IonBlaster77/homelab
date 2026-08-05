@@ -1,0 +1,28 @@
+# Kubernetes-native VolumeSnapshot CRDs (snapshot.storage.k8s.io), upstream
+# from the CSI project - not installed by default, and not the same thing as
+# Longhorn's own internal snapshots.longhorn.io CRD. Needed for CNPG's
+# volumeSnapshot backup method (task #13) - CNPG's other backup method,
+# barmanObjectStore, is S3-API-only and the NAS here doesn't support S3.
+#
+# Same pattern as gateway-api-crds.yaml: CRDs synced before the controller
+# that depends on them (volumesnapshot-controller.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: volumesnapshot-crds
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/kubernetes-csi/external-snapshotter.git
+    targetRevision: v8.6.0
+    path: client/config/crd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

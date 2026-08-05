@@ -27,6 +27,26 @@ spec:
         name: cognee-db-credentials
       postInitSQL:
         - CREATE EXTENSION IF NOT EXISTS vector;
+  # CNPG-native backup (task #13) - Longhorn's own hourly/daily backup
+  # already covers this PVC block-level (recurring-jobs.yaml), this adds a
+  # clean per-cluster restore path via `cnpg` tooling on top of that. Needs
+  # volumesnapshot-crds + volumesnapshot-controller (separate ArgoCD apps).
+  backup:
+    volumeSnapshot:
+      className: longhorn-backup-vsc
+      online: true
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: cognee-db-backup
+  namespace: cognee
+spec:
+  schedule: "0 0 4 * * *" # 4am daily - offset from Longhorn's own daily backup (2am)
+  backupOwnerReference: self
+  method: volumeSnapshot
+  cluster:
+    name: cognee-db
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor

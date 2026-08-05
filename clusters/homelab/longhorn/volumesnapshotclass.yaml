@@ -1,0 +1,14 @@
+# type: bak (not the default "snap") tells Longhorn's CSI driver to push the
+# snapshot to the configured backup target (nfs://10.77.20.20:/volume1/
+# longhorn-backups, see backup-target.yaml) instead of a local-only
+# snapshot. Confirmed against Longhorn's own docs (longhorn/website,
+# csi-volume-snapshot-associated-with-longhorn-backup.md). Consumed by
+# CNPG's ScheduledBackup method: volumeSnapshot (task #13).
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: longhorn-backup-vsc
+driver: driver.longhorn.io
+deletionPolicy: Delete
+parameters:
+  type: bak
