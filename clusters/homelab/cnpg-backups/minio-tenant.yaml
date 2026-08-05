@@ -25,7 +25,12 @@ spec:
         spec:
           accessModes:
             - ReadWriteOnce
-          storageClassName: longhorn-ssd
+          # nvme, not ssd: the ssd pool's scheduled (committed) capacity is
+          # already near its ceiling on some nodes cluster-wide (real free
+          # space is fine, but Longhorn's scheduler still refused a new
+          # replica - ReplicaSchedulingFailure, "insufficient storage").
+          # nvme is nearly empty. Not latency-sensitive data anyway.
+          storageClassName: longhorn-nvme
           resources:
             requests:
               storage: 20Gi
