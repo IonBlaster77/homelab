@@ -234,6 +234,12 @@ spec:
             app: job-server
         - matchLabels:
             app: streamystats
+        # cognee-mcp shares this instance's already-pulled nomic-embed-text
+        # for embeddings, rather than duplicating a 274MB download into
+        # cognee's own Ollama (which only needs gemma4:26b for the LLM side).
+        - matchLabels:
+            io.kubernetes.pod.namespace: cognee
+            app: cognee-mcp
       toPorts:
         - ports:
             - port: "11434"

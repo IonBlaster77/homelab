@@ -32,7 +32,9 @@ spec:
               value: cognee-ollama.cognee.svc.cluster.local:11434
           command: ["/bin/sh", "-c"]
           args:
-            - ollama pull gemma4:26b && ollama pull nomic-embed-text
+            # nomic-embed-text no longer needed here - cognee-mcp shares
+            # Streamystats' already-running instance for embeddings instead.
+            - ollama pull gemma4:26b
           resources:
             requests:
               memory: 128Mi

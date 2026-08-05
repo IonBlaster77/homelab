@@ -66,6 +66,28 @@ spec:
             - port: "9000"
               protocol: TCP
 ---
+# cognee-mcp -> Streamystats' Ollama, for embeddings only (nomic-embed-text
+# is already pulled there - shared instance instead of duplicating the
+# download into cognee-ollama, which only needs gemma4:26b now).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-mcp-egress-to-streamystats-ollama
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: streamystats
+            app: ollama
+      toPorts:
+        - ports:
+            - port: "11434"
+              protocol: TCP
+---
 # Default deny all ingress and egress for the cognee namespace.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy

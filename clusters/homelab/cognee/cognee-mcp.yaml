@@ -88,8 +88,12 @@ spec:
               value: nomic-embed-text:latest
             - name: EMBEDDING_DIMENSIONS
               value: "768"
+            # Streamystats' Ollama, not cognee-ollama - nomic-embed-text is
+            # already pulled and running there (shared instance instead of
+            # a duplicate 274MB download). cognee-ollama only needs
+            # gemma4:26b for the LLM side now.
             - name: EMBEDDING_ENDPOINT
-              value: http://cognee-ollama.cognee.svc.cluster.local:11434/v1
+              value: http://ollama.streamystats.svc.cluster.local:11434/v1
             - name: TZ
               value: Australia/Adelaide
             # cognee-mcp's own DNS-rebinding Host-header allowlist (mcp SDK's
