@@ -208,3 +208,24 @@ spec:
         - ports:
             - port: "3000"
               protocol: TCP
+---
+# Egress to the Cognee MCP memory server (in-cluster path — independent of
+# the public cognee.jupitertech.net hostname / Access gate, see task #4).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-cognee-mcp-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cognee
+            app: cognee-mcp
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP

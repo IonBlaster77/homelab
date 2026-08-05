@@ -48,3 +48,22 @@ data:
           resources: false
           prompts: false
         supports_parallel_tool_calls: true
+      cognee:
+        # Streamable HTTP at /mcp, confirmed directly against the pod
+        # (initialize + tools/list round-trip). No auth — cognee-mcp doesn't
+        # implement bearer/API-key auth itself, so this relies entirely on
+        # the NetworkPolicy restricting ingress to in-cluster callers
+        # (hermes-allow-cognee-mcp-egress / cognee-allow-mcp-ingress-from-hermes).
+        # Same self-hosted Postgres+pgvector+Ollama stack as the public
+        # cognee.jupitertech.net endpoint (task #4) — this is the in-cluster
+        # path, unaffected by whether the public Access gate is set up yet.
+        url: "http://cognee-mcp.cognee.svc.cluster.local:8000/mcp"
+        tools:
+          # remember/recall/forget are the actual memory operations. Excluded:
+          # visualize_graph_ui / upload_file_ui / open_cognee_workspace (open
+          # a browser UI — no browser in Hermes' context) and the *_json
+          # dataset-management tools (workspace-UI plumbing, not memory ops).
+          include: [remember, recall, forget]
+          resources: false
+          prompts: false
+        supports_parallel_tool_calls: true

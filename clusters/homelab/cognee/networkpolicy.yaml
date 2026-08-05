@@ -22,6 +22,27 @@ spec:
             - port: "8000"
               protocol: TCP
 ---
+# Hermes -> cognee-mcp, port 8000. The in-cluster memory integration path
+# (task #23) - independent of the public Gateway route above.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-mcp-ingress-from-hermes
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+---
 # Default deny all ingress and egress for the cognee namespace.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
