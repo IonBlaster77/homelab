@@ -142,8 +142,14 @@ spec:
             # already pulled and running there (shared instance instead of
             # a duplicate 274MB download). cognee-ollama only needs
             # gemma4:26b for the LLM side now.
+            # OllamaEmbeddingEngine POSTs directly to this exact URL with no
+            # path augmentation - its own default is
+            # "http://localhost:11434/api/embed" (Ollama's native embed
+            # route), not the OpenAI-compatible /v1/embeddings path LLM_
+            # ENDPOINT uses. Confirmed via source: the /v1 value was hitting
+            # the bare path, getting a 404 back as text/plain.
             - name: EMBEDDING_ENDPOINT
-              value: http://ollama.streamystats.svc.cluster.local:11434/v1
+              value: http://ollama.streamystats.svc.cluster.local:11434/api/embed
             # Cognee's OllamaEmbeddingEngine always loads a HuggingFace
             # tokenizer for chunk token-counting, regardless of embedding
             # provider - EmbeddingConfig's own default is None (not the
