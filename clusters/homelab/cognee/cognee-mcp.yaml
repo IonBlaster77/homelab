@@ -59,6 +59,29 @@ spec:
               value: cognee
             - name: GRAPH_DATABASE_PROVIDER
               value: postgres
+            # GraphConfig has its own separate graph_database_host/port
+            # fields, distinct from DB_HOST/DB_PORT above, and doesn't fall
+            # back to them even with provider=postgres pointing at the same
+            # instance. Unset, they default to host="" (resolves to
+            # localhost) and port=123 - confirmed via source read, this was
+            # causing "Connect call failed ('::1', 123)" on every remember
+            # call. Same all-in-one Postgres, just needs telling twice.
+            - name: GRAPH_DATABASE_HOST
+              value: cognee-db-rw.cognee.svc.cluster.local
+            - name: GRAPH_DATABASE_PORT
+              value: "5432"
+            - name: GRAPH_DATABASE_NAME
+              value: cognee
+            - name: GRAPH_DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cognee-db-credentials
+                  key: username
+            - name: GRAPH_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cognee-db-credentials
+                  key: password
             - name: VECTOR_DB_PROVIDER
               value: pgvector
             - name: DB_USERNAME
