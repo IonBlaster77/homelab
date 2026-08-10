@@ -56,6 +56,17 @@ spec:
             summary: "Longhorn volume {{ $labels.volume }} ({{ $labels.pvc }}) is Faulted"
             description: "All replicas for this volume are unavailable — data on this PVC is currently inaccessible."
 
+    - name: cilium-gateway
+      rules:
+        - alert: CiliumGatewayProbeFailed
+          expr: probe_success{target="cilium-gateway"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Cilium Gateway (networking/homelab-gateway) is not responding"
+            description: "Every public *.jupitertech.net hostname except auth.jupitertech.net routes through this shared Envoy Gateway — a failure here takes all of them down at once, even though cloudflared's tunnel-to-edge connection (see CloudflareTunnelDown) stays healthy throughout, since this is an origin-reachability failure, not a tunnel one. Known cause: cilium-agent/cilium-envoy proxy-port drift after a partial restart (agent restarted without envoy, or vice versa) — compare `cilium-dbg envoy admin listeners` against the agent's 'Adding new proxy port rules' log line on each node; a mismatch means that node's envoy needs restarting too."
+
     - name: network-services
       rules:
         - alert: AdGuardDNSProbeFailed

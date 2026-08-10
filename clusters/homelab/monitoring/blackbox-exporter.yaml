@@ -31,6 +31,16 @@ data:
       tcp_connect:
         prober: tcp
         timeout: 5s
+      gateway_https:
+        prober: http
+        timeout: 5s
+        http:
+          method: GET
+          tls_config:
+            insecure_skip_verify: true
+          headers:
+            Host: hermes.jupitertech.net
+          valid_status_codes: [200, 301, 302, 401, 403]
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -146,4 +156,31 @@ spec:
         - 10.77.20.20:2049
       labels:
         target: nas-nfs
+  interval: 30s
+---
+# Probes the shared Cilium Gateway the same way cloudflared does: an HTTPS
+# request straight to the gateway's ClusterIP with a real Host header. This
+# is the origin-reachability check cloudflared itself can't give us — its
+# CloudflareTunnelDown alert only fires on zero edge connections, which
+# stayed healthy during the 2026-08-09 outage even though every hostname
+# behind the gateway was unreachable (cilium-agent/cilium-envoy proxy-port
+# drift after a partial restart). hermes.jupitertech.net is just the canary
+# Host header; a failure here means the whole gateway is down, not just Hermes.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: cilium-gateway
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  module: gateway_https
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - https://cilium-gateway-homelab-gateway.networking.svc.cluster.local:443/
+      labels:
+        target: cilium-gateway
   interval: 30s
