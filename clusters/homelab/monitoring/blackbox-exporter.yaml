@@ -2,6 +2,12 @@
 # endpoint (AdGuard's DNS resolution, Kea's control-agent API). Prometheus
 # Operator's Probe CRD (below) tells Prometheus to hit this exporter, which
 # in turn performs the actual check against the target.
+#
+# This binary only reads config.yml at startup — no --web.enable-lifecycle,
+# no reloader sidecar. Editing `modules:` below requires a manual
+# `kubectl rollout restart deployment/blackbox-exporter -n monitoring`
+# afterward, or the new/changed module 400s until the pod happens to restart
+# some other way.
 apiVersion: v1
 kind: ConfigMap
 metadata:
