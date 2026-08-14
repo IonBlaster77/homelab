@@ -47,6 +47,13 @@ spec:
         # Cognee - cognee is the only role, on the only tenant, of this
         # entire CNPG cluster.
         superuser: true
+        # Explicit here (matching kea-db-cluster.yaml's role entries) even
+        # though these match CNPG's own webhook defaults - spec.managed.roles
+        # is an atomic list, so ArgoCD's SSA dry-run comparison doesn't see
+        # webhook-injected defaults the same way the real live object does,
+        # causing a persistent phantom OutOfSync with no visible diff.
+        inherit: true
+        connectionLimit: -1
   # CNPG-native backup (task #13) - continuous WAL archiving + scheduled
   # base backups to the in-cluster MinIO tenant (buzz-minio, shared cluster
   # object storage - see cnpg-backup-minio-provision.yaml in buzz/ for the
