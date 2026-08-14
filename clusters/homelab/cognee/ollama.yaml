@@ -3,20 +3,22 @@
 # starve or be starved by that unrelated pipeline. Serves both the
 # memory-extraction LLM and embeddings for Cognee, self-contained.
 #
-# Model: gemma4:26b - chosen for quality over speed (async/queued extraction,
-# so CPU-only throughput of ~0.5-2 tok/s is acceptable) and strong clean-JSON
-# structured-output behavior, which is what memory extraction needs most.
+# Model: qwen2.5:7b-instruct-q4_K_M - switched from gemma4:26b (2026-08-05),
+# which crashed loading a CLIP component and, before that, was too slow to
+# pull reliably (cluster egress kept getting throttled mid-download). qwen2.5
+# handles structured-output/JSON entity extraction cleanly and pulls in
+# minutes instead of hours. Embeddings come from Streamystats' shared Ollama,
+# not this instance.
 #
 # Node: talos4 is the only dedicated worker (talos1-3 are control-plane) -
 # pinning heavy application workloads off the control-plane nodes, same
 # philosophy as the CPU/memory-headroom pinning already done for hermes.
 #
-# Model pulling is NOT done here (no postStart hook) - kubelet kills a
-# postStart hook that runs too long (~20min observed), which an 18GB pull
-# always exceeds, causing an infinite ContainerCreating/kill/restart loop
-# that can never finish regardless of network speed. See
-# cognee-ollama-pull-models.yaml (a plain Job, no hook-tied deadline) for
-# the actual model pull, run once against this Deployment's Service.
+# Model pulling is a one-off `ollama pull` against this Deployment's Service,
+# run manually (not via postStart - kubelet kills a postStart hook that runs
+# too long, ~20min observed, which a multi-GB pull always exceeds - and not
+# via a standing Job, since Job pod specs are immutable and a completed pull
+# has nothing left to reconcile). The model persists on the PVC below.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
