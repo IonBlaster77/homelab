@@ -143,11 +143,50 @@ spec:
                 - MinIO Console:
                     id: minio-card
                     href: https://minio.jupitertech.net
-                    description: S3-compatible object storage
+                    description: S3-compatible object storage — buzz tenant
                     icon: minio.png
                     siteMonitor: http://buzz-minio-console.buzz.svc.cluster.local:9090
                     namespace: buzz
                     podSelector: v1.min.io/tenant=buzz-minio
+                - MinIO — CNPG Backups:
+                    id: minio-backups-card
+                    # Second, separate MinIO tenant holding the CNPG Barman
+                    # backups (task #13). Deliberately not the same tenant as
+                    # buzz-minio - backups moved off it when that pool neared
+                    # its scheduling ceiling. No public hostname: internal only.
+                    description: Postgres backup object store — internal only
+                    icon: minio.png
+                    siteMonitor: http://cnpg-backups-minio-console.cnpg-backups.svc.cluster.local:9090
+                    namespace: cnpg-backups
+                - Prometheus:
+                    id: prometheus-card
+                    # No href: not exposed via the gateway. Grafana is the
+                    # dashboard surface; this tile is for knowing Prometheus
+                    # itself is alive, which Grafana being up does NOT imply.
+                    description: Metrics store & alert rules — internal only
+                    icon: prometheus.png
+                    siteMonitor: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/healthy
+                    namespace: monitoring
+                    app: prometheus
+                - Alertmanager:
+                    id: alertmanager-card
+                    description: Alert routing & silences — internal only
+                    icon: alertmanager.png
+                    siteMonitor: http://monitoring-kube-prometheus-alertmanager.monitoring.svc.cluster.local:9093/-/healthy
+                    namespace: monitoring
+                    app: alertmanager
+                - Argo Workflows:
+                    id: argo-workflows-card
+                    # Intentionally NO href. The server runs with authModes
+                    # `server`, i.e. it acts as its own ServiceAccount with no
+                    # per-user login - putting a reachable URL in front of it
+                    # would publish an unauthenticated cluster-admin UI. Reach
+                    # it with a port-forward until it is behind SSO or Access.
+                    description: In-cluster build & job orchestration — port-forward only
+                    icon: mdi-sitemap
+                    siteMonitor: http://argo-workflows-server.argo-workflows.svc.cluster.local:2746
+                    namespace: argo-workflows
+                    app: argo-workflows-server
 
             - Network & Security:
                 - Authentik:
@@ -308,6 +347,18 @@ spec:
                     namespace: hermes
                     app: hermes
                     podSelector: app=hermes
+                - Cognee:
+                    id: cognee-card
+                    href: https://cognee.jupitertech.net
+                    description: Shared cross-agent memory (MCP server)
+                    icon: mdi-brain
+                    # /health rather than / - cognee-mcp is an MCP endpoint, not
+                    # a web app, and the Python mcp SDK rejects requests whose
+                    # Host header is not in MCP_ALLOWED_HOSTS with a 421, which
+                    # would show as a permanently-down tile.
+                    siteMonitor: http://cognee-mcp.cognee.svc.cluster.local:8000/health
+                    namespace: cognee
+                    app: cognee-mcp
                 - Streamystats:
                     id: streamystats-card
                     href: https://streamystats.jupitertech.net

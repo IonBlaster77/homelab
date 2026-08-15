@@ -127,3 +127,23 @@ spec:
         - ports:
             - port: "9090"
               protocol: TCP
+---
+# Homepage's siteMonitor probe against the server UI. Port is the pod's
+# container port (post-DNAT), not the Service port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-workflows-allow-ingress-from-homepage
+  namespace: argo-workflows
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: argo-workflows-server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "2746"
+              protocol: TCP

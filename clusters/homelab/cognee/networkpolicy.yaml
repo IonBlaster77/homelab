@@ -355,3 +355,24 @@ spec:
         - ports:
             - port: "11434"
               protocol: TCP
+---
+# Homepage's siteMonitor probe. Hits cognee-mcp directly on the pod port
+# (post-DNAT), not the Service port - Cilium's kube-proxy replacement DNATs
+# before policy enforcement, so a Service-port rule would never match.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cognee-allow-ingress-from-homepage
+  namespace: cognee
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cognee-mcp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP

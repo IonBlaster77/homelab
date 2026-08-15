@@ -110,3 +110,24 @@ spec:
         - ports:
             - port: "9000"
               protocol: TCP
+---
+# Homepage's siteMonitor probe against the MinIO console. Port is the pod's
+# container port (post-DNAT), not the Service port - Cilium DNATs before policy
+# enforcement, so a Service-port rule silently never matches.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cnpg-backups-allow-ingress-from-homepage
+  namespace: cnpg-backups
+spec:
+  endpointSelector:
+    matchLabels:
+      v1.min.io/tenant: cnpg-backups-minio
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
