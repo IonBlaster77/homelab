@@ -84,6 +84,12 @@ spec:
               add_rewrite "hubble.jupitertech.net"   "10.77.20.60"
               add_rewrite "buzz.jupitertech.net"     "10.77.20.60"
               add_rewrite "minio.jupitertech.net"    "10.77.20.60"
+              # LAN resolution for the two hostnames whose HTTPRoutes are live
+              # but which had no rewrite, so they resolved nowhere on the LAN.
+              # Public DNS for both is still pending in Cloudflare (tasks #4/#7);
+              # these entries are the LAN half only and are independent of it.
+              add_rewrite "cognee.jupitertech.net"   "10.77.20.60"
+              add_rewrite "relay.jupitertech.net"    "10.77.20.60"
 
               # Retired hostnames. add_rewrite never updates or removes an
               # existing record, so renames leave the old name resolving to
