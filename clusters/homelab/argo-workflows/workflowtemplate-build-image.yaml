@@ -1,0 +1,116 @@
+# Reusable image build. BuildKit rather than Kaniko: Google archived kaniko on
+# 2025-06-03 and its gcr.io images get no further security patches; Chainguard's
+# fork is paywalled. This is the component that holds the registry push
+# credential, so it should not be an unmaintained binary.
+#
+# Runs buildkitd ephemerally inside the step via buildctl-daemonless.sh - no
+# persistent buildkitd Deployment to own. Trade-off: no local layer cache
+# between builds. If builds get slow, add registry-backed caching
+# (--export-cache type=registry,ref=...:buildcache) rather than a PVC, since
+# that survives pod rescheduling.
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: build-image
+  namespace: argo-builds
+spec:
+  serviceAccountName: argo-workflow
+  entrypoint: build
+  ttlStrategy:
+    secondsAfterCompletion: 3600
+  arguments:
+    parameters:
+      - name: repo
+        value: https://github.com/IonBlaster77/homelab.git
+      - name: revision
+        value: main
+      # Path within the repo holding the Dockerfile and build context.
+      - name: context
+        value: services/example
+      - name: image
+        value: ghcr.io/ionblaster77/example
+      # Immutable git-SHA tags only - never :latest. hermes-agent:latest turned
+      # out to be tracking the unstable :main branch rather than releases, which
+      # is exactly the class of surprise pinning avoids.
+      - name: tag
+        value: dev
+      # Set false to build without publishing - useful for validating a
+      # Dockerfile, or for testing this template before a push credential exists.
+      - name: push
+        value: "true"
+  templates:
+    - name: build
+      inputs:
+        parameters:
+          - name: repo
+          - name: revision
+          - name: context
+          - name: image
+          - name: tag
+          - name: push
+      container:
+        image: moby/buildkit:v0.32.2-rootless
+        command: [buildctl-daemonless.sh]
+        args:
+          - build
+          - --frontend=dockerfile.v0
+          # BuildKit clones the git context itself, so there is no separate
+          # checkout step. Public repo, so no git credential is needed.
+          - --opt=context={{inputs.parameters.repo}}#{{inputs.parameters.revision}}:{{inputs.parameters.context}}
+          - --output=type=image,name={{inputs.parameters.image}}:{{inputs.parameters.tag}},push={{inputs.parameters.push}}
+        env:
+          # Rootless BuildKit normally wants seccomp AND AppArmor set to
+          # Unconfined - but PodSecurity `baseline` forbids both of those
+          # explicitly, so that route is closed. --oci-worker-no-process-sandbox
+          # drops the nested process sandbox instead, which is what lets this
+          # run under RuntimeDefault seccomp. Acceptable here because the build
+          # pod is already an isolation boundary of its own; it would NOT be
+          # acceptable if this namespace ran untrusted third-party builds.
+          - name: BUILDKITD_FLAGS
+            value: --oci-worker-no-process-sandbox
+          # buildctl needs somewhere writable for daemon state.
+          - name: XDG_RUNTIME_DIR
+            value: /home/user/.local/tmp
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          seccompProfile:
+            type: RuntimeDefault
+          # NOTE: allowPrivilegeEscalation is deliberately left unset (i.e.
+          # true). RootlessKit relies on the setuid newuidmap/newgidmap helpers
+          # to set up its user namespace, and setting this false blocks setuid
+          # and breaks the build. `baseline` permits it; this is one of the
+          # reasons this namespace is not `restricted`.
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            # Capped deliberately: cluster CPU requests already sit at 45-63%
+            # per node with limits overcommitted. Revisit once the two extra
+            # nodes land (task #34).
+            cpu: "2"
+            memory: 3Gi
+        volumeMounts:
+          - name: buildkit-state
+            mountPath: /home/user/.local/share/buildkit
+          - name: buildkit-tmp
+            mountPath: /home/user/.local/tmp
+          - name: ghcr-push
+            mountPath: /home/user/.docker
+            readOnly: true
+      volumes:
+        - name: buildkit-state
+          emptyDir: {}
+        - name: buildkit-tmp
+          emptyDir: {}
+        - name: ghcr-push
+          secret:
+            secretName: ghcr-push
+            # optional so a push=false build still runs before the credential
+            # exists. A push=true build without it fails at the push step with
+            # an auth error, which is the correct and obvious failure.
+            optional: true
+            items:
+              - key: .dockerconfigjson
+                path: config.json
