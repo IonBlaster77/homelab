@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows-config
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/argo-workflows
+  destination:
+    server: https://kubernetes.default.svc
+    # The manifests here span two namespaces (argo-builds and argo-workflows)
+    # and each carries an explicit `metadata.namespace`, so this is only the
+    # default for anything that doesn't.
+    namespace: argo-builds
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

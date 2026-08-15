@@ -1,0 +1,80 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows
+  namespace: argocd
+spec:
+  # project: default (not homelab) - matches cnpg/metrics-server etc. Apps that
+  # pull an external Helm chart use the default project, which sidesteps the
+  # homelab AppProject's sourceRepos whitelist.
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-workflows
+    targetRevision: 2.0.0
+    helm:
+      values: |
+        # Workflow pods run in a SEPARATE namespace (argo-builds, PodSecurity
+        # `baseline`) rather than here, because Kaniko has to run as root to
+        # unpack image layers into / and would be rejected outright by the
+        # `restricted` profile this namespace enforces. Keeping the control
+        # plane restricted and only the build sandbox baseline confines that
+        # exemption to the pods that actually need it.
+        workflow:
+          namespace: argo-builds
+          serviceAccount:
+            create: true
+            name: argo-workflow
+          rbac:
+            create: true
+
+        controller:
+          # Hard cap on concurrently-running workflows. Deliberately low until
+          # the two extra nodes land (task #34): cluster CPU requests already
+          # sit at 45-63% per node with limits overcommitted, and a Kaniko build
+          # can take 1-2 CPU for minutes. Raise this once there is dedicated
+          # worker capacity to absorb it.
+          parallelism: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+
+        server:
+          enabled: true
+          # `server` auth mode = the UI talks to Kubernetes as the server's own
+          # ServiceAccount, with no per-user login. Acceptable only because
+          # this is not exposed yet - there is no HTTPRoute and no public DNS
+          # record, so reaching it needs a port-forward. BEFORE putting a
+          # hostname in front of this, move to sso auth mode (Authentik, see
+          # task #14) or put it behind Cloudflare Access - `server` mode on a
+          # reachable URL is effectively an unauthenticated cluster admin UI.
+          authModes:
+            - server
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-workflows
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    # managedNamespaceMetadata labels the namespace ArgoCD creates, so the PSA
+    # labels land without a separate ordering-sensitive namespace manifest.
+    managedNamespaceMetadata:
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/warn: restricted
+    syncOptions:
+      - CreateNamespace=true
+      # The Workflow CRDs are large enough to blow the annotation size limit on
+      # a client-side apply - same reason the monitoring app uses SSA.
+      - ServerSideApply=true

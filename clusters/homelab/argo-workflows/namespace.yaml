@@ -1,0 +1,19 @@
+# Build sandbox for Argo Workflows. Separate from the argo-workflows namespace
+# (which runs the controller/server under PodSecurity `restricted`) purely so
+# the root-required build tooling is confined to one place.
+#
+# PSA is `baseline`, NOT `restricted`, and NOT `privileged`:
+#   - `restricted` demands runAsNonRoot, which Kaniko cannot satisfy - it has to
+#     run as uid 0 to unpack image layers into the container filesystem root.
+#   - `baseline` still forbids the things that actually matter here: privileged
+#     containers, host namespaces, hostPath mounts, and added capabilities.
+#   - `privileged` is not needed. If something in a build appears to want it,
+#     that is a signal to re-check the build, not to relax this label.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argo-builds
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: baseline

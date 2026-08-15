@@ -1,0 +1,129 @@
+---
+# Default deny all ingress and egress for the argo-builds namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-builds-default-deny
+  namespace: argo-builds
+spec:
+  endpointSelector: {}
+  # An empty LIST (ingress: []) is rejected by Cilium as a malformed rule and
+  # silently leaves the namespace unprotected; a list with one EMPTY RULE (- {})
+  # is the canonical deny-all. Same idiom as every other namespace here.
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-builds-allow-dns
+  namespace: argo-builds
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Build pods need the API server: the Argo executor reports step status back
+# through it, and `git`/`kaniko` steps read their own pod spec.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-builds-allow-egress-to-apiserver
+  namespace: argo-builds
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# Outbound HTTPS for builds: cloning source from github.com, pulling base
+# images, and pushing the result to ghcr.io. Scoped to 443 rather than a CIDR
+# because all three are CDN-fronted with no stable address range.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-builds-allow-egress-https
+  namespace: argo-builds
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Default deny for the control-plane namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-workflows-default-deny
+  namespace: argo-workflows
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-workflows-allow-dns
+  namespace: argo-workflows
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The controller and server are almost entirely API-server clients - watching
+# Workflows, creating pods in argo-builds, updating status.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-workflows-allow-egress-to-apiserver
+  namespace: argo-workflows
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# Prometheus scrapes the controller's metrics endpoint (:9090).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-workflows-allow-ingress-from-monitoring
+  namespace: argo-workflows
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
