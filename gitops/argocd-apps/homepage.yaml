@@ -75,6 +75,16 @@ spec:
               Quick Links:
                 tab: Apps
                 icon: mdi-bookmark-multiple
+              Update Queue:
+                tab: Patch Ops
+                style: row
+                columns: 2
+                icon: mdi-package-down
+              Upstream Releases:
+                tab: Patch Ops
+                style: row
+                columns: 3
+                icon: mdi-tag-arrow-up
 
           bookmarks:
             - Quick Links:
@@ -358,6 +368,94 @@ spec:
                       username: "{{HOMEPAGE_VAR_SYNOLOGY_USER}}"
                       password: "{{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}"
                       volume: volume_1
+
+            # Patch ops centre (task #21). Deliberately built with customapi
+            # widgets hitting public APIs directly rather than a custom
+            # aggregator service: this repo has no image-build pipeline, so a
+            # bespoke backend would be a delivery problem, not a coding one.
+            #
+            # Division of labour: Renovate (task #22) covers every Helm chart
+            # and container image in the repo and raises a PR per update, so
+            # "Update Queue" just counts its open PRs rather than duplicating
+            # version-checking. "Upstream Releases" covers the things Renovate
+            # structurally CANNOT see - Talos OS (Image Factory serves
+            # content-addressed installer images, not versioned tags, so
+            # Renovate's docker datasource gets no-result) and Kubernetes
+            # (ships as part of Talos, not as a tracked dependency here).
+            - Update Queue:
+                - Renovate:
+                    id: renovate-card
+                    href: https://github.com/IonBlaster77/homelab/pulls
+                    description: Dependency update PRs awaiting review
+                    icon: mdi-source-pull
+                    widget:
+                      type: customapi
+                      # GitHub's search API returns a single total_count field,
+                      # which maps cleanly onto one customapi field. Listing
+                      # /pulls directly would return an array with no count.
+                      # Unauthenticated search is rate-limited to 10 req/min;
+                      # a 10-minute refresh sits far inside that.
+                      url: "https://api.github.com/search/issues?q=repo:IonBlaster77/homelab+is:pr+is:open+label:renovate"
+                      refreshInterval: 600000
+                      mappings:
+                        - field: total_count
+                          label: Open PRs
+                          format: number
+                - Dependency Dashboard:
+                    id: renovate-dashboard-card
+                    href: https://github.com/IonBlaster77/homelab/issues
+                    description: Full backlog incl. rate-limited & skipped updates
+                    icon: mdi-clipboard-list-outline
+
+            - Upstream Releases:
+                - Talos OS:
+                    id: talos-release-card
+                    # Current version is hardcoded because nothing serves it
+                    # over HTTP that Homepage can reach - it lives on the Node
+                    # objects (.status.nodeInfo.osImage) and reading those needs
+                    # a service-account token, which customapi cannot supply.
+                    # Update this line whenever the cluster is upgraded, or
+                    # replace the whole card once the aggregator lands.
+                    description: Running v1.12.6 — compare against latest
+                    href: https://github.com/siderolabs/talos/releases
+                    icon: mdi-server
+                    widget:
+                      type: customapi
+                      url: "https://api.github.com/repos/siderolabs/talos/releases/latest"
+                      refreshInterval: 3600000
+                      mappings:
+                        - field: tag_name
+                          label: Latest
+                        - field: published_at
+                          label: Released
+                          format: relativeDate
+                - Kubernetes:
+                    id: k8s-release-card
+                    description: Running v1.35.0 — ships with Talos, not tracked by Renovate
+                    href: https://github.com/kubernetes/kubernetes/releases
+                    icon: kubernetes.png
+                    widget:
+                      type: customapi
+                      url: "https://api.github.com/repos/kubernetes/kubernetes/releases/latest"
+                      refreshInterval: 3600000
+                      mappings:
+                        - field: tag_name
+                          label: Latest
+                        - field: published_at
+                          label: Released
+                          format: relativeDate
+                - Network Hardware:
+                    id: netgear-pending-card
+                    # Placeholder, not a live card. RouterOS versions need
+                    # either SSH (blocked - task #26, the router key import has
+                    # never worked) or the REST API; the existing mikrotik
+                    # exporter feeding Prometheus has no version collector
+                    # (confirmed 2026-08-15: only cpu/memory/interface/route
+                    # metrics). UniFi firmware needs the unifi-poller scrape
+                    # fixed first - it exports fine but no unifi_* series ever
+                    # reach Prometheus despite a ServiceMonitor existing.
+                    description: RouterOS & UniFi firmware — blocked, see tasks #26 / unifi scrape
+                    icon: mdi-alert-circle-outline
 
           widgets:
             - kubernetes:
