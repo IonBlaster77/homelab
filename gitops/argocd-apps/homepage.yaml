@@ -454,17 +454,38 @@ spec:
                         - field: published_at
                           label: Released
                           format: relativeDate
-                - Network Hardware:
-                    id: netgear-pending-card
+                - UniFi APs:
+                    id: unifi-firmware-card
+                    # Firmware version comes from unpoller_device_info's
+                    # `version` label. Note the metric prefix is `unpoller_`,
+                    # not `unifi_` - the project renamed itself from
+                    # unifi-poller to UnPoller, which makes the data easy to
+                    # miss when grepping. Queried through Prometheus' HTTP API
+                    # via customapi rather than Homepage's `prometheus` widget
+                    # type, because that widget renders a series *value* and
+                    # the information here lives in a label instead.
+                    description: Access point firmware (both U6-Lite)
+                    href: https://10.77.10.10
+                    icon: unifi.png
+                    widget:
+                      type: customapi
+                      url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=unpoller_device_info"
+                      refreshInterval: 3600000
+                      mappings:
+                        - field:
+                            data:
+                              result:
+                                0:
+                                  metric: version
+                          label: Firmware
+                - MikroTik RouterOS:
+                    id: routeros-pending-card
                     # Placeholder, not a live card. RouterOS versions need
                     # either SSH (blocked - task #26, the router key import has
-                    # never worked) or the REST API; the existing mikrotik
-                    # exporter feeding Prometheus has no version collector
-                    # (confirmed 2026-08-15: only cpu/memory/interface/route
-                    # metrics). UniFi firmware needs the unifi-poller scrape
-                    # fixed first - it exports fine but no unifi_* series ever
-                    # reach Prometheus despite a ServiceMonitor existing.
-                    description: RouterOS & UniFi firmware — blocked, see tasks #26 / unifi scrape
+                    # never worked) or the REST API; the mikrotik exporter
+                    # feeding Prometheus has no version collector (confirmed
+                    # 2026-08-15: only cpu/memory/interface/route/uptime).
+                    description: Version check blocked — see task #26
                     icon: mdi-alert-circle-outline
 
           widgets:
