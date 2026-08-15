@@ -19,7 +19,14 @@ metadata:
   namespace: longhorn-system
 spec:
   name: daily-backup
-  cron: "0 2 * * *"
+  # Offset to :30 so this never starts in the same minute as hourly-backup
+  # ("0 * * * *"). Both jobs target the same `default` group, i.e. the same
+  # volumes, and a Longhorn backup takes a per-volume lock in the backupstore.
+  # Firing both at 02:00 made them race for those locks, and the loser failed
+  # outright with "failed to acquire lock ... please try again later" rather
+  # than waiting — four LonghornBackupFailed alerts were firing from exactly
+  # this. :30 is the maximum separation available from any hourly run.
+  cron: "30 2 * * *"
   task: backup
   groups:
     - default
