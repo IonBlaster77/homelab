@@ -85,6 +85,11 @@ spec:
                 style: row
                 columns: 3
                 icon: mdi-tag-arrow-up
+              Device Firmware:
+                tab: Patch Ops
+                style: row
+                columns: 3
+                icon: mdi-chip
 
           bookmarks:
             - Quick Links:
@@ -454,30 +459,74 @@ spec:
                         - field: published_at
                           label: Released
                           format: relativeDate
-                - UniFi APs:
-                    id: unifi-firmware-card
-                    # Firmware version comes from unpoller_device_info's
-                    # `version` label. Note the metric prefix is `unpoller_`,
-                    # not `unifi_` - the project renamed itself from
-                    # unifi-poller to UnPoller, which makes the data easy to
-                    # miss when grepping. Queried through Prometheus' HTTP API
-                    # via customapi rather than Homepage's `prometheus` widget
-                    # type, because that widget renders a series *value* and
-                    # the information here lives in a label instead.
-                    description: Access point firmware (both U6-Lite)
+            # Per-device firmware. AP versions come from unpoller_device_info's
+            # `version` label - note the metric prefix is `unpoller_`, not
+            # `unifi_` (the project renamed itself from unifi-poller to
+            # UnPoller), which makes the data very easy to miss when grepping.
+            # Read through Prometheus' HTTP API via customapi rather than
+            # Homepage's `prometheus` widget type, because that widget renders
+            # a series *value* and the information here lives in a label.
+            # Each AP is selected by name so the cards can't silently swap
+            # round if the series order changes.
+            - Device Firmware:
+                - U6-Lite Office:
+                    id: unifi-ap-office-card
+                    description: Access point — 10.77.10.12
+                    href: https://10.77.10.10
+                    icon: ubiquiti.png
+                    widget:
+                      type: customapi
+                      url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=unpoller_device_info%7Bname%3D%22U6-Lite-Office%22%7D"
+                      refreshInterval: 3600000
+                      mappings:
+                        - field: data.result.0.metric.version
+                          label: Firmware
+                - U6-Lite Garage:
+                    id: unifi-ap-garage-card
+                    description: Access point — 10.77.10.100
+                    href: https://10.77.10.10
+                    icon: ubiquiti.png
+                    widget:
+                      type: customapi
+                      url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=unpoller_device_info%7Bname%3D%22U6-Lite-Garage%22%7D"
+                      refreshInterval: 3600000
+                      mappings:
+                        - field: data.result.0.metric.version
+                          label: Firmware
+                - UniFi Network Controller:
+                    id: unifi-controller-card
+                    # unpoller_controller_info carries NO version label (only
+                    # hostname/site_name/source), so the controller's version
+                    # string is not obtainable here. What IS available is
+                    # whether the controller reports a pending update, which is
+                    # the part that actually matters for patch ops. 0 = up to
+                    # date, 1 = update waiting.
+                    description: Network application — update flag
                     href: https://10.77.10.10
                     icon: unifi.png
                     widget:
                       type: customapi
-                      url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=unpoller_device_info"
+                      url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=unpoller_controller_update_available"
                       refreshInterval: 3600000
                       mappings:
-                        - field:
-                            data:
-                              result:
-                                0:
-                                  metric: version
-                          label: Firmware
+                        - field: data.result.0.value.1
+                          label: Update pending
+                - CloudKey Gen2+ / UniFi OS:
+                    id: cloudkey-pending-card
+                    # Placeholder, not a live card. The CloudKey never appears
+                    # in unpoller_device_info - unpoller polls the Network API
+                    # and so only sees adopted devices (the 2 APs), not the
+                    # host it runs on. Probed the controller directly on
+                    # 2026-08-15: https://10.77.10.10/api/system answers
+                    # UNauthenticated but returns only identity/state
+                    # (hardware.shortname UCKP, name, mac, cloudConnected) with
+                    # no firmware field; /proxy/network/status is 401. Getting
+                    # UniFi OS + CloudKey firmware needs a real login flow
+                    # (POST /api/auth/login -> token -> authed GET), which
+                    # customapi cannot do - it sends static headers, not a
+                    # round-trip. Needs the aggregator (task #21/#31).
+                    description: Firmware needs authenticated API — see task #21
+                    icon: mdi-alert-circle-outline
                 - MikroTik RouterOS:
                     id: routeros-pending-card
                     # Placeholder, not a live card. RouterOS versions need
