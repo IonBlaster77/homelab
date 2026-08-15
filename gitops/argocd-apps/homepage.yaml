@@ -397,6 +397,12 @@ spec:
                       # a 10-minute refresh sits far inside that.
                       url: "https://api.github.com/search/issues?q=repo:IonBlaster77/homelab+is:pr+is:open+label:renovate"
                       refreshInterval: 600000
+                      # GitHub's API rejects any request without a User-Agent
+                      # ("Request forbidden by administrative rules"), and
+                      # Homepage's proxy sends none by default - without this
+                      # the widget shows a bare "API Error Information".
+                      headers:
+                        User-Agent: homepage-jupitertech
                       mappings:
                         - field: total_count
                           label: Open PRs
@@ -423,6 +429,8 @@ spec:
                       type: customapi
                       url: "https://api.github.com/repos/siderolabs/talos/releases/latest"
                       refreshInterval: 3600000
+                      headers:
+                        User-Agent: homepage-jupitertech
                       mappings:
                         - field: tag_name
                           label: Latest
@@ -438,6 +446,8 @@ spec:
                       type: customapi
                       url: "https://api.github.com/repos/kubernetes/kubernetes/releases/latest"
                       refreshInterval: 3600000
+                      headers:
+                        User-Agent: homepage-jupitertech
                       mappings:
                         - field: tag_name
                           label: Latest
