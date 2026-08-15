@@ -35,6 +35,17 @@ spec:
           # can take 1-2 CPU for minutes. Raise this once there is dedicated
           # worker capacity to absorb it.
           parallelism: 2
+          # The chart ships runAsNonRoot/drop-ALL but NOT seccompProfile, so
+          # both Deployments are rejected outright by this namespace's
+          # `restricted` PodSecurity enforcement ("must set
+          # securityContext.seccompProfile.type"). The failure mode is quiet:
+          # the Deployment and ReplicaSet are created fine and only the pods
+          # are refused, so the app reports Synced/Progressing with 0/1 ready
+          # and the reason lives in ReplicaSet FailedCreate events. Setting it
+          # at pod level covers every container in the pod.
+          podSecurityContext:
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             requests:
               cpu: 100m
@@ -53,6 +64,10 @@ spec:
           # reachable URL is effectively an unauthenticated cluster admin UI.
           authModes:
             - server
+          # Same restricted-PSA requirement as the controller above.
+          podSecurityContext:
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             requests:
               cpu: 50m
