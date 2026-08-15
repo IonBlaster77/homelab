@@ -1,0 +1,19 @@
+# HA's whole state lives here: configuration, the SQLite recorder database,
+# .storage (entity registry, device registry, auth tokens), and any custom
+# components. Losing it means re-onboarding and re-pairing every device.
+#
+# longhorn-ssd is the cluster default class. This PVC inherits the `default`
+# recurring-job group, so it is picked up by the hourly/daily Longhorn backups
+# to the NAS (daily runs 02:00 Adelaide — see clusters/homelab/longhorn/).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: home-assistant-config
+  namespace: home-assistant
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-ssd
+  resources:
+    requests:
+      storage: 10Gi

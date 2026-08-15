@@ -1,0 +1,25 @@
+# Home Assistant — the brain for the whole-home audio project (ZONED-AUDIO.md).
+#
+# Plain HA Container, not the supervised/OS install, so there is NO add-on store.
+# Music Assistant is therefore deployed as its own workload rather than as an HA
+# add-on — see gitops/argocd-apps/music-assistant.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: home-assistant
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/home-assistant
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: home-assistant
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

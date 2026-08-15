@@ -1,0 +1,63 @@
+# Seed configuration.yaml, mounted over /config/configuration.yaml via subPath.
+#
+# WHY THIS IS NOT OPTIONAL — the http: block below is the single most common
+# reason HA appears "broken" behind a reverse proxy. Without use_x_forwarded_for
+# + trusted_proxies, every request arriving through the Cilium Gateway is
+# rejected with HTTP 400 "Request from <pod-ip> ... not allowed", because HA
+# sees the proxy's address rather than the client's and refuses to trust the
+# X-Forwarded-For header. It fails the same way for a healthy deployment as for
+# a misconfigured one, so it is worth getting right up front.
+#
+# The trusted range is the Cilium pod CIDR (cluster-pool-ipv4-cidr = 10.0.0.0/8),
+# which is where the Gateway's Envoy pods live. It is deliberately not 0.0.0.0/0.
+#
+# TRADE-OFF, deliberate: because this is mounted from a ConfigMap, HA cannot
+# rewrite configuration.yaml itself. That is the GitOps-correct posture (the
+# file is declared here, in git), and it does not restrict normal use — HA keeps
+# its UI-managed state in /config/.storage on the PVC, not in this file. Adding
+# YAML-only integrations means editing this ConfigMap and syncing, not editing
+# the file in place.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: home-assistant-config
+  namespace: home-assistant
+data:
+  configuration.yaml: |
+    # Loads the standard set of integrations (frontend, history, mobile_app,
+    # zeroconf, ssdp, etc). Without this HA boots to a near-empty instance.
+    default_config:
+
+    homeassistant:
+      name: Home
+      unit_system: metric
+      currency: AUD
+      country: AU
+      time_zone: Australia/Adelaide
+
+    http:
+      use_x_forwarded_for: true
+      trusted_proxies:
+        - 10.0.0.0/8
+      # The Gateway terminates TLS; HA itself speaks plain HTTP internally.
+      server_port: 8123
+
+    # Recorder keeps the state history in SQLite on the PVC. 7 days is a
+    # deliberate cap: the default is 10 and the DB is the fastest-growing thing
+    # on this volume. Raise it once there is a reason to.
+    recorder:
+      purge_keep_days: 7
+
+    automation: !include automations.yaml
+    script: !include scripts.yaml
+    scene: !include scenes.yaml
+
+  # HA refuses to start if an !include target is missing, and these three are
+  # written by the UI automation/script/scene editors. Seed them empty so a
+  # first boot succeeds; they live on the PVC thereafter.
+  automations.yaml: |
+    []
+  scripts.yaml: |
+    {}
+  scenes.yaml: |
+    []

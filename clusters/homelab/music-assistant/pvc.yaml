@@ -1,0 +1,18 @@
+# MA's library database, provider credentials (Spotify etc), player
+# configuration and zone/group definitions. Group definitions in particular are
+# expensive to lose — they are rebuilt by hand.
+#
+# Inherits the `default` Longhorn recurring-job group, so hourly/daily NAS
+# backups cover it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: music-assistant-data
+  namespace: music-assistant
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-ssd
+  resources:
+    requests:
+      storage: 10Gi

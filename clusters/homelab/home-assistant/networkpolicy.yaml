@@ -1,0 +1,158 @@
+---
+# Default deny all ingress and egress for the home-assistant namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-default-deny
+  namespace: home-assistant
+spec:
+  endpointSelector: {}
+  # An empty LIST (ingress: []) is rejected by Cilium as a malformed rule
+  # ("rule must have at least one of Ingress/IngressDeny/Egress/EgressDeny"),
+  # which silently drops the whole policy and leaves the namespace unprotected.
+  # A list with one EMPTY RULE (- {}) is the canonical deny-all.
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-dns
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Outbound internet — HA fetches integration manifests, Python wheels on first
+# boot, cloud integration endpoints, and update metadata.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-internet
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  egress:
+    - toCIDR:
+        - 0.0.0.0/0
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Egress to the LAN — this is the whole point of the deployment. HA must reach
+# ESPHome nodes on their native API (6053), Music Assistant, and assorted local
+# devices. The node subnet is allowed EXCEPT the Kubernetes API VIP: HA has no
+# business talking to the API server, and a blanket toCIDR would otherwise grant
+# it (the same carve-out crawl4ai's policy makes, for the same reason).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-lan-egress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  egress:
+    - toCIDRSet:
+        - cidr: 10.77.0.0/16
+          except:
+            - 10.77.20.10/32
+---
+# Allow response traffic back to the pod subnet for same-node connections.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-pod-egress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  egress:
+    - toCIDR:
+        - 10.0.0.0/8
+---
+# Ingress via the Cilium Gateway (ha.jupitertech.net).
+#
+# NOTE the port is the POD's container port (8123), not a Service port — with
+# kube-proxy replacement, DNAT happens before policy enforcement, so policy sees
+# the post-DNAT destination. Getting this wrong produces a silent drop.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-gateway-ingress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8123"
+              protocol: TCP
+---
+# Ingress directly from the LAN via the 10.77.20.65 LoadBalancer — ESPHome nodes
+# calling back, the companion app, and Music Assistant. This does NOT arrive with
+# the `ingress` identity (that is Gateway-sourced traffic only), so it needs its
+# own rule.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-lan-ingress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  ingress:
+    - fromCIDR:
+        - 10.77.0.0/16
+      toPorts:
+        - ports:
+            - port: "8123"
+              protocol: TCP
+---
+# Prometheus scraping, should the HA Prometheus integration be enabled later.
+# Harmless if unused; cheaper than rediscovering the missing-policy failure mode
+# that took down the buzz-db exporter (task #15).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-monitoring-ingress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "8123"
+              protocol: TCP

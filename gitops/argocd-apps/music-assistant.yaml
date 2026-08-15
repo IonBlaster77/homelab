@@ -1,0 +1,24 @@
+# Music Assistant — the audio engine for ZONED-AUDIO.md. Pinned to talos4 and
+# running hostNetwork because AirPlay requires LAN multicast in both directions;
+# see clusters/homelab/music-assistant/namespace.yaml for the full reasoning and
+# networkpolicy.yaml for why there is deliberately no CiliumNetworkPolicy.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: music-assistant
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: clusters/homelab/music-assistant
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: music-assistant
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

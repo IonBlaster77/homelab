@@ -1,0 +1,25 @@
+# ClusterIP only — deliberately no LoadBalancer.
+#
+# The pod is hostNetwork, so it is ALREADY reachable on the LAN at the node's
+# own address (talos4 = 10.77.20.14) on port 8095. Adding a LoadBalancer VIP on
+# top would create a second address for the same thing and invite exactly the
+# confusion this project cannot afford: MA advertises its own address in mDNS
+# and in stream URLs, and that will always be the node IP, never a VIP.
+#
+# This Service exists so the Gateway's HTTPRoute has a stable backend to target
+# for music.jupitertech.net. Because the pod is hostNetwork, the endpoint behind
+# this Service resolves to the node IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: music-assistant
+  namespace: music-assistant
+spec:
+  type: ClusterIP
+  selector:
+    app: music-assistant
+  ports:
+    - name: http
+      port: 8095
+      targetPort: 8095
+      protocol: TCP

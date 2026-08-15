@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  replicas: 1
+  # HA owns a single ReadWriteOnce PVC and a SQLite database. Two instances must
+  # never run at once: RollingUpdate would either deadlock on the RWO volume or,
+  # worse, briefly run two writers against the same SQLite file. Recreate is the
+  # only correct strategy here. (See task #36 for the deadlock failure mode.)
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+    spec:
+      securityContext:
+        # HA manages ownership inside /config itself; fsGroup ensures the
+        # Longhorn volume is group-writable on first attach.
+        fsGroup: 0
+      initContainers:
+        # HA refuses to start when a !include target is missing. These three are
+        # written by the UI editors at runtime, so they must live on the PVC and
+        # stay writable — mounting them from the ConfigMap would make the
+        # automation/script/scene editors fail on save. Copy-if-absent gives a
+        # working first boot without ever clobbering real content afterwards.
+        - name: seed-includes
+          image: ghcr.io/home-assistant/home-assistant:2026.8.2
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              for f in automations.yaml scripts.yaml scenes.yaml; do
+                if [ ! -e "/config/$f" ]; then
+                  cp "/seed/$f" "/config/$f"
+                  echo "seeded $f"
+                else
+                  echo "$f already present, leaving alone"
+                fi
+              done
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: seed
+              mountPath: /seed
+      containers:
+        - name: home-assistant
+          image: ghcr.io/home-assistant/home-assistant:2026.8.2
+          ports:
+            - name: http
+              containerPort: 8123
+              protocol: TCP
+          env:
+            - name: TZ
+              value: Australia/Adelaide
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            # subPath so this single file is overlaid without hiding the rest of
+            # /config (which is the PVC). Note subPath mounts do NOT pick up
+            # ConfigMap updates live — changing configuration.yaml requires a
+            # pod restart, which ArgoCD will not do on its own.
+            - name: seed
+              mountPath: /config/configuration.yaml
+              subPath: configuration.yaml
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              # No CPU limit deliberately — HA is bursty at startup and on
+              # automation storms, and throttling it produces mysterious
+              # slow-UI reports. Memory is capped to protect the node.
+              memory: 2Gi
+          startupProbe:
+            # HA's first boot installs dependencies and can genuinely take
+            # minutes. 30 x 10s = 5 minutes before the liveness probe engages,
+            # so a slow start is not mistaken for a hang.
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: home-assistant-config
+        - name: seed
+          configMap:
+            name: home-assistant-config

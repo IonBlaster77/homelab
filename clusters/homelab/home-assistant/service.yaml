@@ -1,0 +1,46 @@
+# Two Services on purpose.
+#
+# The ClusterIP is what the Gateway's HTTPRoute targets for the public/LAN
+# hostname. The LoadBalancer is a stable LAN address for things that talk to HA
+# directly rather than through the Gateway — ESPHome nodes calling back, the
+# companion app on the local network, and Music Assistant.
+#
+# 10.77.20.65 is pinned rather than allocated: ESP32 firmware and device configs
+# will hardcode it, so it must not move if the Cilium pool hands out addresses in
+# a different order after a restart. Pool is 10.77.20.50-99; .50/.51/.53/.60-.64
+# are already taken (argocd, longhorn, adguard-dns, gateway, authentik x2, kea,
+# alloy-syslog).
+apiVersion: v1
+kind: Service
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+spec:
+  type: ClusterIP
+  selector:
+    app: home-assistant
+  ports:
+    - name: http
+      port: 8123
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: home-assistant-lan
+  namespace: home-assistant
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 10.77.20.65
+  # Preserve the real client IP for LAN callers. Without this, kube-proxy-style
+  # SNAT would make every device look like it came from a node, which breaks
+  # HA's trusted_proxies logic and its per-client login banning.
+  externalTrafficPolicy: Local
+  selector:
+    app: home-assistant
+  ports:
+    - name: http
+      port: 8123
+      targetPort: http
+      protocol: TCP

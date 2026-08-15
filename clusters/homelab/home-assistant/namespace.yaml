@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: home-assistant
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    # PSA baseline, NOT restricted. The official Home Assistant container runs
+    # as root by design — it manages its own /config tree, and upstream does not
+    # support running it as an arbitrary non-root UID. `restricted` enforces
+    # runAsNonRoot: true, which the image cannot satisfy, so the Deployment
+    # would create fine while the ReplicaSet silently emitted FailedCreate
+    # events (the same failure shape hit in task #31).
+    #
+    # baseline still blocks the things that actually matter here: hostNetwork,
+    # host PID/IPC, hostPath, privileged, and added capabilities. HA gets root
+    # inside its own container and nothing more.
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: baseline

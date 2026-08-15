@@ -90,6 +90,13 @@ spec:
               # these entries are the LAN half only and are independent of it.
               add_rewrite "cognee.jupitertech.net"   "10.77.20.60"
               add_rewrite "relay.jupitertech.net"    "10.77.20.60"
+              # Whole-home audio hub (ZONED-AUDIO.md). Both go via the Gateway
+              # like everything else. Note Home Assistant ALSO has a direct LAN
+              # address on 10.77.20.65 for device callbacks that should not
+              # traverse the Gateway, and Music Assistant is reachable directly
+              # on talos4 (10.77.20.14:8095) because it runs hostNetwork.
+              add_rewrite "ha.jupitertech.net"       "10.77.20.60"
+              add_rewrite "music.jupitertech.net"    "10.77.20.60"
 
               # Retired hostnames. add_rewrite never updates or removes an
               # existing record, so renames leave the old name resolving to

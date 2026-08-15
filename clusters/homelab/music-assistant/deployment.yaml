@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: music-assistant
+  namespace: music-assistant
+spec:
+  replicas: 1
+  # Single RWO PVC and a single hostNetwork port binding — two pods can neither
+  # share the volume nor bind the same host ports. Recreate is mandatory, not a
+  # preference. (RollingUpdate here would deadlock exactly as in task #36, with
+  # the added twist of a host port conflict.)
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: music-assistant
+  template:
+    metadata:
+      labels:
+        app: music-assistant
+    spec:
+      # See namespace.yaml for the full reasoning. Short version: AirPlay needs
+      # LAN multicast in both directions, and a pod-network container cannot get
+      # it by any arrangement of reflectors.
+      hostNetwork: true
+      # REQUIRED with hostNetwork. The default (ClusterFirst) silently falls back
+      # to the node's resolv.conf when hostNetwork is set, so in-cluster names
+      # stop resolving. ClusterFirstWithHostNet keeps kube-dns in the path, which
+      # MA needs to reach Home Assistant by service name.
+      dnsPolicy: ClusterFirstWithHostNet
+      # hostNetwork binds to whichever node the pod lands on, so its LAN address
+      # is the node's. Pin it: ESP32 firmware, AirPlay device pairings and MA's
+      # advertised stream URLs all end up referencing that address, and letting
+      # it move would silently break every zone.
+      #
+      # talos4 is the only worker and the least loaded node (22% CPU / 25% mem
+      # as of 2026-08-16). Its address is 10.77.20.14.
+      nodeSelector:
+        kubernetes.io/hostname: talos4
+      containers:
+        - name: music-assistant
+          image: ghcr.io/music-assistant/server:2.9.13
+          # No `ports:` block — with hostNetwork these are informational only,
+          # and MA opens a range of ephemeral stream ports that cannot be
+          # meaningfully enumerated here. The web UI/API is on 8095.
+          env:
+            - name: TZ
+              value: Australia/Adelaide
+          securityContext:
+            # hostNetwork is the ONLY elevated thing this pod takes. Everything
+            # else stays locked down, which is the point of the "label is the
+            # floor, not the posture" note in namespace.yaml.
+            privileged: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              # No CPU limit: MA transcodes and mixes audio in real time, and CPU
+              # throttling on an audio path produces dropouts and sync drift
+              # rather than graceful slowdown. Memory capped to protect the node.
+              #
+              # Sized for the scoped 7 concurrent Sendspin streams + per-player
+              # DSP. Revisit once real zone count is known.
+              memory: 4Gi
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8095
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8095
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8095
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: music-assistant-data

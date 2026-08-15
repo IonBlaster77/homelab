@@ -1,0 +1,36 @@
+# INTENTIONALLY NO CiliumNetworkPolicy IN THIS NAMESPACE.
+#
+# Read this before "fixing" the missing policy — an added one would be a no-op
+# that looks like protection.
+#
+# The music-assistant pod runs with hostNetwork: true. In Cilium, a host-networked
+# pod shares the host network namespace and is represented by the reserved:host
+# identity, NOT a per-pod identity. A CiliumNetworkPolicy with an endpointSelector
+# matching `app: music-assistant` therefore selects nothing and enforces nothing.
+# Copying the crawl4ai / home-assistant default-deny pattern here would create a
+# policy that appears in `kubectl get cnp`, reports no error, and silently does
+# nothing at all.
+#
+# The mechanism that WOULD apply to host-networked workloads is a
+# CiliumClusterwideNetworkPolicy with a nodeSelector, which requires
+# `enable-host-firewall: true` in the cilium-config ConfigMap.
+#
+# Verified 2026-08-16: `enable-host-firewall` is UNSET on this cluster, and there
+# are zero CiliumClusterwideNetworkPolicies. So host-level policy is not merely
+# unwritten, it is not currently available.
+#
+# Consequences to accept, deliberately, for the MVP:
+#   - MA's network access is bounded by the node's own posture, not by Cilium.
+#   - It can reach anything talos4 can reach.
+#   - This is the same posture as the 22 other hostNetwork pods already running
+#     on this cluster (cilium-agent, node-exporter, and friends).
+#
+# Turning on the host firewall is a cluster-wide change with real blast radius —
+# it would begin enforcing policy on every node's host traffic, including the
+# control plane — so it is NOT something to enable casually as a side effect of
+# deploying a music player.
+#
+# The clean fix is to stop needing hostNetwork at all: give MA its own LAN
+# interface via macvlan/Multus, at which point it regains a normal pod identity
+# and the standard default-deny pattern applies. That is tracked separately as a
+# hardening task and is explicitly out of MVP scope.

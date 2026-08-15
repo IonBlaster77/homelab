@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: music-assistant
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    # PSA privileged, required for hostNetwork — and hostNetwork is required for
+    # AirPlay to work at all. Both directions need LAN multicast:
+    #   1. MA must RECEIVE the mDNS announcements HomePods / Apple TVs / WiiM
+    #      broadcast, or it cannot discover them.
+    #   2. MA must ADVERTISE itself on the LAN so iPhones see the zones as
+    #      AirPlay targets to cast to.
+    # A pod on the cluster network has a single netns with no leg on the LAN, so
+    # it never sees that multicast. No mDNS reflector arrangement fixes this: a
+    # hostNetwork Avahi sees only the host interface and cannot inject into the
+    # pod network, and one pod cannot hold both namespaces at once.
+    #
+    # `baseline` is not sufficient — it forbids hostNetwork — and PSA has no
+    # per-namespace exemption mechanism, so the label has to be `privileged`.
+    #
+    # As with argo-builds (task #31): the label is the FLOOR, not the posture.
+    # The pod below still runs with no privileged flag, no host PID/IPC, no
+    # hostPath, and no added capabilities. It takes hostNetwork and nothing else.
+    #
+    # The clean long-term alternative is macvlan via Multus, which would give MA
+    # its own LAN interface while staying reschedulable. That is a deliberate
+    # later migration, not a blocker for a working hub.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: privileged
