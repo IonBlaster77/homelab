@@ -15,6 +15,24 @@ data:
         base_url: http://radarr:7878
         api_key: !env_var RADARR_API_KEY
 
+        # Size ceilings, in MB per minute of runtime. Radarr shipped with no
+        # meaningful cap (the default "movie" definition allows 2000 MB/min —
+        # roughly 240 GB for a feature film), which is how a 114 GB Dracula and
+        # a 52 GB Argo were grabbed.
+        #
+        # "sqp-streaming" is the definition matched to the SQP-1 profiles used
+        # below, and the only one with real ceilings: 2160p WEB tops out at
+        # 222.2 MB/min (~27 GB for a 2h film) and 1080p Bluray at 154 (~18 GB).
+        #
+        # preferred_ratio positions the *preferred* size between min and max.
+        # The guide's own preferred sits just under max, which biases toward the
+        # largest acceptable release; 0.5 targets the midpoint instead, so 4K
+        # lands nearer 15 GB than 27 GB. Raise it toward 1.0 to favour bitrate
+        # over disk, lower it to favour disk.
+        quality_definition:
+          type: sqp-streaming
+          preferred_ratio: 0.5
+
         quality_profiles:
           - name: SQP-1 (1080p)
             reset_unmatched_scores:
