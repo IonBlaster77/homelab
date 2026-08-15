@@ -57,7 +57,54 @@ data:
               # of favor and this one is no longer part of the collection.
               - ed38b889b31be83fda192888e2286d83  # BR-DISK
               - 90a6f9a284dff5103f6346090e6280c8  # LQ
-              - b8cd450cbfa689c0259a01d9e29ba3d6  # LQ (Release Title)
+              - b8cd450cbfa689c0259a01d9e29ba3d6  # 3D
+            assign_scores_to:
+              - name: SQP-1 (1080p)
+                score: -10000
+              - name: SQP-1 (2160p)
+                score: -10000
+
+          # --- LG C1 (OLED55C1PTB) playback compatibility ---
+          # The TV is the primary Jellyfin client and the server has no GPU
+          # (HardwareAccelerationType: none, no /dev/dri) — every playback is a
+          # direct stream or remux, video is never re-encoded. So anything the
+          # C1 cannot decode plays as a black picture with working audio, with
+          # no server-side fallback. Reject those formats at grab time instead.
+          #
+          # The C1 (α9 Gen4) *does* decode AV1, 4K HEVC Main 10 and Dolby
+          # Vision, so those are deliberately NOT blocked here.
+
+          - trash_ids:
+              # 10-bit H.264 (Hi10P). No TV has a 10-bit AVC decoder — this is
+              # the one format that is guaranteed to fail on the C1. Scoped to
+              # 1080p only: at 2160p a "10bit" title almost always means 10-bit
+              # HEVC, which the C1 handles natively and we want to keep.
+              - a5d148168c4506b55cf53984107c396e  # 10bit
+            assign_scores_to:
+              - name: SQP-1 (1080p)
+                score: -10000
+
+          # NOTE: 4K H.264 is deliberately NOT blocked. It looked like a likely
+          # culprit, but the C1 decodes it fine — Bluey season 1 is 52 files of
+          # 2160p x264 and plays without issue. The guide does score x264 -10000
+          # in its UHD profiles on efficiency grounds (a 2160p AVC encode is much
+          # larger than HEVC for the same picture); add it back if that tradeoff
+          # matters, but it is not a playback-compatibility fix.
+
+          - trash_ids:
+              # HDR10+ — deliberately INVERTED from the guide's default of +100.
+              # LG TVs have no HDR10+ support at all (LG backs Dolby Vision;
+              # HDR10+ is the Samsung/Amazon camp), so it is never useful here.
+              #
+              # Worse, releases carrying HDR10+ dynamic metadata *alongside* a
+              # Dolby Vision RPU are the confirmed cause of the black-picture-
+              # with-audio reports on this TV: "The Mummy (2026)" and "Avatar
+              # Aang (2026)" are the only two files in the library with both,
+              # and both fail. The five DV files without HDR10+ play fine.
+              # Jellyfin's HLS/MPEG-TS remux does not carry the DV signalling
+              # through cleanly, leaving the TV with 2094-40 metadata it cannot
+              # interpret — and with no GPU there is no transcode to fall back on.
+              - caa37d0df9c348912df1fb1d88f9273a  # HDR10+ Boost
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: -10000
@@ -87,7 +134,7 @@ data:
                 score: 60
 
           - trash_ids:
-              - 9170d55c319f4fe40da8711ba9d8050d  # x265 (HD)
+              - 9170d55c319f4fe40da8711ba9d8050d  # x265
             assign_scores_to:
               - name: SQP-1 (1080p)
                 score: -10
@@ -133,7 +180,6 @@ data:
           - trash_ids:
               # Unwanted, common to both profiles
               - 85c61753df5da1fb2aab6f2a47426b09  # BR-DISK
-              - 47435ece6b99a0b477caf360e79ba0bb  # x265 (no HDR/DV)
             assign_scores_to:
               - name: WEB-1080p
                 score: -10000
@@ -142,10 +188,46 @@ data:
 
           - trash_ids:
               # x265 (HD) only matches HD releases, so it's scoped to the
-              # 1080p profile only.
-              - 9c11cd3f07101cdba90a2d81cf0e56b4  # x265 (HD)
+              # 1080p profile only. LQ is a general low-quality-group filter
+              # and applies to both.
+              - 47435ece6b99a0b477caf360e79ba0bb  # x265 (HD)
             assign_scores_to:
               - name: WEB-1080p
+                score: -10000
+
+          - trash_ids:
+              - 9c11cd3f07101cdba90a2d81cf0e56b4  # LQ
+            assign_scores_to:
+              - name: WEB-1080p
+                score: -10000
+              - name: WEB-2160p
+                score: -10000
+
+          # --- LG C1 (OLED55C1PTB) playback compatibility ---
+          # See the matching block in the radarr section above for the
+          # rationale. AV1 is deliberately not blocked: the C1 decodes it.
+
+          - trash_ids:
+              # 10-bit H.264 (Hi10P) — no TV can decode it, and it is common in
+              # anime releases. One-Punch Man and Overlord are already in the
+              # library in this format and play as a black picture with audio.
+              - b2550eb333d27b75833e25b8c2557b38  # 10bit
+            assign_scores_to:
+              - name: WEB-1080p
+                score: -10000
+
+          # 4K H.264 deliberately not blocked — see the radarr note above.
+
+          - trash_ids:
+              # HDR10+ — inverted from the guide's +100 default. See the radarr
+              # section for the full rationale. Note this is HDR10*+* (dynamic
+              # ST 2094-40 metadata), not plain HDR10, which the C1 supports and
+              # which the "HDR" format above still scores positively.
+              - 0c4b99df9206d2cfac3c05ab897dd62a  # HDR10+ Boost
+            assign_scores_to:
+              - name: WEB-1080p
+                score: -10000
+              - name: WEB-2160p
                 score: -10000
 
           - trash_ids:
@@ -163,13 +245,27 @@ data:
                 score: 20
 
           - trash_ids:
-              # HDR
-              - 418f50b10f1907201b6cfdf881f467b7  # HDR10
+              # HDR. The standalone "HDR10" format was retired in favour of the
+              # general "HDR" format, which matches HDR10/HDR10+/HLG/PQ/DV.
+              - 505d871304820ba7106b693be6fe4a9e  # HDR
             assign_scores_to:
               - name: WEB-1080p
                 score: 10
               # HDR matters far more at 2160p than 1080p, so it's weighted
               # much higher here.
+              - name: WEB-2160p
+                score: 50
+
+          - trash_ids:
+              # NOTE: this id was previously commented "# HDR10" but is in fact
+              # Anime Dual Audio — so these scores have been boosting dual-audio
+              # anime, not HDR, and sonarr had no HDR scoring at all until the
+              # block above was added. Scores left untouched; drop this block if
+              # the boost was never intended.
+              - 418f50b10f1907201b6cfdf881f467b7  # Anime Dual Audio
+            assign_scores_to:
+              - name: WEB-1080p
+                score: 10
               - name: WEB-2160p
                 score: 50
 ---
