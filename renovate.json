@@ -2,7 +2,6 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "timezone": "Australia/Adelaide",
-  "dependencyDashboardApproval": true,
   "prConcurrentLimit": 5,
   "kubernetes": {
     "managerFilePatterns": ["/clusters/homelab/.+\\.ya?ml$/"]
