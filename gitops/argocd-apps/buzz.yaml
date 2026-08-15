@@ -56,6 +56,34 @@ spec:
         secrets:
           existingSecret: buzz-relay-secrets
 
+        # Git scratch volume as a per-pod emptyDir, not a PVC.
+        #
+        # With enabled: true the chart mounts a single ReadWriteOnce PVC
+        # (buzz-git), and the chart hardcodes `strategy: RollingUpdate` with
+        # maxUnavailable: 0 and no values hook to override it. Those two
+        # combine into a permanent deadlock on every rollout: the new pod is
+        # scheduled to a different node and blocks in ContainerCreating waiting
+        # to attach the RWO volume, while the old pod — which holds that
+        # attachment — is never terminated because maxUnavailable: 0 requires
+        # the new one to go Ready first. Observed stuck for 22h
+        # (ProgressDeadlineExceeded) with the old pod still serving, so it
+        # presents as a frozen image rather than an outage. This recurs on
+        # every upstream commit, since chart and image both float on `main`.
+        #
+        # enabled: false is upstream's own documented answer (see the chart's
+        # values.yaml "Git scratch volume" comment): no volume to multi-attach,
+        # each pod gets its own working space. Safe because nothing durable
+        # lives here — repos are hydrated from object storage per request and
+        # repo-name uniqueness lives in Postgres. Confirmed empirically before
+        # the switch: the live PVC held 20K, i.e. nothing but lost+found.
+        #
+        # size is reused verbatim by the chart as the emptyDir sizeLimit.
+        # Note ArgoCD auto-prune will delete the now-unreferenced buzz-git PVC.
+        persistence:
+          git:
+            enabled: false
+            size: 10Gi
+
         externalPostgresql:
           url: ""
         externalRedis:
