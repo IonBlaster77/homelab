@@ -15,7 +15,7 @@ spec:
     spec:
       initContainers:
         - name: socket-perms
-          image: busybox:1.36
+          image: busybox:1.38
           command: ["chmod", "750", "/kea/sockets"]
           securityContext:
             runAsUser: 0
@@ -47,7 +47,7 @@ spec:
               mountPath: /schema
       containers:
         - name: kea-dhcp4
-          image: jonasal/kea-dhcp4:2.6.3
+          image: jonasal/kea-dhcp4:2.7.9
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -74,7 +74,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
         - name: kea-ctrl-agent
-          image: jonasal/kea-ctrl-agent:2.6.3
+          image: jonasal/kea-ctrl-agent:2.7.9
           command: ["kea-ctrl-agent", "-c", "/etc/kea/kea-ctrl-agent.conf"]
           ports:
             - name: api

@@ -74,7 +74,7 @@ spec:
           # /bin/kubectl, no shell and no xargs — so the labeler must be a single
           # shell-free `kubectl label --all` call (not a get|xargs pipeline), run
           # directly via the image's /bin/kubectl entrypoint.
-          image: rancher/kubectl:v1.31.0
+          image: rancher/kubectl:v1.36.2
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true

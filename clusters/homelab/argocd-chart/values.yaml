@@ -93,7 +93,7 @@ argo-cd:
 
     initContainers:
       - name: install-sops
-        image: ghcr.io/getsops/sops:v3.12.1
+        image: ghcr.io/getsops/sops:v3.13.3
         command: [cp, /usr/local/bin/sops, /custom-tools/sops]
         securityContext:
           allowPrivilegeEscalation: false
@@ -109,7 +109,7 @@ argo-cd:
 
     extraContainers:
       - name: cmp-sops
-        image: quay.io/argoproj/argocd:v3.3.7
+        image: quay.io/argoproj/argocd:v3.5.1
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
