@@ -59,23 +59,27 @@ spec:
           - --opt=context={{inputs.parameters.repo}}#{{inputs.parameters.revision}}:{{inputs.parameters.context}}
           - --output=type=image,name={{inputs.parameters.image}}:{{inputs.parameters.tag}},push={{inputs.parameters.push}}
         env:
-          # Rootless BuildKit normally wants seccomp AND AppArmor set to
-          # Unconfined - but PodSecurity `baseline` forbids both of those
-          # explicitly, so that route is closed. --oci-worker-no-process-sandbox
-          # drops the nested process sandbox instead, which is what lets this
-          # run under RuntimeDefault seccomp. Acceptable here because the build
-          # pod is already an isolation boundary of its own; it would NOT be
-          # acceptable if this namespace ran untrusted third-party builds.
+          # Drops the nested per-build process sandbox. Still wanted alongside
+          # the unconfined seccomp below: it avoids needing an unmasked /proc.
+          # Acceptable because this namespace only builds first-party code from
+          # this repo; it would NOT be acceptable for untrusted third-party
+          # builds sharing the cluster.
           - name: BUILDKITD_FLAGS
             value: --oci-worker-no-process-sandbox
           # buildctl needs somewhere writable for daemon state.
           - name: XDG_RUNTIME_DIR
             value: /home/user/.local/tmp
         securityContext:
+          # Still non-root. The relaxations below are narrow and specific.
           runAsUser: 1000
           runAsGroup: 1000
+          # RootlessKit needs CLONE_NEWUSER to build its user namespace, and
+          # the RuntimeDefault seccomp profile blocks it - the symptom is
+          # "fork/exec /proc/self/exe: operation not permitted" and a
+          # buildkitd socket that never appears. This is the reason the
+          # namespace has to be PSA `privileged`; see namespace.yaml.
           seccompProfile:
-            type: RuntimeDefault
+            type: Unconfined
           # NOTE: allowPrivilegeEscalation is deliberately left unset (i.e.
           # true). RootlessKit relies on the setuid newuidmap/newgidmap helpers
           # to set up its user namespace, and setting this false blocks setuid

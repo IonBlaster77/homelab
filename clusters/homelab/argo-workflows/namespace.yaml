@@ -2,18 +2,35 @@
 # (which runs the controller/server under PodSecurity `restricted`) purely so
 # the root-required build tooling is confined to one place.
 #
-# PSA is `baseline`, NOT `restricted`, and NOT `privileged`:
-#   - `restricted` demands runAsNonRoot, which Kaniko cannot satisfy - it has to
-#     run as uid 0 to unpack image layers into the container filesystem root.
-#   - `baseline` still forbids the things that actually matter here: privileged
-#     containers, host namespaces, hostPath mounts, and added capabilities.
-#   - `privileged` is not needed. If something in a build appears to want it,
-#     that is a signal to re-check the build, not to relax this label.
+# PSA is `privileged`, which needs justifying because it reads worse than it is.
+#
+# Rootless BuildKit creates a user namespace via RootlessKit, and that needs
+# seccomp set to `Unconfined` - the RuntimeDefault profile blocks the
+# CLONE_NEWUSER clone, which surfaces as
+# "fork/exec /proc/self/exe: operation not permitted". PodSecurity `baseline`
+# explicitly forbids an Unconfined seccomp profile, and PSA has only three
+# levels with no per-namespace exemption mechanism (exemptions are an
+# API-server-level setting). So `baseline` cannot express "unconfined seccomp
+# but nothing else", and the namespace label has to be `privileged`.
+#
+# What the label permits is NOT what the workload does. The build pod:
+#   - runs as uid/gid 1000, NOT root
+#   - does NOT set privileged: true
+#   - uses no host namespaces, no hostPath, no added capabilities
+# The permissive label is the floor, not the actual posture - see the
+# securityContext in workflowtemplate-build-image.yaml, which is the thing that
+# actually constrains it. Treat any future pod here that genuinely wants
+# privileged: true or a hostPath as a red flag to review, not as licence.
+#
+# Rejected alternatives: Kaniko needed only root in an ordinary container and
+# would have fitted `baseline` - but Google archived it on 2025-06-03 and its
+# images get no security patches. Rootful BuildKit avoids user namespaces but
+# needs a genuinely privileged container, which is strictly worse than this.
 apiVersion: v1
 kind: Namespace
 metadata:
   name: argo-builds
   labels:
     app.kubernetes.io/managed-by: argocd
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/warn: privileged
