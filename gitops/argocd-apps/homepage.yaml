@@ -67,6 +67,11 @@ spec:
                 style: row
                 columns: 5
                 icon: mdi-cog-play
+              Audio:
+                tab: Media
+                style: row
+                columns: 2
+                icon: mdi-speaker-multiple
               Tools & AI:
                 tab: Apps
                 style: row
@@ -234,6 +239,28 @@ spec:
                     siteMonitor: http://seerr.media.svc.cluster.local:5055
                     namespace: media
                     app: seerr
+
+            # Whole-home audio hub — see ZONED-AUDIO.md.
+            - Audio:
+                - Home Assistant:
+                    id: home-assistant-card
+                    href: https://ha.jupitertech.net
+                    description: Home automation hub — zones, presence, announcements
+                    icon: home-assistant.png
+                    siteMonitor: http://home-assistant.home-assistant.svc.cluster.local:8123
+                    namespace: home-assistant
+                    app: home-assistant
+                - Music Assistant:
+                    id: music-assistant-card
+                    href: https://music.jupitertech.net
+                    description: Multiroom audio — Sendspin zones, AirPlay, library
+                    icon: music-assistant.png
+                    # Resolves to talos4's node IP because the pod is hostNetwork
+                    # (required for AirPlay multicast). The Service still works as
+                    # a stable name for this probe.
+                    siteMonitor: http://music-assistant.music-assistant.svc.cluster.local:8095
+                    namespace: music-assistant
+                    app: music-assistant
 
             - Media Management:
                 - Radarr:

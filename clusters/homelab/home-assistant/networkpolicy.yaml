@@ -136,6 +136,29 @@ spec:
             - port: "8123"
               protocol: TCP
 ---
+# Homepage's siteMonitor widget calls the Service directly, bypassing the
+# Gateway, so `fromEntities: ingress` above does not cover it. Without this the
+# Home Assistant tile renders a red "API Error" with nothing in any pod log —
+# the same failure crawl4ai's policy documents.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-homepage-ingress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+            app.kubernetes.io/name: homepage
+      toPorts:
+        - ports:
+            - port: "8123"
+              protocol: TCP
+---
 # Prometheus scraping, should the HA Prometheus integration be enabled later.
 # Harmless if unused; cheaper than rediscovering the missing-policy failure mode
 # that took down the buzz-db exporter (task #15).
