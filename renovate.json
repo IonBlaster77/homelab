@@ -12,7 +12,6 @@
   "packageRules": [
     {
       "matchManagers": ["kubernetes", "helm-values"],
-      "groupName": "container images",
       "commitMessageTopic": "{{depName}}"
     },
     {
