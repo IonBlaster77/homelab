@@ -70,6 +70,7 @@ machine:
                 #         - 10.0.0.0/8
                 #         - '!10.0.0.3/32'
                 #         - fdc7::/16
+        disableManifestsDirectory: true
     # Provides machine specific network configuration options.
     network:
         interfaces:
@@ -228,6 +229,8 @@ machine:
     # Configures the node annotations for the machine.
     nodeAnnotations:
         node.longhorn.io/default-disks-config: '[{"path":"/var/lib/longhorn","allowScheduling":true,"storageReserved":42949672960,"tags":["ssd"]},{"path":"/var/lib/longhorn-nvme","allowScheduling":true,"storageReserved":10737418240,"tags":["nvme"]}]'
+    sysctls:
+        user.max_user_namespaces: "63359"
 # Provides cluster specific configuration options.
 cluster:
     # Globally unique identifier for this cluster (base64 encoded random 32 bytes).
@@ -427,8 +430,8 @@ sops:
             MThrU1JFZVFQVkNrMDlTeC9URHB4YjgKpmoS/tNNTxX9I2Gn3ujVee2dEsb3aHEJ
             jXRoA9kD2jjgjvdrJD3dkTqJ/3RuUpvXNMG5eKTsWIK+fJLfsLV5zQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-04-18T17:42:24Z"
-    mac: ENC[AES256_GCM,data:5lzcqL72U97E1IxRtpqXf+bqbwEHXPvJP+xZRrrXsvlZHSu/qYM6x2N1HIpgnqHxmddcmmmc9lBgApeSRP2NOov0yJhGZbPavRzH6rimKZE6lX1sOSLY7oEUQ5CxU9YejxqFjagmWXtg28IHyTXxBQOiyV207/4rvVVGAV8a92g=,iv:EKMahqxBlMGS6YJR/ZA+j+jRlOkZp0Xhi0bgqs42jnA=,tag:Iyzn+W3FLYBhDP28Y5n0rA==,type:str]
+    lastmodified: "2026-08-15T04:54:50Z"
+    mac: ENC[AES256_GCM,data:y3FS4kJHls0hI/ZSqh++fIZn+re+ZNCXnsWYFpItZxNaHdnhfMdbOdqFZV9AtRWeXGAJcmeJX5sHa/c/6OfMFC5SaeZIJbcDfp5vmFd+yMZBKuMBltCs6Zt+yozdQ30YxiAX4/jIY5sKd9jBeJnSbB4Kx1VlIJ9++Jd5Hy6Mjkk=,iv:5pdKZzpzQ7xaSiOcqNWsflxu7+VxvS6ujODf/CJ9T30=,tag:a9GDmvJb9eu40fb3tOLZow==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -447,7 +450,7 @@ sops:
             MThrU1JFZVFQVkNrMDlTeC9URHB4YjgKpmoS/tNNTxX9I2Gn3ujVee2dEsb3aHEJ
             jXRoA9kD2jjgjvdrJD3dkTqJ/3RuUpvXNMG5eKTsWIK+fJLfsLV5zQ==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-04-18T17:42:24Z"
-    mac: ENC[AES256_GCM,data:5lzcqL72U97E1IxRtpqXf+bqbwEHXPvJP+xZRrrXsvlZHSu/qYM6x2N1HIpgnqHxmddcmmmc9lBgApeSRP2NOov0yJhGZbPavRzH6rimKZE6lX1sOSLY7oEUQ5CxU9YejxqFjagmWXtg28IHyTXxBQOiyV207/4rvVVGAV8a92g=,iv:EKMahqxBlMGS6YJR/ZA+j+jRlOkZp0Xhi0bgqs42jnA=,tag:Iyzn+W3FLYBhDP28Y5n0rA==,type:str]
+    lastmodified: "2026-08-15T04:54:50Z"
+    mac: ENC[AES256_GCM,data:y3FS4kJHls0hI/ZSqh++fIZn+re+ZNCXnsWYFpItZxNaHdnhfMdbOdqFZV9AtRWeXGAJcmeJX5sHa/c/6OfMFC5SaeZIJbcDfp5vmFd+yMZBKuMBltCs6Zt+yozdQ30YxiAX4/jIY5sKd9jBeJnSbB4Kx1VlIJ9++Jd5Hy6Mjkk=,iv:5pdKZzpzQ7xaSiOcqNWsflxu7+VxvS6ujODf/CJ9T30=,tag:a9GDmvJb9eu40fb3tOLZow==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
