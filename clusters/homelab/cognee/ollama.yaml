@@ -85,12 +85,17 @@ spec:
         - ip: "104.18.17.170"
           hostnames:
             - registry.ollama.ai
+      # required, not preferred: as `preferred` this scheduled onto talos1 (a
+      # control-plane node) and sat there, pushing it to 93% memory requests /
+      # 133% limits alongside etcd and the apiserver, while the dedicated
+      # worker talos4 idled at 12% - the exact inversion of the intent stated
+      # above. A soft preference silently loses to whatever the scheduler
+      # scored higher at admission time and never re-evaluates afterwards.
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
                   - key: kubernetes.io/hostname
                     operator: In
                     values: ["talos4"]
@@ -103,13 +108,13 @@ spec:
           env:
             - name: OLLAMA_HOST
               value: 0.0.0.0:11434
-            # Keep both the LLM and embedding model resident - reloading an
-            # 18GB model from disk between calls would add real latency on
-            # top of already-slow CPU inference.
+            # Keep the LLM resident - reloading from disk between calls adds
+            # real latency on top of already-slow CPU inference. Only one
+            # model lives here; embeddings come from Streamystats' Ollama.
             - name: OLLAMA_KEEP_ALIVE
               value: 4h
             - name: OLLAMA_MAX_LOADED_MODELS
-              value: "2"
+              value: "1"
             - name: TZ
               value: Australia/Adelaide
           volumeMounts:
@@ -133,22 +138,17 @@ spec:
             periodSeconds: 10
             failureThreshold: 3
           resources:
+            # Sized for qwen2.5:7b-instruct-q4_K_M, the only model on this
+            # instance: 4.7GB of weights + KV cache + runtime overhead, so a
+            # ~7GB working set. The previous 19Gi/23Gi was carried over from
+            # gemma4:26b (16.75GiB weights) and never revisited when that was
+            # abandoned on 2026-08-05 - it was reserving 19Gi to serve a
+            # process observed using 25Mi at idle.
             requests:
-              # Lower than the limit on purpose - 22Gi as a request couldn't
-              # schedule on any node ("Insufficient memory"). Baseline
-              # residency doesn't need the full burst headroom the limit
-              # below provides for mmap-loading gemma4:26b.
-              memory: 19Gi
+              memory: 7Gi
               cpu: 1000m
             limits:
-              # 20Gi was too tight against the 16.75GiB gemma4:26b weights -
-              # loading it (mmap + KV cache + GGUF parsing overhead)
-              # repeatedly failed with "read error: Input/output error",
-              # which looked like storage flakiness but may actually have
-              # been memory-pressure-induced page-in failures against the
-              # network-backed Longhorn volume. talos4 has 24Gi total with
-              # only ~6Gi used elsewhere, so there's real headroom to give.
-              memory: 23Gi
+              memory: 12Gi
               cpu: 4000m
       volumes:
         - name: models
