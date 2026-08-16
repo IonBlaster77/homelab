@@ -74,7 +74,7 @@ The "cheap ESP32 zone" — most rooms.
 |---|---|---|
 | MCU | ESP32-S3 N16R8 (or N8R8) | **Must have PSRAM (R8).** Octal SPI PSRAM on S3 — set `psram: mode: octal` in ESPHome or it **silently fails**. Octal PSRAM uses **GPIO 33–37 — avoid those pins for I2S** |
 | DAC | PCM5102A breakout ("GY-PCM5102") | ~$3–5. **Tie SCK pin to GND** (internal PLL mode) — the most common wiring mistake. 3.3V logic, no level shifting needed |
-| Amp | TPA3116D2 2.0 stereo board | **Must have mute/SD pin broken out** — critical for idle noise control. Avoid boards with onboard pot/NE5532 preamp (noise source) |
+| Amp | TPA3116D2 2.0 stereo board | **Must have mute/SD pin broken out** AND **accessible gain-setting resistors/jumpers** — see the gain-structure section below; both matter for idle noise. Avoid boards with onboard pot/NE5532 preamp (noise source) |
 | PSU | 24V DC, RCM-marked plugpack | Standardise voltage across every zone — one spare covers any room |
 | Buck | 24V→5V for ESP32 | Not needed where 5V is separately available (e.g. patio) |
 | Enclosure | Sealed ABS project box | Same model/connector scheme across zones for interchangeability |
@@ -86,19 +86,48 @@ override files with pin map + substitutions. Matches the existing SOPS+Age GitOp
 
 > **Not yet written down or settled — do this before zone 2.**
 
-### The mute pin is the make-or-break detail
+### Idle hiss is mostly gain structure — set gain to 20dB
+
+**Revised 2026-08-16: this, not the mute pin, is the first-order cause of idle hiss.**
+
+The PCM5102A outputs **~2.1V RMS**. A TPA3116 at its common default **36dB gain** reaches
+full output from about **0.35V** — so the amp is being fed roughly **15dB more signal than
+it needs**, and every unnecessary dB amplifies the amp's own noise floor into the tweeter
+at idle and at low volume.
+
+**Set gain to 20dB.** That largely removes the hiss and still leaves far more output than
+any speaker on this list needs. It matters most in the bedroom and office, which are
+*low-volume* rooms where noise floor, not power, is the dominant quality factor.
+
+Hence the amp spec requires accessible gain resistors/jumpers, not just a mute pin.
+
+### The mute pin still matters — second-order
 
 Must **unmute after the I2S clock is stable** (short delay, ~30–50ms) and **mute before it
-stops**. Tuned by ear per build, not from a datasheet.
+stops**. Tuned by ear per build, not from a datasheet. Test in the actual room —
+especially the kids' room, overnight.
 
-This is expected to be the main source of "is idle noise tolerable" verdicts. Test in the
-actual room — especially the kids' room, overnight.
+### Zone tiering — set expectations per room
+
+| Tier | Zones | Build |
+|---|---|---|
+| **Utility** — intelligibility, not fidelity | kids, garage, bathroom, patio | Standard build, 20dB gain, cheap speakers fine |
+| **Quality** — will actually be listened to | bedroom, office, lounge | Same electronics are fine; **the speakers are what will disappoint** |
+
+The 10–15W satellites (Optimus, Jaycar CS2459) are correctly matched to **utility zones
+only**. In the quality tier the electronics are not the limiting factor — the speakers are.
+Note also that a 25W amp into 10W speakers makes the per-zone volume ceiling a
+**speaker-protection** measure, not just a neighbour one.
 
 ### Alternatives considered
 
-Sonocotta Louder-ESP32 / Louder-ESP32-Mini (TAS5805M, hardware DSP, no soldering) and
-Esparagus Audio Brick (DIN-rail, Ethernet). Both viable but pricier/slower to ship; not
-the current default.
+Esparagus Audio Brick (DIN-rail, Ethernet) — viable but pricier/slower to ship.
+
+**Sonocotta Louder-ESP32 / Louder-ESP32-Mini (TAS5805M) — reconsidered 2026-08-16 and now
+the recommended default for the two quality zones (bedroom, office).** The TAS5805M has
+*hardware* DSP: per-zone EQ and limiting that costs the cluster nothing, with no separate
+DAC, no gain-structure lottery and nothing to solder. MA's built-in DSP softens the
+argument but doesn't eliminate it. Still the wrong choice for utility zones on price.
 
 ---
 
@@ -152,13 +181,23 @@ Build a cheap ESP32 test zone now to live with in the interim. Decide 1 zone vs.
 Real use case: phone speaker is too quiet for videos while sitting outside. Used at all
 hours **including late night/early morning.**
 
-- **Mono build** — MAX98357A (combined DAC+amp) instead of the PCM5102A+TPA3116 pair
+- **MAX98357A REJECTED here, revised 2026-08-16.** It was the *weakest* amp in the build
+  (3.2W into 4Ω) going to the *only outdoor* zone — where there is no room gain, no wall
+  reflections, and the stated problem is already "too quiet". Outdoors needs **more**
+  power than indoors for the same perceived loudness, not less. Use the **standard
+  PCM5102A + TPA3116** pair like every other zone; bridge to mono if running a single
+  speaker. (This is why the DAC order quantity is 10, not 9.)
+- **Run 24V to the patio, not 12V — decide this before the conduit is sealed.** At 12V a
+  TPA3116 gives ~10W/ch into 8Ω (already ~3× the MAX98357A); at 24V it's ~25W and the
+  patio becomes an ordinary zone on the standard PSU. A spare conductor pair is being
+  pulled anyway, so the marginal cost now is near zero — and this is the one decision
+  here that is genuinely expensive to revisit later
 - IP65-rated outdoor speaker
 - Sealed enclosure mounted under the curved plastic patio roof (out of direct weather;
   still use an IP-rated box and **orient cable entry downward** as cheap insurance)
 - Conformal-coated board
-- **Power: 5V and 12V both being run via new conduit to the eave** — no buck converter
-  needed. 5V straight to ESP32, 12V to amp
+- **Power: 5V and 24V via new conduit to the eave** (was 5V/12V — see the amp change
+  above). 5V straight to ESP32, 24V to amp, no buck converter needed
 - **Pull a spare conductor pair while the conduit is open.** Use a drip loop at cable entry
 - **PIR motion sensor on the same ESP32**; gating logic lives in HA ("only play announcement
   if patio presence true in last N minutes") — same pattern reusable for kids' room bedtime
@@ -227,9 +266,26 @@ speaker-agnostic.
 | PCM5102A, TPA3116 boards | AliExpress. Not stocked at Jaycar under those names |
 | PSUs (RCM-marked), enclosures, fuse holders, speaker wire, CS2459 pair | Jaycar |
 
-**Buying strategy:**
-- **Disposable layer (ESP32 + DAC): buy in bulk now — 6–7 units** for all planned zones
-- **Amps: buy only as each zone is actually wired**
+**Buying strategy — revised 2026-08-16:**
+- **Disposable layer (ESP32 + DAC): buy 10 of each**, not 6–7. Arithmetic: 7 planned
+  zones + 1 possible lounge split (zone 6 is open-plan and explicitly undecided) + 1
+  bench/dev unit that is never installed + 1 dead-board buffer (one *will* die — magic
+  smoke, wrong pin, static). Three spare ESP32s cost ~$37 and three spare DACs ~$12
+  against a **3-week resupply lead time**; that is not a close call
+- **Split the order across both vendors.** 1× ESP32-S3 from **Phipps** (~$30.95, AU stock,
+  2–3 day) + the remaining 9 and all 10 DACs from **AliExpress**. The extra ~$18 on that
+  one fast unit converts the 3-week shipping window from dead time into the window where
+  `common.yaml`, the naming convention and the wifi/API/OTA/diagnostics package get built
+  — none of which need a DAC or amp. That is exactly the sequencing this doc already asks
+  for ("settle `common.yaml` before zone 2")
+- **Amps: buy ONE now, not the fleet.** Cheap TPA3116 boards are a lottery — input
+  coupling caps, layout, gain wiring and output filters vary wildly between sellers using
+  the same chip name. Buying seven before hearing one is how you end up with seven boards
+  that hiss identically. Prove one in the kids' room at 20dB gain, *then* bulk-order that
+  specific listing
+- **Don't cheap out on the PSU.** Class D passes supply noise fairly directly to the
+  output, so a nasty 24V plugpack is a real noise source. It's a shared-failure-mode part
+  standardised across every zone, so quality here is amortised
 - **Speakers: opportunistically/deliberately per room, never in bulk**
 
 ---
@@ -238,17 +294,20 @@ speaker-agnostic.
 
 Ordered as given, with the hub inserted at its real position on the critical path.
 
-1. **Order 6–7× ESP32-S3 (N16R8/N8R8) + 6–7× PCM5102A** — skip the DAC for patio, use
-   MAX98357A there instead. *Do this first; the ~3wk lead time is the long pole*
+1. **Order 10× ESP32-S3 (N16R8/N8R8) + 10× PCM5102A**, split 1× Phipps (fast) / 9× +
+   10 DACs AliExpress. The patio gets a normal DAC now, not a MAX98357A — see Sourcing
+   and the Patio section. *Do this first; the ~3wk lead time is the long pole*
 2. **Build HA + Music Assistant on the cluster** *(added — see the critical-path section;
    this does not currently exist and everything else depends on it)*. Do it during the
    shipping window
-3. Source TPA3116 2.0 boards **with mute pin broken out**, same quantity minus patio
-4. Standardise on 24V PSUs for indoor zones; patio uses the new 5V/12V conduit run
+3. Source **ONE** TPA3116 2.0 board **with mute pin AND gain jumpers broken out**, prove
+   it at 20dB gain in the kids' room, then bulk-order that exact listing (patio included)
+4. Standardise on 24V PSUs for **every** zone including the patio, which uses the new
+   5V/24V conduit run
 5. **Build and tune the kids' room zone first** (canary for idle-noise/mute-pin tuning),
    plus one adjacent zone to test grouping/sync
 6. **Settle ESPHome `common.yaml` + naming convention before zone 2**
-7. Run patio conduit (5V + 12V + spare conductor, drip loop, sealed IP-rated enclosure)
+7. Run patio conduit (5V + **24V** + spare conductor, drip loop, sealed IP-rated enclosure)
    and build that zone with PIR presence gating
 8. Build cheap interim test zones in office and lounge/kitchen/dining despite eventual
    upgrade plans (WiiM Amp for lounge, studio monitors for office) — **the point is to get
