@@ -74,7 +74,7 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
         - name: kea-ctrl-agent
-          image: jonasal/kea-ctrl-agent:2.6.3
+          image: jonasal/kea-ctrl-agent:2.7.9
           command: ["kea-ctrl-agent", "-c", "/etc/kea/kea-ctrl-agent.conf"]
           ports:
             - name: api
