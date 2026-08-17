@@ -104,7 +104,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: searxng-mcp
-          image: isokoliuk/mcp-searxng:1.10.0
+          image: isokoliuk/mcp-searxng:1.15.0
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
