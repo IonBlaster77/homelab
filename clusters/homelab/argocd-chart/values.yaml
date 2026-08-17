@@ -109,7 +109,7 @@ argo-cd:
 
     extraContainers:
       - name: cmp-sops
-        image: quay.io/argoproj/argocd:v3.3.7
+        image: quay.io/argoproj/argocd:v3.5.1
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
