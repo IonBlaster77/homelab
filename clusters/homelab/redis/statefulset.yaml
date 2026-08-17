@@ -92,7 +92,7 @@ spec:
         # separate Deployment, since it only ever needs to monitor this one
         # instance.
         - name: redis-exporter
-          image: oliver006/redis_exporter:v1.66.0-alpine
+          image: oliver006/redis_exporter:v1.89.0-alpine
           env:
             - name: REDIS_PASSWORD
               valueFrom:
