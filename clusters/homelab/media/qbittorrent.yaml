@@ -53,6 +53,12 @@ spec:
               value: mullvad
             - name: VPN_TYPE
               value: wireguard
+            # Pin the exit to a P2P-friendly jurisdiction. Left unset, Gluetun
+            # picks any Mullvad server; it landed on a US exit (us-mkc) where
+            # BitTorrent peer traffic is blocked, so torrents added fine but
+            # never found a single peer and the tunnel sat idle.
+            - name: SERVER_COUNTRIES
+              value: Netherlands
             - name: WIREGUARD_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
