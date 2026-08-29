@@ -127,3 +127,67 @@ spec:
           annotations:
             summary: "Access point {{ $labels.name }} is offline"
             description: "The UniFi controller reports zero uptime for this AP, meaning it's currently unreachable/disconnected."
+
+    - name: kernel-memory
+      rules:
+        # Memory the kernel holds that no counter attributes: not anon, not
+        # page cache, not slab, not page tables, kernel stacks, percpu or
+        # vmalloc. It is normally a small stable residual - measured across
+        # all four nodes on 2026-08-29 it was 0.21-0.38 GiB.
+        #
+        # talos2 reached 9.1 GiB of this before its 2026-08-29 reboot, while
+        # every process's RSS summed to 6.16 GiB against 13.96 GiB used - so
+        # most of the node's memory had no owning process at all. Everything
+        # ordinary was ruled out (BPF maps, GUP pins, netns/veth, slab,
+        # vmalloc, every cgroup, hardware). NodeMemoryHighUtilization only
+        # caught it at 90% with ~2 days left; this catches the same leak
+        # about 2.5 days in, with two weeks of headroom to act.
+        - record: node:memory_unaccounted_bytes
+          expr: >-
+            node_memory_MemTotal_bytes
+            - node_memory_MemFree_bytes
+            - node_memory_Buffers_bytes
+            - node_memory_Cached_bytes
+            - node_memory_AnonPages_bytes
+            - node_memory_Slab_bytes
+            - node_memory_PageTables_bytes
+            - node_memory_KernelStack_bytes
+            - node_memory_Percpu_bytes
+            - node_memory_VmallocUsed_bytes
+
+        - alert: NodeKernelMemoryUnaccounted
+          # ~4x the observed baseline. for:2h so a transient allocation spike
+          # during heavy I/O doesn't page anyone.
+          expr: node:memory_unaccounted_bytes > 1.5e9
+          for: 2h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.instance }} holds {{ $value | humanize1024 }}B of unattributable kernel memory"
+            description: "Baseline is 0.2-0.4 GiB per node, so this is a leak, not load - it will not be reclaimed under pressure and ends in an OOM on a control-plane node if left. Confirm with `scripts/kpageflags-audit.sh` (watch the flags=0 UNCLASSIFIED line, healthy is under ~1 GiB), and note .11=talos1 .12=talos2 .13=talos3 .14=talos4. A drain plus reboot clears it; to actually identify the call site, attach eBPF to the kmem:mm_page_alloc / kmem:mm_page_free tracepoints and diff outstanding allocations by kernel stack - both tracepoints and /sys/kernel/btf/vmlinux are present, so this needs no reboot."
+
+        - alert: NodeMemoryExhaustionPredicted
+          # Backstop for leaks that DO land in ordinary counters, which the
+          # unaccounted rule above would miss entirely.
+          #
+          # The `and` on a plain instant selector is load-bearing twice over,
+          # both verified against live data before this was committed:
+          #
+          #  - After a node-exporter pod restart the previous pod's series is
+          #    still inside the [24h] window, so predict_linear alone reports
+          #    two results per node and the dead one keeps the pre-restart
+          #    trend for a full day. An instant selector goes stale in ~5m, so
+          #    the `and` drops it on label match.
+          #  - A freshly-started series extrapolates wildly from a handful of
+          #    points - talos2's new pod predicted -240 GiB an hour after the
+          #    reboot. Requiring the node to actually be under 8 GiB available
+          #    means a trend on a near-empty node can't page anyone.
+          expr: >-
+            predict_linear(node_memory_MemAvailable_bytes[24h], 7 * 86400) < 0
+            and node_memory_MemAvailable_bytes < 8e9
+          for: 6h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.instance }} is on track to run out of memory within 7 days"
+            description: "Extrapolating the last 24h, MemAvailable reaches zero inside a week. This fires while there is still time to schedule a drain rather than discover it at 95%. If NodeKernelMemoryUnaccounted is also firing for this instance it is the known kernel leak; if not, something is growing in a way that IS accounted for, so check `kubectl top pods --sort-by=memory` on that node first."
