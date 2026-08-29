@@ -397,14 +397,7 @@ spec:
             - port: "9090"
               protocol: TCP
 ---
-# Prometheus scraping the relay's metrics/health endpoints, and Alertmanager
-# POSTing to the webhook receivers on the app port.
-#
-# 3000 is deliberate: Alertmanager delivers straight to this Service rather
-# than out through buzz.jupitertech.net, so the alerting path doesn't depend
-# on DNS, the Gateway datapath or Cloudflare Access. Those are exactly the
-# things you stop hearing about when they break — routing alerts through the
-# ingress they're meant to report on is a silent single point of failure.
+# Prometheus scraping the relay's metrics/health endpoints.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -423,6 +416,4 @@ spec:
             - port: "9102"
               protocol: TCP
             - port: "8080"
-              protocol: TCP
-            - port: "3000"
               protocol: TCP
