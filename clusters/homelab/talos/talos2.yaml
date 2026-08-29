@@ -97,7 +97,30 @@ machine:
         # The disk used for installations.
         disk: /dev/sda
         # Allows for supplying the image used to perform the installation.
-        image: factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.6
+        #
+        # PENDING - not yet applied to the running node. Takes effect only on the
+        # next `talosctl upgrade`; a plain reboot will NOT pick it up, because
+        # grubUseUKICmdline below means the kernel cmdline comes from the signed
+        # UKI rather than being built on the host. That is also why page_owner is
+        # baked into a factory schematic instead of machine.install.extraKernelArgs,
+        # which this node would ignore.
+        #
+        # Schematic 29ed3086 == the previous 203464d7 (iscsi-tools, nfs-utils,
+        # util-linux-tools, dual-boot) plus `extraKernelArgs: [page_owner=on]`.
+        #
+        # Why: talos2 leaks ~0.46 GiB/day of kernel memory that no counter
+        # attributes - not slab, vmalloc, BPF maps, GUP pins, netns/veth, page
+        # tables or any cgroup. Measured 2026-08-29: 217 processes summed to
+        # 6.16 GiB RSS against 13.96 GiB used, so ~7.8 GiB has no owning process
+        # (on healthy talos1 the same sum is 10.66 vs 7.73 - RSS above used, as
+        # expected, since shared pages double-count). page_owner records a stack
+        # trace per allocated page, so /proc/page_owner names the leaking call
+        # site directly. Costs ~64-128 MiB of page_ext on a 16 GiB node.
+        #
+        # WHEN APPLYING: /var/lib/longhorn lives on /dev/sda (the EPHEMERAL
+        # partition) and this node holds 22 replicas, so upgrade with --preserve
+        # or they are wiped and rebuilt from the other two copies.
+        image: factory.talos.dev/installer/29ed30861180b374ed20fef0b1ebeda27c9e94e061a60bb029934378d335c5ac:v1.12.6
         # Indicates if the installation disk should be wiped at installation time.
         wipe: true
         # Indicates if legacy GRUB bootloader should use kernel cmdline from the UKI instead of building it on the host.
