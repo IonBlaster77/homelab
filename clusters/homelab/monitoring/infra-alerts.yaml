@@ -164,7 +164,7 @@ spec:
             severity: warning
           annotations:
             summary: "{{ $labels.instance }} holds {{ $value | humanize1024 }}B of unattributable kernel memory"
-            description: "Baseline is 0.2-0.4 GiB per node, so this is a leak, not load - it will not be reclaimed under pressure and ends in an OOM on a control-plane node if left. Confirm with `scripts/kpageflags-audit.sh` (watch the flags=0 UNCLASSIFIED line, healthy is under ~1 GiB), and note .11=talos1 .12=talos2 .13=talos3 .14=talos4. A drain plus reboot clears it; to actually identify the call site, attach eBPF to the kmem:mm_page_alloc / kmem:mm_page_free tracepoints and diff outstanding allocations by kernel stack - both tracepoints and /sys/kernel/btf/vmlinux are present, so this needs no reboot."
+            description: "Baseline is 0.2-0.4 GiB per node and it is stable to within 0.02 GiB over a day, so this is a leak, not load - it will not be reclaimed under pressure and ends in an OOM on a control-plane node if left. Note .11=talos1 .12=talos2 .13=talos3 .14=talos4. Confirm the memory type with `scripts/kpageflags-audit.sh`, but read its flags=0 UNCLASSIFIED line loosely: 0.8-1.3 GiB is normal there and it drifted 0.20 GiB in a day on a healthy node, so it corroborates this alert rather than standing in for it. A drain plus reboot clears the leak; to identify the call site, attach eBPF to the kmem:mm_page_alloc / kmem:mm_page_free tracepoints and diff outstanding allocations by kernel stack - both tracepoints and /sys/kernel/btf/vmlinux are present, so this needs no reboot."
 
         - alert: NodeMemoryExhaustionPredicted
           # Backstop for leaks that DO land in ordinary counters, which the

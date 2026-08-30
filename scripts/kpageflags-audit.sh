@@ -15,13 +15,23 @@
 #
 # Watch the "flags=0 UNCLASSIFIED" line. Those are pages that exist but carry no
 # LRU/slab/anon/buddy flag - the signature of a raw alloc_pages() by kernel code
-# that never freed them. Healthy baseline measured across all four nodes right
-# after talos2's reboot:
+# that never freed them. Baseline measured across all four nodes right after
+# talos2's reboot, then again 22h later:
 #
-#     talos2 0.84 GiB | talos1 0.95 | talos3 1.00 | talos4 0.98
+#     talos2 0.84 -> 0.83 | talos1 0.95 -> 1.15 | talos3 1.00 -> 0.98 | talos4 0.98 -> 0.99
 #
-# Anything drifting well above ~1 GiB on a node is the leak returning. That
-# identifies WHICH node and confirms the memory type, but not the call site;
+# CALIBRATION (corrected 2026-08-30): this number is NOISIER than it first
+# looked. talos1 moved +0.20 GiB in a day while completely healthy - its
+# meminfo residual and MemAvailable were both flat across the same window. So
+# treat roughly 0.8-1.3 GiB as normal and do NOT read a few hundred MiB of
+# drift as a leak. The reliable signal is node:memory_unaccounted_bytes (the
+# recording rule in clusters/homelab/monitoring/infra-alerts.yaml), which held
+# to within 0.02 GiB on every node over the same 22h. Use this script to
+# confirm the memory TYPE once that rule fires, not as the tripwire itself.
+#
+# A real recurrence looks like the pre-reboot state: multiple GiB, climbing
+# monotonically day over day. That identifies which node and confirms the
+# memory type, but not the call site;
 # for that, attach eBPF to the kmem:mm_page_alloc / kmem:mm_page_free
 # tracepoints (both present, and /sys/kernel/btf/vmlinux is available) and
 # aggregate outstanding allocations by kernel stack.
