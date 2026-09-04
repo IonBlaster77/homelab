@@ -6,6 +6,6 @@
 #
 # Kept deliberately trivial so it always builds: it exists to prove the
 # pipeline works, not to do anything useful.
-FROM alpine:3.22
+FROM alpine:3.24
 RUN echo "homelab build pipeline smoke test" > /smoke
 CMD ["cat", "/smoke"]
