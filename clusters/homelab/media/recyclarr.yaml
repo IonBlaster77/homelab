@@ -307,7 +307,7 @@ spec:
           # the ConfigMap into a writable emptyDir before the real run.
           initContainers:
             - name: copy-config
-              image: ghcr.io/recyclarr/recyclarr:8.7.0
+              image: ghcr.io/recyclarr/recyclarr:8.7.2
               command:
                 - sh
                 - -c
@@ -319,7 +319,7 @@ spec:
                   mountPath: /config
           containers:
             - name: recyclarr
-              image: ghcr.io/recyclarr/recyclarr:8.7.0
+              image: ghcr.io/recyclarr/recyclarr:8.7.2
               args:
                 - sync
               env:
