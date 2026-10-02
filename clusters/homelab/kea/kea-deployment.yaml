@@ -23,7 +23,7 @@ spec:
             - name: ctrl-socket
               mountPath: /kea/sockets
         - name: db-init
-          image: postgres:16
+          image: postgres:18
           command: ["/bin/sh", "-c"]
           args:
             - |
