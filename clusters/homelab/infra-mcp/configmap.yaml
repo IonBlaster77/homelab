@@ -285,12 +285,13 @@ data:
         url = f"{LOKI_URL}/loki/api/v1/query?{urllib.parse.urlencode({'query': logql, 'limit': limit})}"
         return _http_get_json("loki_query", {"logql": logql, "limit": limit}, url)
 
+    HUBBLE_SERVER = "hubble-relay.kube-system.svc.cluster.local:80"
+
     def _hubble(tool_name, args, cmd_args):
         def run():
-            env = dict(os.environ)
-            env["HUBBLE_SERVER"] = "hubble-relay.kube-system.svc.cluster.local:80"
             result = subprocess.run(
-                [HUBBLE_CLI] + cmd_args, capture_output=True, text=True, timeout=15, env=env,
+                [HUBBLE_CLI, "--server", HUBBLE_SERVER] + cmd_args,
+                capture_output=True, text=True, timeout=15,
             )
             if result.returncode != 0:
                 return {"error": result.stderr.strip() or result.stdout.strip()}
@@ -300,7 +301,10 @@ data:
     @mcp.tool()
     def hubble_observe(namespace: str = "", limit: int = 50) -> str:
         """Observe recent Cilium network flows — what's talking to what, and what got dropped by which policy. Empty namespace covers the whole cluster."""
-        cmd = ["observe", "--output", "json", "-n", str(limit)]
+        # Verified live: --server is a flag, not an env var; count is --last,
+        # not -n (that's the namespace short flag); jsonpb is the structured
+        # output format.
+        cmd = ["observe", "-o", "jsonpb", "--last", str(limit)]
         if namespace:
             cmd += ["--namespace", namespace]
         return _hubble("hubble_observe", {"namespace": namespace, "limit": limit}, cmd)

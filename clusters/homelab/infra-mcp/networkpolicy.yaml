@@ -151,7 +151,14 @@ spec:
             - port: "3100"
               protocol: TCP
 ---
-# Hubble relay — network flow visibility, same pattern.
+# Hubble relay — network flow visibility, same pattern. Port 4245, NOT the
+# Service's port 80 — found live (connection hung, then timed out) that
+# Cilium toEndpoints/toPorts enforcement needs the pod's actual container
+# port (named "grpc" on the Service, resolves to 4245), not the Service
+# port; kube-proxy replacement DNATs before policy enforcement runs. Same
+# class of issue already in feedback_cilium_networkpolicy_ports memory —
+# hit it again here despite having the lesson on file, worth being more
+# careful to check targetPort vs port up front next time.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -168,7 +175,7 @@ spec:
             k8s-app: hubble-relay
       toPorts:
         - ports:
-            - port: "80"
+            - port: "4245"
               protocol: TCP
 ---
 # Ingress on the MCP port, from Hermes only — same pattern as
