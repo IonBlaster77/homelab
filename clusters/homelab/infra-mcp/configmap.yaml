@@ -46,6 +46,16 @@ data:
     custom_api = client.CustomObjectsApi()
 
     mcp = FastMCP("infra-mcp")
+    # The mcp SDK's DNS-rebinding protection defaults to loopback-only Host
+    # headers (127.0.0.1/localhost), which 421s every real in-cluster caller
+    # - confirmed live (same class of issue as cognee-mcp's, see
+    # feedback_mcp_dns_rebinding_hosts memory). Scope to the exact expected
+    # service DNS name rather than disabling the check outright.
+    mcp.settings.transport_security.allowed_hosts = [
+        "infra-mcp.infra-mcp.svc.cluster.local:8000",
+        "infra-mcp.infra-mcp.svc:8000",
+    ]
+    mcp.settings.transport_security.allowed_origins = ["*"]
 
     def _api_call(tool_name, args, fn):
         try:
