@@ -12,8 +12,16 @@ data:
     #!/bin/sh
     set -e
 
+    # Persistent apk cache: a symlink at /etc/apk/cache is apk's own
+    # documented mechanism for this. Caches downloaded .apk files across
+    # restarts (faster re-installs) WITHOUT keeping anything installed —
+    # the installed-package state itself stays ephemeral on purpose, so a
+    # restart still wipes any OS-level tool that isn't in the list below.
+    mkdir -p /workspace/apk-cache
+    ln -sfn /workspace/apk-cache /etc/apk/cache
+
     apk update
-    apk add --no-cache openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool
+    apk add openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool
 
     mkdir -p /workspace/ssh_host_keys /root/.ssh /var/empty/sshd
     chmod 700 /root/.ssh
@@ -36,14 +44,26 @@ data:
     PasswordAuthentication no
     PubkeyAuthentication yes
     AuthorizedKeysFile /root/.ssh/authorized_keys
-    UsePAM no
     SetEnv PATH=/opt/venv/bin:/opt/npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     SSHDEOF
 
-    python3 -m venv /opt/venv
-    /opt/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
+    # Persist the venv + npm global prefix on /workspace, unlike the apk
+    # state above — these are self-contained directories with no
+    # system-wide side effects (unlike apk's installed files, which spread
+    # across /usr /etc /lib), so there's no meaningful new exposure from
+    # keeping them around: whatever's installed came from the same public
+    # registries either way, restart or no restart. Skip reinstalling the
+    # baseline if a previous run already set it up.
+    mkdir -p /workspace/venv /workspace/npm-global
+    rm -rf /opt/venv /opt/npm-global
+    ln -s /workspace/venv /opt/venv
+    ln -s /workspace/npm-global /opt/npm-global
 
-    mkdir -p /opt/npm-global
+    if [ ! -x /opt/venv/bin/pip ]; then
+      python3 -m venv /opt/venv
+      /opt/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
+    fi
+
     npm config set prefix /opt/npm-global
 
     exec /usr/sbin/sshd -D -e
