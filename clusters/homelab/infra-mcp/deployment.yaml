@@ -42,7 +42,7 @@ spec:
                   name: infra-mcp-secret
                   key: MCP_AUTH_TOKEN
             - name: TALOSCONFIG
-              value: /etc/infra-mcp/talosconfig
+              value: /etc/talos/talosconfig
           ports:
             - containerPort: 8000
               name: http
@@ -65,7 +65,7 @@ spec:
             - name: home
               mountPath: /home/app
             - name: talosconfig
-              mountPath: /etc/infra-mcp/talosconfig
+              mountPath: /etc/talos/talosconfig
               subPath: talosconfig
               readOnly: true
           resources:
