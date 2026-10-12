@@ -13,7 +13,10 @@ data:
     # Non-root (PSA restricted) means pip can't write into the image's own
     # site-packages — install to $HOME/.local instead, same as research-worker's
     # venv-not-system-site-packages reasoning, just via --user rather than a venv.
-    pip install --user --no-cache-dir --quiet mcp kubernetes starlette uvicorn
+    # mcp>=2.0 renamed FastMCP to MCPServer and changed the API (found live:
+    # ModuleNotFoundError pointed straight at this) - pin <2 to keep running
+    # the v1 API this server is written against, rather than migrate blind.
+    pip install --user --no-cache-dir --quiet "mcp<2" kubernetes starlette uvicorn
     exec python3 /app/server.py
 
   server.py: |
