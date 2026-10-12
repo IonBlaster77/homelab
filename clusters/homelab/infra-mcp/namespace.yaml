@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-mcp
+  labels:
+    app.kubernetes.io/managed-by: argocd
+    # restricted, not baseline like research-worker — nothing here needs
+    # root. This pod's entire purpose is holding read-only infra
+    # credentials; it has no package-manager/arbitrary-fetch capability
+    # that would ever need it.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted

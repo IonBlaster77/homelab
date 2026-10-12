@@ -1,0 +1,194 @@
+# Entrypoint + server source for infra-mcp. Same "install deps + exec a
+# ConfigMap-mounted script at pod start" pattern as playwright-mcp and
+# research-worker — no prebuilt image, nothing heavy enough to need one.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: infra-mcp-entrypoint
+  namespace: infra-mcp
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    set -e
+    # Non-root (PSA restricted) means pip can't write into the image's own
+    # site-packages — install to $HOME/.local instead, same as research-worker's
+    # venv-not-system-site-packages reasoning, just via --user rather than a venv.
+    pip install --user --no-cache-dir --quiet mcp kubernetes starlette uvicorn
+    exec python3 /app/server.py
+
+  server.py: |
+    import json
+    import logging
+    import os
+    import sys
+    import time
+
+    from kubernetes import client, config as k8s_config
+    from kubernetes.client.rest import ApiException
+    from mcp.server.fastmcp import FastMCP
+
+    logging.basicConfig(
+        stream=sys.stdout,
+        level=logging.INFO,
+        format='{"ts":"%(asctime)s","level":"%(levelname)s","msg":%(message)s}',
+    )
+    audit = logging.getLogger("infra-mcp.audit")
+
+    def log_call(tool, args, ok, summary):
+        audit.info(json.dumps({"tool": tool, "args": args, "ok": ok, "summary": summary}))
+
+    k8s_config.load_incluster_config()
+    core_v1 = client.CoreV1Api()
+    apps_v1 = client.AppsV1Api()
+    custom_api = client.CustomObjectsApi()
+
+    mcp = FastMCP("infra-mcp")
+
+    def _api_call(tool_name, args, fn):
+        try:
+            result = fn()
+            log_call(tool_name, args, True, f"{len(result) if isinstance(result, list) else 1} item(s)")
+            return json.dumps(result, default=str)
+        except ApiException as e:
+            log_call(tool_name, args, False, f"ApiException {e.status}")
+            return json.dumps({"error": f"Kubernetes API error {e.status}: {e.reason}"})
+        except Exception as e:
+            log_call(tool_name, args, False, str(e))
+            return json.dumps({"error": str(e)})
+
+    @mcp.tool()
+    def kubectl_get_pods(namespace: str = "") -> str:
+        """List pods and their status/phase. Empty namespace lists across all namespaces."""
+        def run():
+            items = (core_v1.list_namespaced_pod(namespace) if namespace else core_v1.list_pod_for_all_namespaces()).items
+            return [
+                {
+                    "name": p.metadata.name,
+                    "namespace": p.metadata.namespace,
+                    "phase": p.status.phase,
+                    "ready": sum(1 for c in (p.status.container_statuses or []) if c.ready),
+                    "containers": len(p.spec.containers),
+                    "restarts": sum(c.restart_count for c in (p.status.container_statuses or [])),
+                    "node": p.spec.node_name,
+                }
+                for p in items
+            ]
+        return _api_call("kubectl_get_pods", {"namespace": namespace}, run)
+
+    @mcp.tool()
+    def kubectl_get_deployments(namespace: str = "") -> str:
+        """List deployments and their replica status. Empty namespace lists across all namespaces."""
+        def run():
+            items = (apps_v1.list_namespaced_deployment(namespace) if namespace else apps_v1.list_deployment_for_all_namespaces()).items
+            return [
+                {
+                    "name": d.metadata.name,
+                    "namespace": d.metadata.namespace,
+                    "replicas": d.status.replicas or 0,
+                    "ready_replicas": d.status.ready_replicas or 0,
+                    "available_replicas": d.status.available_replicas or 0,
+                }
+                for d in items
+            ]
+        return _api_call("kubectl_get_deployments", {"namespace": namespace}, run)
+
+    @mcp.tool()
+    def kubectl_get_events(namespace: str = "", limit: int = 50) -> str:
+        """List recent Kubernetes events, most recent first. Empty namespace lists across all namespaces."""
+        def run():
+            items = (core_v1.list_namespaced_event(namespace) if namespace else core_v1.list_event_for_all_namespaces()).items
+            items = sorted(items, key=lambda e: e.last_timestamp or e.event_time or "", reverse=True)[:limit]
+            return [
+                {
+                    "namespace": e.metadata.namespace,
+                    "type": e.type,
+                    "reason": e.reason,
+                    "object": f"{e.involved_object.kind}/{e.involved_object.name}",
+                    "message": e.message,
+                    "count": e.count,
+                    "last_seen": str(e.last_timestamp or e.event_time),
+                }
+                for e in items
+            ]
+        return _api_call("kubectl_get_events", {"namespace": namespace, "limit": limit}, run)
+
+    @mcp.tool()
+    def kubectl_get_pod_logs(namespace: str, pod_name: str, container: str = "", tail_lines: int = 200) -> str:
+        """Read the tail of a pod's logs. container is optional if the pod has only one."""
+        def run():
+            kwargs = {"tail_lines": tail_lines}
+            if container:
+                kwargs["container"] = container
+            text = core_v1.read_namespaced_pod_log(pod_name, namespace, **kwargs)
+            return {"logs": text}
+        return _api_call("kubectl_get_pod_logs", {"namespace": namespace, "pod_name": pod_name, "container": container}, run)
+
+    def _custom_list(tool_name, args, group, version, plural, namespace=None):
+        def run():
+            if namespace:
+                resp = custom_api.list_namespaced_custom_object(group, version, namespace, plural)
+            else:
+                resp = custom_api.list_cluster_custom_object(group, version, plural)
+            return resp.get("items", [])
+        return _api_call(tool_name, args, run)
+
+    @mcp.tool()
+    def kubectl_get_networkpolicies(namespace: str = "") -> str:
+        """List CiliumNetworkPolicy objects. Empty namespace lists across all namespaces."""
+        return _custom_list("kubectl_get_networkpolicies", {"namespace": namespace}, "cilium.io", "v2", "ciliumnetworkpolicies", namespace or None)
+
+    @mcp.tool()
+    def kubectl_get_httproutes(namespace: str = "") -> str:
+        """List Gateway API HTTPRoute objects. Empty namespace lists across all namespaces."""
+        return _custom_list("kubectl_get_httproutes", {"namespace": namespace}, "gateway.networking.k8s.io", "v1", "httproutes", namespace or None)
+
+    @mcp.tool()
+    def argo_list_workflows(namespace: str = "") -> str:
+        """List Argo Workflows and their phase/status. Empty namespace lists across all namespaces."""
+        return _custom_list("argo_list_workflows", {"namespace": namespace}, "argoproj.io", "v1alpha1", "workflows", namespace or None)
+
+    @mcp.tool()
+    def argocd_application_status(namespace: str = "argocd") -> str:
+        """Read ArgoCD Application sync/health status directly from the Application CRs."""
+        def run():
+            resp = custom_api.list_namespaced_custom_object("argoproj.io", "v1alpha1", namespace, "applications")
+            return [
+                {
+                    "name": a["metadata"]["name"],
+                    "sync_status": a.get("status", {}).get("sync", {}).get("status"),
+                    "health_status": a.get("status", {}).get("health", {}).get("status"),
+                }
+                for a in resp.get("items", [])
+            ]
+        return _api_call("argocd_application_status", {"namespace": namespace}, run)
+
+    @mcp.tool()
+    def longhorn_volume_status(namespace: str = "longhorn-system") -> str:
+        """Read Longhorn volume health/state and robustness."""
+        def run():
+            resp = custom_api.list_namespaced_custom_object("longhorn.io", "v1beta2", namespace, "volumes")
+            return [
+                {
+                    "name": v["metadata"]["name"],
+                    "state": v.get("status", {}).get("state"),
+                    "robustness": v.get("status", {}).get("robustness"),
+                }
+                for v in resp.get("items", [])
+            ]
+        return _api_call("longhorn_volume_status", {"namespace": namespace}, run)
+
+    @mcp.tool()
+    def cnpg_cluster_status(namespace: str = "") -> str:
+        """Read CloudNativePG cluster health and instance status. Empty namespace lists across all namespaces."""
+        return _custom_list("cnpg_cluster_status", {"namespace": namespace}, "postgresql.cnpg.io", "v1", "clusters", namespace or None)
+
+    @mcp.tool()
+    def minio_tenant_status(namespace: str = "") -> str:
+        """Read MinIO Tenant health status. Empty namespace lists across all namespaces."""
+        return _custom_list("minio_tenant_status", {"namespace": namespace}, "minio.min.io", "v2", "tenants", namespace or None)
+
+    if __name__ == "__main__":
+        port = int(os.environ.get("PORT", "8000"))
+        mcp.settings.host = "0.0.0.0"
+        mcp.settings.port = port
+        mcp.run(transport="streamable-http")

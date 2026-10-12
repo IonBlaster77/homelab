@@ -1,0 +1,45 @@
+# Cluster-wide READ-ONLY access for infra-mcp's own ServiceAccount.
+# Deliberately get/list/watch only, no secrets, no exec, no RBAC-object
+# access, no write verb anywhere in this file.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: infra-mcp-read
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "events", "services", "namespaces", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumnetworkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["argoproj.io"]
+    resources: ["applications", "workflows", "workflowtemplates"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["longhorn.io"]
+    resources: ["volumes", "backups"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["postgresql.cnpg.io"]
+    resources: ["clusters", "backups", "scheduledbackups"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["minio.min.io"]
+    resources: ["tenants"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: infra-mcp-read-binding
+subjects:
+  - kind: ServiceAccount
+    name: infra-mcp-sa
+    namespace: infra-mcp
+roleRef:
+  kind: ClusterRole
+  name: infra-mcp-read
+  apiGroup: rbac.authorization.k8s.io

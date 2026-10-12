@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: infra-mcp
+  namespace: infra-mcp
+  labels:
+    app: infra-mcp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: infra-mcp
+  template:
+    metadata:
+      labels:
+        app: infra-mcp
+    spec:
+      serviceAccountName: infra-mcp-sa
+      restartPolicy: Always
+      # fsGroup lets the non-root container write into the mounted-volume
+      # HOME dir it needs for `pip install --user` — same mechanism already
+      # used for playwright-mcp's install step, chosen there over root+chown
+      # specifically to avoid relaxing this namespace's PodSecurity level.
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: infra-mcp
+          image: python:3.12-slim
+          command:
+            - /bin/sh
+            - /etc/infra-mcp/entrypoint.sh
+          env:
+            - name: HOME
+              value: /home/app
+            - name: PORT
+              value: "8000"
+          ports:
+            - containerPort: 8000
+              name: http
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: entrypoint
+              mountPath: /etc/infra-mcp
+              readOnly: true
+            - name: server-src
+              mountPath: /app
+              readOnly: true
+            - name: home
+              mountPath: /home/app
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "50m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: entrypoint
+          configMap:
+            name: infra-mcp-entrypoint
+            items:
+              - key: entrypoint.sh
+                path: entrypoint.sh
+            defaultMode: 0555
+        - name: server-src
+          configMap:
+            name: infra-mcp-entrypoint
+            items:
+              - key: server.py
+                path: server.py
+            defaultMode: 0444
+        - name: home
+          emptyDir: {}

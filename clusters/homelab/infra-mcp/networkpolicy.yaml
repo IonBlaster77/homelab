@@ -1,0 +1,72 @@
+---
+# Default deny all ingress and egress for the infra-mcp namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-default-deny
+  namespace: infra-mcp
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-dns
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The Kubernetes API server itself, via Cilium's reserved kube-apiserver
+# entity rather than pinning an IP/CIDR — this is what every
+# kubectl-equivalent read tool in this pod actually talks to.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-apiserver
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# Ingress on the MCP port, from Hermes only — same pattern as
+# playwright-mcp/research-worker. Never exposed via the Gateway.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-hermes-ingress
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
