@@ -80,10 +80,14 @@ spec:
             - port: "80"
               protocol: TCP
 ---
-# Talos API (port 50000) on the 4 known node IPs specifically — not a
-# subnet-wide rule like Hermes' own pre-existing (and already flagged as
-# overly broad) node-egress policy. This is exactly the port/host scoping
-# that policy should have had from the start.
+# Talos API (port 50000) — not a subnet-wide rule like Hermes' own
+# pre-existing (and already flagged as overly broad) node-egress policy.
+# Found live: talosctl actually dials whatever's in the talosconfig's
+# `endpoints` first (the control-plane VIP, 10.77.20.10), then routes to
+# specific `-n` node IPs *through* that connection — the per-node-IP-only
+# rule this started with let every call hang until timeout, since the VIP
+# itself was never reachable. Both are allowed here: the VIP (actually
+# dialed) and the 4 node IPs (needed for the per-node routing).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -95,6 +99,7 @@ spec:
       app: infra-mcp
   egress:
     - toCIDR:
+        - 10.77.20.10/32
         - 10.77.20.11/32
         - 10.77.20.12/32
         - 10.77.20.13/32
