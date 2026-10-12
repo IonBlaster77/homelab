@@ -68,6 +68,16 @@ data:
       /workspace/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
     fi
 
+    # Hermes' code_execution tool invokes /usr/bin/python3 directly over a
+    # channel that doesn't inherit the SSH session's PATH/SetEnv at all
+    # (confirmed live: os.environ inside it has the bare system PATH, no
+    # trace of the SetEnv value above) — so a PATH-based fix can't reach it.
+    # Point the system interpreter's own default site-packages lookup at
+    # the venv's instead; that works no matter how python3 gets invoked.
+    PYVER=$(python3 -c 'import sys; print("python%d.%d" % sys.version_info[:2])')
+    rm -rf /usr/lib/$PYVER/site-packages
+    ln -s /workspace/venv/lib/$PYVER/site-packages /usr/lib/$PYVER/site-packages
+
     npm config set prefix /opt/npm-global
 
     exec /usr/sbin/sshd -D -e
