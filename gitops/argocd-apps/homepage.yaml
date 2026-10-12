@@ -378,7 +378,15 @@ spec:
                     # or the server 403s the probe and this tile reads as
                     # permanently down — same class of issue as Cognee's
                     # Host-header note below.
-                    siteMonitor: http://playwright-mcp.playwright-mcp.svc.cluster.local:8931
+                    #
+                    # /sse, not the bare root: Streamable HTTP (/mcp) and a
+                    # plain GET/HEAD at / both demand a properly-formed MCP
+                    # request and 400 otherwise — confirmed live, the pod is
+                    # healthy but this read as "NOT FOUND" on the dashboard.
+                    # /sse is the one route that still answers a bare
+                    # HEAD/GET with a clean 200 (legacy SSE transport opens
+                    # on GET, unlike /mcp's POST-based protocol).
+                    siteMonitor: http://playwright-mcp.playwright-mcp.svc.cluster.local:8931/sse
                     namespace: playwright-mcp
                     app: playwright-mcp
                 - Hermes:
