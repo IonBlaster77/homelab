@@ -21,7 +21,7 @@ data:
     ln -sfn /workspace/apk-cache /etc/apk/cache
 
     apk update
-    apk add openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool
+    apk add bash openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool
 
     mkdir -p /workspace/ssh_host_keys /root/.ssh /var/empty/sshd
     chmod 700 /root/.ssh
