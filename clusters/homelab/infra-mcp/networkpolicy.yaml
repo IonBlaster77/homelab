@@ -50,6 +50,36 @@ spec:
     - toEntities:
         - kube-apiserver
 ---
+# Public internet on 80/443, excluding private/link-local/loopback ranges —
+# same SSRF-safe pattern as playwright-mcp/research-worker. Needed right now
+# just for `pip install` at pod start (PyPI), but this pod's steady-state
+# design also calls for the GitHub/Cloudflare API tools later, so this rule
+# isn't a one-off exception — it's where this pod was always headed.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-internet
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 169.254.0.0/16
+            - 127.0.0.0/8
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
 # Ingress on the MCP port, from Hermes only — same pattern as
 # playwright-mcp/research-worker. Never exposed via the Gateway.
 apiVersion: cilium.io/v2
