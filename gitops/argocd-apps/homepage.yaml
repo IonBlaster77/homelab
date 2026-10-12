@@ -404,6 +404,21 @@ spec:
                     namespace: playwright-mcp
                     app: playwright-mcp
                     podSelector: app=playwright-mcp
+                - Infra MCP:
+                    id: infra-mcp-card
+                    # No href — internal only, no web UI, same as Playwright
+                    # MCP above. Unlike Playwright MCP, siteMonitor DOES work
+                    # here: this server is bearer-token-gated, and an
+                    # unauthenticated request gets a quick 401 from the auth
+                    # middleware before it ever reaches the MCP transport
+                    # layer — no SSE-hang risk, confirmed live. 401 is <=403,
+                    # which Homepage accepts as "up".
+                    description: Read-only infra visibility for Hermes (MCP server) — no web UI
+                    icon: mdi-server-security
+                    siteMonitor: http://infra-mcp.infra-mcp.svc.cluster.local:8000/mcp
+                    namespace: infra-mcp
+                    app: infra-mcp
+                    podSelector: app=infra-mcp
                 - Hermes:
                     id: hermes-card
                     href: https://hermes.jupitertech.net
