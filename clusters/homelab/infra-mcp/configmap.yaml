@@ -191,7 +191,24 @@ data:
         return _custom_list("minio_tenant_status", {"namespace": namespace}, "minio.min.io", "v2", "tenants", namespace or None)
 
     if __name__ == "__main__":
+        import uvicorn
+        from starlette.middleware.base import BaseHTTPMiddleware
+        from starlette.responses import PlainTextResponse
+
+        # Defense in depth on top of the NetworkPolicy ingress restriction
+        # (already scoped to the hermes pod specifically) - same dual-layer
+        # pattern as crawl4ai/searxng. MCP_AUTH_TOKEN comes from
+        # infra-mcp-secret, mirroring those servers' own bearer tokens.
+        AUTH_TOKEN = os.environ.get("MCP_AUTH_TOKEN")
+
+        class BearerAuthMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request, call_next):
+                if AUTH_TOKEN:
+                    if request.headers.get("authorization") != f"Bearer {AUTH_TOKEN}":
+                        return PlainTextResponse("Unauthorized", status_code=401)
+                return await call_next(request)
+
+        app = mcp.streamable_http_app()
+        app.add_middleware(BearerAuthMiddleware)
         port = int(os.environ.get("PORT", "8000"))
-        mcp.settings.host = "0.0.0.0"
-        mcp.settings.port = port
-        mcp.run(transport="streamable-http")
+        uvicorn.run(app, host="0.0.0.0", port=port)

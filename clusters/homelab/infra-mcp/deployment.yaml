@@ -36,6 +36,11 @@ spec:
               value: /home/app
             - name: PORT
               value: "8000"
+            - name: MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: infra-mcp-secret
+                  key: MCP_AUTH_TOKEN
           ports:
             - containerPort: 8000
               name: http

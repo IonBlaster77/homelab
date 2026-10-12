@@ -144,6 +144,27 @@ data:
         # "at once" meaningfully); serializing also keeps the action log
         # easier to audit after the fact.
         supports_parallel_tool_calls: false
+      infra-mcp:
+        # Read-only infra visibility (#45) — Kubernetes/Argo Workflows for
+        # now, more systems (Talos/Prometheus/Loki/Hubble/ArgoCD/etc.) land
+        # incrementally as each is built. Own namespace, own ServiceAccount,
+        # no general-purpose fetch-and-run capability at all — deliberately
+        # not research-worker, which has exactly that and is an accepted
+        # risk specifically because there's nothing to steal there. This
+        # pod holds real (if read-only) infra visibility, so it gets both
+        # layers crawl4ai/searxng use: NetworkPolicy ingress scoped to this
+        # pod specifically, plus this bearer token on top.
+        url: "http://infra-mcp.infra-mcp.svc.cluster.local:8000/mcp"
+        headers:
+          Authorization: "Bearer ${INFRA_MCP_AUTH_TOKEN}"
+        sampling:
+          enabled: false
+        elicitation:
+          enabled: false
+        tools:
+          resources: false
+          prompts: false
+        supports_parallel_tool_calls: true
       cognee:
         # Streamable HTTP at /mcp, confirmed directly against the pod
         # (initialize + tools/list round-trip). No auth — cognee-mcp doesn't

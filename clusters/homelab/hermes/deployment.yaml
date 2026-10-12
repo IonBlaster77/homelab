@@ -185,6 +185,11 @@ spec:
               value: "22"
             - name: TERMINAL_SSH_KEY
               value: /home/hermes/.ssh/research-worker-key
+            - name: INFRA_MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: INFRA_MCP_AUTH_TOKEN
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes

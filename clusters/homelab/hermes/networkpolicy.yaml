@@ -209,6 +209,27 @@ spec:
             - port: "3000"
               protocol: TCP
 ---
+# Egress to infra-mcp (#45, its own pod/namespace — see
+# clusters/homelab/infra-mcp/).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-infra-mcp-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: infra-mcp
+            app: infra-mcp
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+---
 # Egress to the research-worker terminal sandbox (its own pod/namespace —
 # see clusters/homelab/research-worker/), port 22 for terminal.backend: ssh.
 apiVersion: cilium.io/v2
