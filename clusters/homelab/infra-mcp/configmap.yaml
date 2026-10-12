@@ -280,10 +280,17 @@ data:
         return _http_get_json("prometheus_query", {"promql": promql}, url)
 
     @mcp.tool()
-    def loki_query(logql: str, limit: int = 100) -> str:
-        """Run an instant LogQL query against Loki and return matching log lines."""
-        url = f"{LOKI_URL}/loki/api/v1/query?{urllib.parse.urlencode({'query': logql, 'limit': limit})}"
-        return _http_get_json("loki_query", {"logql": logql, "limit": limit}, url)
+    def loki_query(logql: str, limit: int = 100, minutes: int = 60) -> str:
+        """Run a LogQL query against Loki over the last `minutes` and return matching log lines."""
+        # Found live: Loki's /query endpoint is instant-metric-query only and
+        # 400s any log selector ("log queries are not supported as an instant
+        # query type") - log queries need /query_range with an explicit
+        # start/end window.
+        end_ns = int(time.time() * 1e9)
+        start_ns = end_ns - minutes * 60 * 1_000_000_000
+        params = {"query": logql, "limit": limit, "start": start_ns, "end": end_ns}
+        url = f"{LOKI_URL}/loki/api/v1/query_range?{urllib.parse.urlencode(params)}"
+        return _http_get_json("loki_query", {"logql": logql, "limit": limit, "minutes": minutes}, url)
 
     HUBBLE_SERVER = "hubble-relay.kube-system.svc.cluster.local:80"
 
