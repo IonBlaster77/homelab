@@ -59,9 +59,13 @@ data:
     ln -s /workspace/venv /opt/venv
     ln -s /workspace/npm-global /opt/npm-global
 
-    if [ ! -x /opt/venv/bin/pip ]; then
-      python3 -m venv /opt/venv
-      /opt/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
+    # python -m venv refuses to create at a path that's already a symlink
+    # ("Unable to create directory") even when it resolves to a valid empty
+    # dir — create at the real path instead; /opt/venv still works fine for
+    # reading through the symlink afterward.
+    if [ ! -x /workspace/venv/bin/pip ]; then
+      python3 -m venv /workspace/venv
+      /workspace/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
     fi
 
     npm config set prefix /opt/npm-global
