@@ -373,20 +373,21 @@ spec:
                     # same as Cognee below.
                     description: Interactive browser automation (MCP server) — no web UI
                     icon: mdi-google-chrome
-                    # Must match one of playwright-mcp's --allowed-hosts
-                    # entries (clusters/homelab/playwright-mcp/deployment.yaml)
-                    # or the server 403s the probe and this tile reads as
-                    # permanently down — same class of issue as Cognee's
-                    # Host-header note below.
-                    #
-                    # /sse, not the bare root: Streamable HTTP (/mcp) and a
-                    # plain GET/HEAD at / both demand a properly-formed MCP
-                    # request and 400 otherwise — confirmed live, the pod is
-                    # healthy but this read as "NOT FOUND" on the dashboard.
-                    # /sse is the one route that still answers a bare
-                    # HEAD/GET with a clean 200 (legacy SSE transport opens
-                    # on GET, unlike /mcp's POST-based protocol).
-                    siteMonitor: http://playwright-mcp.playwright-mcp.svc.cluster.local:8931/sse
+                    # No siteMonitor, deliberately — this server has no route
+                    # that both (a) closes quickly and (b) returns a status
+                    # Homepage accepts as "up" (<=403). / and /mcp both demand
+                    # a properly-formed MCP request and return 400 to a bare
+                    # HEAD/GET, which Homepage shows as "NOT FOUND" despite
+                    # the pod being healthy. /sse (legacy SSE transport) was
+                    # tried next since it returns 200 to a quick spider-style
+                    # HEAD — but Homepage's own httpMonitor client doesn't
+                    # short-circuit the way `wget --spider` does: it waits for
+                    # the response body to close, which an SSE stream never
+                    # does on its own. Confirmed live — the siteMonitor call
+                    # hung indefinitely rather than erroring, meaning every
+                    # 30s poll would leave a connection open on the homepage
+                    # pod forever. Worse than a wrong badge. Same no-monitor
+                    # treatment as CloudKey/RouterOS below.
                     namespace: playwright-mcp
                     app: playwright-mcp
                 - Hermes:
