@@ -388,8 +388,22 @@ spec:
                     # 30s poll would leave a connection open on the homepage
                     # pod forever. Worse than a wrong badge. Same no-monitor
                     # treatment as CloudKey/RouterOS below.
+                    #
+                    # The "NOT FOUND" badge itself turned out to be from a
+                    # SEPARATE mechanism entirely — Homepage's Kubernetes pod
+                    # lookup, read directly from its own compiled source
+                    # (api/kubernetes/status/[...service].js): with no
+                    # explicit podSelector, it defaults to searching for label
+                    # app.kubernetes.io/name=<app>, not plain app=<app>. This
+                    # Deployment (like crawl4ai/hermes/research-worker) only
+                    # carries the plain `app` label, so that search matched
+                    # zero pods — genuinely, correctly "not found", nothing to
+                    # do with siteMonitor or HTTP at all. podSelector below
+                    # fixes the real cause; same pattern already used by
+                    # Crawl4AI/Hermes/SearXNG/Kea above.
                     namespace: playwright-mcp
                     app: playwright-mcp
+                    podSelector: app=playwright-mcp
                 - Hermes:
                     id: hermes-card
                     href: https://hermes.jupitertech.net
