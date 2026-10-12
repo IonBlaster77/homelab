@@ -1,7 +1,11 @@
-# Fragment merged into ~/.hermes/config.yaml's mcp_servers: key by the
-# merge-mcp-config initContainer in deployment.yaml. Non-secret by design —
-# bearer tokens are injected via Hermes' native ${VAR} substitution, reading
-# from env vars sourced from hermes-secret (see deployment.yaml/secret.yaml).
+# Fragment deep-merged into ~/.hermes/config.yaml by the merge-mcp-config
+# initContainer in deployment.yaml. Despite the name (kept to avoid touching
+# the initContainer/volume wiring for a cosmetic rename), this now covers a
+# couple of top-level keys beyond mcp_servers: too — terminal.backend and
+# approvals.mode, added together with the research-worker sandbox. Non-secret
+# by design — bearer tokens/keys are injected via Hermes' native ${VAR}
+# substitution or mounted files, reading from hermes-secret (see
+# deployment.yaml/secret.yaml).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -9,6 +13,29 @@ metadata:
   namespace: hermes
 data:
   mcp-servers-fragment.yaml: |
+    # approvals.mode is GLOBAL — Hermes has no per-tool/per-backend approval
+    # scoping (confirmed: NousResearch/hermes-agent#33905/#80993 are open,
+    # unimplemented feature requests for exactly that). 'smart' (an auxiliary
+    # LLM judges each command) instead of 'manual' because manual's
+    # approve/deny UI is confirmed broken right now across multiple Hermes
+    # clients, including this deployment's own WebUI
+    # (nesquena/hermes-webui#4203, #4479) and even Hermes' own Desktop App
+    # (NousResearch/hermes-agent#37812) — manual would silently fail closed
+    # after a 300s timeout with no button ever rendering, which defeats the
+    # point of letting the agent fetch a missing tool mid-task.
+    approvals:
+      mode: smart
+    terminal:
+      # Was 'local' — executing directly inside this container, which holds
+      # LLM_API_KEY/API_SERVER_KEY/CRAWL4AI_AUTH_TOKEN/SEARXNG_MCP_AUTH_TOKEN
+      # as real env vars. Found live during this rollout, already an active
+      # exposure (terminal/code_execution were enabled by default) before
+      # research-worker existed to point it at. Now points at the isolated,
+      # no-secrets, egress-restricted sandbox instead — see
+      # clusters/homelab/research-worker/. Host/user/port/key come from
+      # TERMINAL_SSH_* env vars on the hermes-agent container (set in
+      # deployment.yaml), not from this file.
+      backend: ssh
     mcp_servers:
       crawl4ai:
         url: "http://crawl4ai.crawl4ai.svc.cluster.local:11235/mcp/sse"

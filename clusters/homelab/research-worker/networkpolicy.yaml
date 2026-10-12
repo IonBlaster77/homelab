@@ -1,0 +1,87 @@
+---
+# Default deny all ingress and egress for the research-worker namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: research-worker-default-deny
+  namespace: research-worker
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: research-worker-allow-dns
+  namespace: research-worker
+spec:
+  endpointSelector:
+    matchLabels:
+      app: research-worker
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# SSRF/lateral-movement boundary: public internet on 80/443 for apt/pip/npm
+# registries, excluding private/link-local/loopback ranges. Same pattern as
+# playwright-mcp — this is the real security boundary, not anything
+# enforced inside the sandbox (which runs as root by design, see
+# namespace.yaml).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: research-worker-allow-internet
+  namespace: research-worker
+spec:
+  endpointSelector:
+    matchLabels:
+      app: research-worker
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 169.254.0.0/16
+            - 127.0.0.0/8
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# SSH ingress from Hermes only — this sandbox is Hermes' terminal.backend
+# target, not for human use (unlike hermes-ssh's existing sidecar, which the
+# user confirmed is for their own manual SSH access).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: research-worker-allow-hermes-ingress
+  namespace: research-worker
+spec:
+  endpointSelector:
+    matchLabels:
+      app: research-worker
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "22"
+              protocol: TCP

@@ -110,6 +110,13 @@ spec:
               - key: SSH_AUTHORIZED_KEYS
                 path: authorized_keys
             defaultMode: 0600
+        - name: research-worker-key
+          secret:
+            secretName: hermes-secret
+            defaultMode: 0400
+            items:
+              - key: RESEARCH_WORKER_SSH_PRIVATE_KEY
+                path: research-worker-key
 
       containers:
         - name: hermes-agent
@@ -147,9 +154,21 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: SEARXNG_MCP_AUTH_TOKEN
+            - name: TERMINAL_SSH_HOST
+              value: research-worker.research-worker.svc.cluster.local
+            - name: TERMINAL_SSH_USER
+              value: root
+            - name: TERMINAL_SSH_PORT
+              value: "22"
+            - name: TERMINAL_SSH_KEY
+              value: /home/hermes/.ssh/research-worker-key
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
+            - name: research-worker-key
+              mountPath: /home/hermes/.ssh/research-worker-key
+              subPath: research-worker-key
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"

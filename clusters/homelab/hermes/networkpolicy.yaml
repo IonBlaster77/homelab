@@ -209,6 +209,27 @@ spec:
             - port: "3000"
               protocol: TCP
 ---
+# Egress to the research-worker terminal sandbox (its own pod/namespace —
+# see clusters/homelab/research-worker/), port 22 for terminal.backend: ssh.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-research-worker-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: research-worker
+            app: research-worker
+      toPorts:
+        - ports:
+            - port: "22"
+              protocol: TCP
+---
 # Egress to the Playwright MCP interactive browser server (its own pod/
 # namespace — see clusters/homelab/playwright-mcp/).
 apiVersion: cilium.io/v2

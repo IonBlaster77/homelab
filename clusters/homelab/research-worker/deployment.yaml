@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: research-worker
+  namespace: research-worker
+  labels:
+    app: research-worker
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: research-worker
+  template:
+    metadata:
+      labels:
+        app: research-worker
+    spec:
+      serviceAccountName: research-worker-sa
+      restartPolicy: Always
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["talos3", "talos4"]
+      containers:
+        # Single container, not a sidecar pair: the installed tools (apt-get
+        # equivalent) and the sshd that exposes them to Hermes have to live
+        # in the same container filesystem — apt/apk touch system-wide paths
+        # (/usr, /var/lib/dpkg-equivalent) that can't be relocated to a
+        # shared volume the way playwright-mcp's npm --prefix trick worked.
+        # No pre-built custom image (the repo's build pipeline exists but
+        # has no push credential configured yet) — so this installs the
+        # toolset at every pod start against a stock Alpine base, and stays
+        # root for its whole lifetime rather than install-then-drop, because
+        # apt/apk installs can be requested by Hermes at any point during a
+        # session, not just at boot.
+        #
+        # SSH server setup below is for a single purpose: letting Hermes'
+        # own terminal.backend=ssh reach this isolated, no-secrets,
+        # egress-restricted sandbox (see networkpolicy.yaml — ingress on the
+        # SSH port is allowed only from the hermes namespace's own pod, no
+        # one else). Key-only auth against a dedicated keypair generated
+        # specifically for this; see secret.yaml.
+        - name: research-worker
+          image: alpine:3.22
+          command:
+            - /bin/sh
+            - /etc/research-worker/entrypoint.sh
+          ports:
+            - containerPort: 22
+              name: ssh
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: authorized-keys
+              mountPath: /run/secrets/authorized_keys
+              subPath: authorized_keys
+              readOnly: true
+            - name: entrypoint
+              mountPath: /etc/research-worker
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "3Gi"
+              cpu: "1500m"
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: research-worker-workspace
+        - name: authorized-keys
+          secret:
+            secretName: research-worker-secret
+            items:
+              - key: AUTHORIZED_KEYS
+                path: authorized_keys
+            defaultMode: 0400
+        - name: entrypoint
+          configMap:
+            name: research-worker-entrypoint
+            defaultMode: 0555

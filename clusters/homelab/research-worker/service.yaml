@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: research-worker
+  namespace: research-worker
+spec:
+  type: ClusterIP
+  selector:
+    app: research-worker
+  ports:
+    - name: ssh
+      port: 22
+      targetPort: 22
+      protocol: TCP

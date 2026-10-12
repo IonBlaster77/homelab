@@ -1,0 +1,49 @@
+# Entrypoint script for the research-worker container. Kept as its own
+# ConfigMap (mounted and exec'd, rather than inlined into deployment.yaml's
+# command) purely to keep that manifest's diff readable — this does the
+# actual package install + sshd setup for the sandbox described there.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: research-worker-entrypoint
+  namespace: research-worker
+data:
+  entrypoint.sh: |
+    #!/bin/sh
+    set -e
+
+    apk update
+    apk add --no-cache openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool
+
+    mkdir -p /workspace/ssh_host_keys /root/.ssh /var/empty/sshd
+    chmod 700 /root/.ssh
+
+    for t in ed25519 rsa ecdsa; do
+      f="/workspace/ssh_host_keys/ssh_host_${t}_key"
+      [ -f "$f" ] || ssh-keygen -q -N '' -t "$t" -f "$f"
+    done
+
+    cp /run/secrets/authorized_keys /root/.ssh/authorized_keys
+    chmod 600 /root/.ssh/authorized_keys
+
+    cat > /etc/ssh/sshd_config <<SSHDEOF
+    Port 22
+    ListenAddress 0.0.0.0
+    HostKey /workspace/ssh_host_keys/ssh_host_ed25519_key
+    HostKey /workspace/ssh_host_keys/ssh_host_rsa_key
+    HostKey /workspace/ssh_host_keys/ssh_host_ecdsa_key
+    PermitRootLogin prohibit-password
+    PasswordAuthentication no
+    PubkeyAuthentication yes
+    AuthorizedKeysFile /root/.ssh/authorized_keys
+    UsePAM no
+    SetEnv PATH=/opt/venv/bin:/opt/npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    SSHDEOF
+
+    python3 -m venv /opt/venv
+    /opt/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
+
+    mkdir -p /opt/npm-global
+    npm config set prefix /opt/npm-global
+
+    exec /usr/sbin/sshd -D -e
