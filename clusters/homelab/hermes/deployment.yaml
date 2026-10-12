@@ -40,6 +40,27 @@ spec:
           securityContext:
             runAsUser: 0
 
+        # SSH clients refuse group/world-readable identity files ("UNPROTECTED
+        # PRIVATE KEY FILE!"). A Secret volume's files are always owned by
+        # root, unreadable to hermes-agent's UID 1000 at any mode strict
+        # enough to satisfy that check — so stage a copy into an emptyDir,
+        # owned and permission-fixed for the UID that actually needs to read
+        # it. Same root-then-fix-ownership shape as fix-perms above.
+        - name: stage-research-worker-key
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - "cp /secret-src/research-worker-key /staged/research-worker-key && chown 1000:1000 /staged/research-worker-key && chmod 600 /staged/research-worker-key"
+          volumeMounts:
+            - name: research-worker-key
+              mountPath: /secret-src
+              readOnly: true
+            - name: research-worker-key-staged
+              mountPath: /staged
+          securityContext:
+            runAsUser: 0
+
         # Merge the hermes-mcp-servers ConfigMap fragment into
         # ~/.hermes/config.yaml's mcp_servers: key. Idempotent (safe on every
         # restart) — deep-merges by key so it neither clobbers config.yaml's
@@ -117,6 +138,8 @@ spec:
             items:
               - key: RESEARCH_WORKER_SSH_PRIVATE_KEY
                 path: research-worker-key
+        - name: research-worker-key-staged
+          emptyDir: {}
 
       containers:
         - name: hermes-agent
@@ -165,7 +188,7 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-            - name: research-worker-key
+            - name: research-worker-key-staged
               mountPath: /home/hermes/.ssh/research-worker-key
               subPath: research-worker-key
               readOnly: true
