@@ -32,6 +32,16 @@ data:
     "
     chmod +x /home/app/.local/bin/talosctl
 
+    # hubble CLI, same pinned-static-binary pattern as talosctl.
+    python3 -c "
+    import tarfile, urllib.request, io
+    data = urllib.request.urlopen(
+        'https://github.com/cilium/hubble/releases/download/v1.17.3/hubble-linux-amd64.tar.gz'
+    ).read()
+    tarfile.open(fileobj=io.BytesIO(data)).extract('hubble', '/home/app/.local/bin')
+    "
+    chmod +x /home/app/.local/bin/hubble
+
     exec python3 /app/server.py
 
   server.py: |
@@ -41,6 +51,8 @@ data:
     import subprocess
     import sys
     import time
+    import urllib.parse
+    import urllib.request
 
     from kubernetes import client, config as k8s_config
     from kubernetes.client.rest import ApiException
@@ -250,6 +262,48 @@ data:
     def talos_members() -> str:
         """List cluster membership as seen by Talos (node names, IPs, roles)."""
         return _talosctl("talos_members", {}, ["get", "members"], [])
+
+    PROMETHEUS_URL = "http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090"
+    LOKI_URL = "http://loki.logging.svc.cluster.local:3100"
+    HUBBLE_CLI = os.path.expanduser("~/.local/bin/hubble")
+
+    def _http_get_json(tool_name, args, url):
+        def run():
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                return json.loads(resp.read().decode())
+        return _api_call(tool_name, args, run)
+
+    @mcp.tool()
+    def prometheus_query(promql: str) -> str:
+        """Run an instant PromQL query against Prometheus and return the result."""
+        url = f"{PROMETHEUS_URL}/api/v1/query?{urllib.parse.urlencode({'query': promql})}"
+        return _http_get_json("prometheus_query", {"promql": promql}, url)
+
+    @mcp.tool()
+    def loki_query(logql: str, limit: int = 100) -> str:
+        """Run an instant LogQL query against Loki and return matching log lines."""
+        url = f"{LOKI_URL}/loki/api/v1/query?{urllib.parse.urlencode({'query': logql, 'limit': limit})}"
+        return _http_get_json("loki_query", {"logql": logql, "limit": limit}, url)
+
+    def _hubble(tool_name, args, cmd_args):
+        def run():
+            env = dict(os.environ)
+            env["HUBBLE_SERVER"] = "hubble-relay.kube-system.svc.cluster.local:80"
+            result = subprocess.run(
+                [HUBBLE_CLI] + cmd_args, capture_output=True, text=True, timeout=15, env=env,
+            )
+            if result.returncode != 0:
+                return {"error": result.stderr.strip() or result.stdout.strip()}
+            return {"output": result.stdout.strip()}
+        return _api_call(tool_name, args, run)
+
+    @mcp.tool()
+    def hubble_observe(namespace: str = "", limit: int = 50) -> str:
+        """Observe recent Cilium network flows — what's talking to what, and what got dropped by which policy. Empty namespace covers the whole cluster."""
+        cmd = ["observe", "--output", "json", "-n", str(limit)]
+        if namespace:
+            cmd += ["--namespace", namespace]
+        return _hubble("hubble_observe", {"namespace": namespace, "limit": limit}, cmd)
 
     if __name__ == "__main__":
         import uvicorn

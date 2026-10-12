@@ -109,6 +109,68 @@ spec:
             - port: "50000"
               protocol: TCP
 ---
+# Prometheus — read-only query API, unauthenticated internally (same as
+# Homepage's existing customapi widgets already use it this way, gated
+# only by network reachability — confirmed, not assumed).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-prometheus
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
+---
+# Loki — same unauthenticated-internally pattern as Prometheus.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-loki
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: logging
+            app.kubernetes.io/name: loki
+      toPorts:
+        - ports:
+            - port: "3100"
+              protocol: TCP
+---
+# Hubble relay — network flow visibility, same pattern.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-hubble
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: hubble-relay
+      toPorts:
+        - ports:
+            - port: "80"
+              protocol: TCP
+---
 # Ingress on the MCP port, from Hermes only — same pattern as
 # playwright-mcp/research-worker. Never exposed via the Gateway.
 apiVersion: cilium.io/v2
