@@ -58,6 +58,10 @@ data:
         # against the server's /mcp endpoint, no transport: override needed
         # (unlike crawl4ai's SSE-only case below).
         url: "http://playwright-mcp.playwright-mcp.svc.cluster.local:8931/mcp"
+        # Connect on first use rather than at Hermes startup — avoids a
+        # boot-time connection error if this pod happens to be restarting,
+        # and nothing here depends on it being connected eagerly.
+        lazy: true
         # trust: untrusted would require approval on every write-capable
         # tool call per Playwright MCP's own read-only annotations — but
         # browser_navigate itself is marked non-read-only, so this would
