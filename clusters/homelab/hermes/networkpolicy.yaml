@@ -209,6 +209,27 @@ spec:
             - port: "3000"
               protocol: TCP
 ---
+# Egress to the Playwright MCP interactive browser server (its own pod/
+# namespace — see clusters/homelab/playwright-mcp/).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-playwright-mcp-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: playwright-mcp
+            app: playwright-mcp
+      toPorts:
+        - ports:
+            - port: "8931"
+              protocol: TCP
+---
 # Egress to the Cognee MCP memory server (in-cluster path — independent of
 # the public cognee.jupitertech.net hostname / Access gate, see task #4).
 apiVersion: cilium.io/v2

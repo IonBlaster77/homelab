@@ -365,6 +365,22 @@ spec:
                     namespace: crawl4ai
                     app: crawl4ai
                     podSelector: app=crawl4ai
+                - Playwright MCP:
+                    id: playwright-mcp-card
+                    # No href — internal only, no public hostname (same as
+                    # Prometheus/Alertmanager/Argo Workflows above). No
+                    # widget — it's a pure MCP server, no stats API to poll,
+                    # same as Cognee below.
+                    description: Interactive browser automation (MCP server) — no web UI
+                    icon: mdi-google-chrome
+                    # Must match one of playwright-mcp's --allowed-hosts
+                    # entries (clusters/homelab/playwright-mcp/deployment.yaml)
+                    # or the server 403s the probe and this tile reads as
+                    # permanently down — same class of issue as Cognee's
+                    # Host-header note below.
+                    siteMonitor: http://playwright-mcp.playwright-mcp.svc.cluster.local:8931
+                    namespace: playwright-mcp
+                    app: playwright-mcp
                 - Hermes:
                     id: hermes-card
                     href: https://hermes.jupitertech.net

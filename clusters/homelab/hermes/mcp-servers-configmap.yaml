@@ -48,6 +48,71 @@ data:
           resources: false
           prompts: false
         supports_parallel_tool_calls: true
+      playwright:
+        # Dedicated pod in its own namespace (clusters/homelab/playwright-mcp/)
+        # rather than Hermes spawning @playwright/mcp itself as a stdio
+        # subprocess (the pattern in Playwright/Hermes' own docs) — keeps a
+        # Chromium compromise confined to a disposable pod with no secrets
+        # and no path back into Hermes, mirroring crawl4ai's isolation model.
+        # Confirmed interactively: bare HTTP here resolves to Streamable HTTP
+        # against the server's /mcp endpoint, no transport: override needed
+        # (unlike crawl4ai's SSE-only case below).
+        url: "http://playwright-mcp.playwright-mcp.svc.cluster.local:8931/mcp"
+        # trust: untrusted would require approval on every write-capable
+        # tool call per Playwright MCP's own read-only annotations — but
+        # browser_navigate itself is marked non-read-only, so this would
+        # prompt on literally the first step of every task, not just risky
+        # ones. Left at the default (full) deliberately; the real controls
+        # are network-level (see playwright-mcp's NetworkPolicy) and the
+        # zero-ambient-credentials/--isolated setup on the server itself.
+        sampling:
+          enabled: false
+        elicitation:
+          enabled: false
+        tools:
+          # Core navigate/interact/observe tools only. Explicitly excluded:
+          # browser_evaluate / browser_run_code_unsafe (arbitrary JS-in-page
+          # execution), browser_file_upload (no legitimate use here and no
+          # interesting files in this pod anyway), all cookie_*/
+          # localstorage_*/sessionstorage_* and browser_set_storage_state
+          # (zero ambient state is the point of --isolated — don't also hand
+          # the model a tool to read/write it), browser_route/browser_unroute/
+          # browser_network_state_set (traffic interception/mocking, no
+          # legitimate research use), and the devtools/vision/pdf/testing
+          # tool groups (not enabled server-side — no --caps flag passed —
+          # so these wouldn't resolve to anything anyway).
+          include:
+            [
+              browser_navigate,
+              browser_navigate_back,
+              browser_click,
+              browser_type,
+              browser_press_key,
+              browser_select_option,
+              browser_hover,
+              browser_drag,
+              browser_drop,
+              browser_wait_for,
+              browser_handle_dialog,
+              browser_fill_form,
+              browser_snapshot,
+              browser_take_screenshot,
+              browser_find,
+              browser_console_messages,
+              browser_network_request,
+              browser_network_requests,
+              browser_tabs,
+              browser_resize,
+              browser_close,
+              browser_emulate_media,
+              browser_get_config,
+            ]
+          resources: false
+          prompts: false
+        # Browser actions are inherently sequential (can't click two things
+        # "at once" meaningfully); serializing also keeps the action log
+        # easier to audit after the fact.
+        supports_parallel_tool_calls: false
       cognee:
         # Streamable HTTP at /mcp, confirmed directly against the pod
         # (initialize + tools/list round-trip). No auth — cognee-mcp doesn't

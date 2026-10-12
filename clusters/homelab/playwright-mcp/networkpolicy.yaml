@@ -1,0 +1,112 @@
+---
+# Default deny all ingress and egress for the playwright-mcp namespace.
+# Same canonical deny-all pattern as hermes/crawl4ai — see hermes'
+# networkpolicy.yaml for why an empty rule list is wrong and a list with one
+# empty rule is required.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: playwright-mcp-default-deny
+  namespace: playwright-mcp
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: playwright-mcp-allow-dns
+  namespace: playwright-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: playwright-mcp
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The real SSRF/lateral-movement boundary for interactive browsing: allow the
+# public internet on 80/443, but explicitly EXCLUDE private/link-local/
+# loopback ranges. Playwright MCP's own --allowed-origins/--blocked-origins
+# are documented by Microsoft as "convenience defenses... not a security
+# boundary — they do not affect redirects", so this is enforced at L3/L4
+# instead, independent of anything the agent decides to navigate to.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: playwright-mcp-allow-internet
+  namespace: playwright-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: playwright-mcp
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8 # cluster pod/node CIDR + mgmt VLAN
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 169.254.0.0/16 # link-local / cloud metadata-style endpoints
+            - 127.0.0.0/8
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Ingress to the MCP port, from Hermes only. Never exposed via the Gateway —
+# no public hostname, no homepage ingress rule needed (Homepage's siteMonitor
+# probe is covered below since it needs the same port).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: playwright-mcp-allow-hermes-ingress
+  namespace: playwright-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: playwright-mcp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "8931"
+              protocol: TCP
+---
+# Homepage's siteMonitor widget calls the Service directly, same as every
+# other app's dashboard tile.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: playwright-mcp-allow-homepage-ingress
+  namespace: playwright-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: playwright-mcp
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+            app.kubernetes.io/name: homepage
+      toPorts:
+        - ports:
+            - port: "8931"
+              protocol: TCP

@@ -1,0 +1,179 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: playwright-mcp
+  namespace: playwright-mcp
+  labels:
+    app: playwright-mcp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: playwright-mcp
+  template:
+    metadata:
+      labels:
+        app: playwright-mcp
+    spec:
+      serviceAccountName: playwright-mcp-sa
+      restartPolicy: Always
+      # Lets both the initContainer and main container write into the shared
+      # emptyDir volumes as non-root UID 1000, so the npm/browser install
+      # step never needs root+chown. Keeps this namespace at full `restricted`
+      # enforcement (unlike hermes' namespace, which is relaxed to `baseline`
+      # for its SSH sidecar) — nothing in this pod ever runs as root.
+      securityContext:
+        fsGroup: 1000
+      # Chromium is memory-heavy; prefer nodes with more headroom (avoid talos1),
+      # same convention as crawl4ai/hermes.
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["talos3", "talos4"]
+
+      initContainers:
+        # @playwright/mcp has no official pre-built image, so it's installed
+        # at pod start from npm into a shared emptyDir, then exec'd as
+        # non-root from the main container. Must run on the SAME base image
+        # as the main container so the browser binary downloaded here matches
+        # what the main container's OS libraries expect.
+        #
+        # Confirmed interactively against this exact image (digest below) on
+        # 2026-10-12: `--browser chromium` resolves to a channel actually
+        # named "chrome-for-testing" internally, which is NOT pre-installed
+        # in the base image and is NOT fetched by a generic `playwright
+        # install chromium` — it needs @playwright/mcp's own
+        # `install-browser chrome-for-testing` subcommand, or the server
+        # fails every browser_navigate call with "Browser not installed".
+        - name: install-playwright-mcp
+          image: mcr.microsoft.com/playwright@sha256:02810c978d5396bf382ab6015c25ad6bed9e39f4a41c5b9c829e9fea439274e2
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: HOME
+              value: /home/pwuser
+            - name: PLAYWRIGHT_BROWSERS_PATH
+              value: /opt/pw-cache
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              npm install -g @playwright/mcp@latest --prefix /opt/pw-mcp
+              npx --prefix /opt/pw-mcp @playwright/mcp install-browser chrome-for-testing
+          volumeMounts:
+            - name: pw-mcp-bin
+              mountPath: /opt/pw-mcp
+            - name: pw-cache
+              mountPath: /opt/pw-cache
+            - name: pw-output
+              mountPath: /opt/pw-output
+            - name: pw-home
+              mountPath: /home/pwuser
+
+      volumes:
+        - name: pw-mcp-bin
+          emptyDir: {}
+        - name: pw-cache
+          emptyDir: {}
+        # Downloads/screenshots land here, never on a volume shared with
+        # Hermes — a malicious download has no automatic path to execution.
+        - name: pw-output
+          emptyDir: {}
+        - name: pw-home
+          emptyDir: {}
+        # Chromium crashes tabs under load without real /dev/shm, same as
+        # crawl4ai's dshm volume.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+
+      containers:
+        - name: playwright-mcp
+          image: mcr.microsoft.com/playwright@sha256:02810c978d5396bf382ab6015c25ad6bed9e39f4a41c5b9c829e9fea439274e2
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: HOME
+              value: /home/pwuser
+            - name: PLAYWRIGHT_BROWSERS_PATH
+              value: /opt/pw-cache
+          command:
+            - /opt/pw-mcp/bin/playwright-mcp
+          args:
+            - --browser=chromium
+            - --headless
+            # In-memory profile only — no saved logins/cookies persist
+            # between tasks or pod restarts.
+            - --isolated
+            # Pod-level isolation (non-root, capabilities dropped, seccomp
+            # RuntimeDefault) is the real security boundary here, not
+            # Chromium's own sandbox, which can't initialize without a user
+            # namespace this cluster doesn't grant. Same trade-off crawl4ai
+            # already makes in production.
+            - --no-sandbox
+            # A page can register tools via the WebMCP API; without this,
+            # those get collected and exposed to Hermes as if they were
+            # legitimate MCP tools — a direct prompt-injection vector.
+            - --no-webmcp
+            - --host=0.0.0.0
+            - --port=8931
+            # Confirmed interactively: the default host check requires the
+            # Host header to literally equal the bind host:port, which
+            # rejects even loopback requests that don't say exactly
+            # "localhost:8931". Scoped here to the exact in-cluster DNS names
+            # Hermes and Homepage will actually use, rather than disabling
+            # the check outright with '*'.
+            - --allowed-hosts=playwright-mcp.playwright-mcp.svc.cluster.local:8931,playwright-mcp.playwright-mcp.svc:8931
+            # Recycle the browser after 10 min idle to bound how long a
+            # compromised session can persist and to free Chromium memory.
+            # No per-call approval gate exists in Hermes for MCP tools, so
+            # this and the network/credential isolation below are the real
+            # controls, not a human clicking approve.
+            - --idle-timeout=600000
+            - --output-dir=/opt/pw-output
+          ports:
+            - containerPort: 8931
+              name: http
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: pw-mcp-bin
+              mountPath: /opt/pw-mcp
+              readOnly: true
+            - name: pw-cache
+              mountPath: /opt/pw-cache
+            - name: pw-output
+              mountPath: /opt/pw-output
+            - name: pw-home
+              mountPath: /home/pwuser
+            - name: dshm
+              mountPath: /dev/shm
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"

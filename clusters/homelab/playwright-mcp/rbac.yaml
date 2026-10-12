@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: playwright-mcp-role
+  namespace: playwright-mcp
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: playwright-mcp-rolebinding
+  namespace: playwright-mcp
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: playwright-mcp-role
+subjects:
+  - kind: ServiceAccount
+    name: playwright-mcp-sa
+    namespace: playwright-mcp
