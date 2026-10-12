@@ -17,12 +17,28 @@ data:
     # ModuleNotFoundError pointed straight at this) - pin <2 to keep running
     # the v1 API this server is written against, rather than migrate blind.
     pip install --user --no-cache-dir --quiet "mcp<2" kubernetes starlette uvicorn
+
+    # talosctl is a single static binary, no package manager needed - pinned
+    # to the same version already running on this cluster (confirmed via
+    # `talosctl version --client` this session) rather than "latest", same
+    # never-:latest discipline as every image in this repo.
+    mkdir -p /home/app/.local/bin
+    python3 -c "
+    import urllib.request
+    urllib.request.urlretrieve(
+        'https://github.com/siderolabs/talos/releases/download/v1.12.6/talosctl-linux-amd64',
+        '/home/app/.local/bin/talosctl',
+    )
+    "
+    chmod +x /home/app/.local/bin/talosctl
+
     exec python3 /app/server.py
 
   server.py: |
     import json
     import logging
     import os
+    import subprocess
     import sys
     import time
 
@@ -199,6 +215,41 @@ data:
     def minio_tenant_status(namespace: str = "") -> str:
         """Read MinIO Tenant health status. Empty namespace lists across all namespaces."""
         return _custom_list("minio_tenant_status", {"namespace": namespace}, "minio.min.io", "v2", "tenants", namespace or None)
+
+    TALOS_NODES = ["10.77.20.11", "10.77.20.12", "10.77.20.13", "10.77.20.14"]
+    TALOSCTL = os.path.expanduser("~/.local/bin/talosctl")
+
+    def _talosctl(tool_name, args, cmd_args, nodes):
+        def run():
+            targets = nodes if nodes else TALOS_NODES
+            result = subprocess.run(
+                [TALOSCTL, "-n", ",".join(targets)] + cmd_args,
+                capture_output=True, text=True, timeout=20,
+            )
+            if result.returncode != 0:
+                return {"error": result.stderr.strip() or result.stdout.strip()}
+            return {"output": result.stdout.strip()}
+        return _api_call(tool_name, args, run)
+
+    @mcp.tool()
+    def talos_version(node: str = "") -> str:
+        """Get Talos OS version for one node (IP) or all known nodes if omitted."""
+        nodes = [node] if node else []
+        return _talosctl("talos_version", {"node": node}, ["version"], nodes)
+
+    @mcp.tool()
+    def talos_service_status(service: str = "", node: str = "") -> str:
+        """List Talos service status (kubelet, etcd, etc.) for one node or all known nodes. Empty service lists all services."""
+        cmd = ["services"]
+        if service:
+            cmd.append(service)
+        nodes = [node] if node else []
+        return _talosctl("talos_service_status", {"service": service, "node": node}, cmd, nodes)
+
+    @mcp.tool()
+    def talos_members() -> str:
+        """List cluster membership as seen by Talos (node names, IPs, roles)."""
+        return _talosctl("talos_members", {}, ["get", "members"], [])
 
     if __name__ == "__main__":
         import uvicorn

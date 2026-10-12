@@ -80,6 +80,30 @@ spec:
             - port: "80"
               protocol: TCP
 ---
+# Talos API (port 50000) on the 4 known node IPs specifically — not a
+# subnet-wide rule like Hermes' own pre-existing (and already flagged as
+# overly broad) node-egress policy. This is exactly the port/host scoping
+# that policy should have had from the start.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: infra-mcp-allow-talos-api
+  namespace: infra-mcp
+spec:
+  endpointSelector:
+    matchLabels:
+      app: infra-mcp
+  egress:
+    - toCIDR:
+        - 10.77.20.11/32
+        - 10.77.20.12/32
+        - 10.77.20.13/32
+        - 10.77.20.14/32
+      toPorts:
+        - ports:
+            - port: "50000"
+              protocol: TCP
+---
 # Ingress on the MCP port, from Hermes only — same pattern as
 # playwright-mcp/research-worker. Never exposed via the Gateway.
 apiVersion: cilium.io/v2
