@@ -1,0 +1,13 @@
+# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
+# NOT listed: it is picked up by the root app, not by this folder's own app.
+# No `namespace:` here on purpose: httproute.yaml lives in the networking
+# namespace, and a kustomize namespace override would silently move it.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+  - referencegrant.yaml
