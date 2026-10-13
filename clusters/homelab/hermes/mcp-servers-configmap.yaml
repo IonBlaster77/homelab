@@ -36,6 +36,16 @@ data:
       # TERMINAL_SSH_* env vars on the hermes-agent container (set in
       # deployment.yaml), not from this file.
       backend: ssh
+    # v2026.9.x defaults to one multiplexed gateway serving every profile.
+    # In that mode a session resolves credentials ONLY from the profile's own
+    # .env (agent/secret_scope.py: a scope miss never falls back to
+    # os.environ), so the TERMINAL_SSH_* and *_AUTH_TOKEN vars this deployment
+    # injects as container env become invisible: the SSH terminal reports
+    # "not configured" and every ${VAR} MCP header expands empty (HTTP 401).
+    # Per-profile gateways (the pre-v2026.9 behaviour) keep the os.environ
+    # fallback, so turn multiplexing off.
+    gateway:
+      multiplex_profiles: false
     mcp_servers:
       crawl4ai:
         url: "http://crawl4ai.crawl4ai.svc.cluster.local:11235/mcp/sse"

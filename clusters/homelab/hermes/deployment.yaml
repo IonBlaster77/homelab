@@ -16,6 +16,11 @@ spec:
     metadata:
       labels:
         app: hermes
+      annotations:
+        # Bump when mcp-servers-configmap.yaml changes: the fragment is only
+        # merged into config.yaml by an initContainer, so a ConfigMap edit
+        # alone never reaches the running pod.
+        hermes/config-fragment-rev: "2026-10-13-multiplex-off"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always
