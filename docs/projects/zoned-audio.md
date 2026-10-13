@@ -9,7 +9,7 @@ Currently testing/MVP phase.
 
 **Location:** Magill, Adelaide SA. Household is all-Apple.
 
-Related: [`BOOTSTRAP.md`](BOOTSTRAP.md), [`NAS-AND-SWITCH-MAINTENANCE.md`](NAS-AND-SWITCH-MAINTENANCE.md).
+Related: [`bootstrap.md`](../runbooks/bootstrap.md), [`nas-and-switch-maintenance.md`](../runbooks/nas-and-switch-maintenance.md).
 Tracked as task **#39** in the homelab task list.
 
 ---

@@ -5,7 +5,7 @@
 #   helm install cilium cilium/cilium \
 #     --namespace kube-system \
 #     --version 1.17.0 \
-#     --values clusters/homelab/bootstrap/cilium-values.yaml
+#     --values bootstrap/cilium-values.yaml
 #
 # After ArgoCD is up, the cilium ArgoCD Application (gitops/argocd-apps/cilium.yaml)
 # takes over management of this release using the same values.

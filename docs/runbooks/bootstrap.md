@@ -35,7 +35,7 @@ Before starting, confirm you have:
 
 Verify SOPS can decrypt before you start:
 ```bash
-sops -d clusters/homelab/talos/talos1.yaml | head -3
+sops -d talos/talos1.yaml | head -3
 # Should print: version: v1alpha1
 ```
 
@@ -76,16 +76,16 @@ The configs in git are SOPS-encrypted, so decrypt before applying.
 
 ```bash
 # From the repo root (homelab/)
-sops -d clusters/homelab/talos/talos1.yaml | \
+sops -d talos/talos1.yaml | \
   talosctl apply-config --insecure --nodes 10.77.20.11 --file /dev/stdin
 
-sops -d clusters/homelab/talos/talos2.yaml | \
+sops -d talos/talos2.yaml | \
   talosctl apply-config --insecure --nodes 10.77.20.12 --file /dev/stdin
 
-sops -d clusters/homelab/talos/talos3.yaml | \
+sops -d talos/talos3.yaml | \
   talosctl apply-config --insecure --nodes 10.77.20.13 --file /dev/stdin
 
-sops -d clusters/homelab/talos/talos4.yaml | \
+sops -d talos/talos4.yaml | \
   talosctl apply-config --insecure --nodes 10.77.20.14 --file /dev/stdin
 ```
 
@@ -136,7 +136,7 @@ sops -d clusters/homelab/talos/talos4.yaml | \
 > kubectl delete pod nvme-wipe -n kube-system
 >
 > # Then re-apply talos4.yaml with the disks section restored
-> sops -d clusters/homelab/talos/talos4.yaml | \
+> sops -d talos/talos4.yaml | \
 >   talosctl apply-config --nodes 10.77.20.14 --file /dev/stdin --mode=auto
 > ```
 
@@ -188,7 +188,7 @@ helm repo update
 helm install cilium cilium/cilium \
   --namespace kube-system \
   --version 1.17.0 \
-  --values clusters/homelab/bootstrap/cilium-values.yaml
+  --values bootstrap/cilium-values.yaml
 ```
 
 Wait for Cilium to be fully ready:
@@ -224,7 +224,7 @@ helm install argocd argo/argo-cd \
   --namespace argocd \
   --create-namespace \
   --version 9.5.2 \
-  --values clusters/homelab/bootstrap/argocd-values.yaml
+  --values bootstrap/argocd-values.yaml
 ```
 
 Wait for ArgoCD to be ready:
@@ -249,7 +249,7 @@ kubectl create secret generic sops-age \
 ### 7b. CMP ConfigMap (plugin config for SOPS decryption sidecar)
 
 ```bash
-kubectl apply -f clusters/homelab/bootstrap/argocd-cmp-configmap.yaml
+kubectl apply -f bootstrap/argocd-cmp-configmap.yaml
 ```
 
 Restart the repo-server so it picks up the ConfigMap:
@@ -261,7 +261,7 @@ kubectl -n argocd rollout status deployment/argocd-repo-server --timeout=5m
 ### 7c. ArgoCD admin password
 
 ```bash
-sops -d clusters/homelab/bootstrap/argocd-secrets.yaml | kubectl apply -f -
+sops -d bootstrap/argocd-secrets.yaml | kubectl apply -f -
 ```
 
 ### 7d. GitHub repo credentials
@@ -281,7 +281,7 @@ picking up new commits). Anonymous read of a public repo has none of that failur
 ### 7e. GHCR pull secret (for ArgoCD to pull from GitHub Container Registry)
 
 ```bash
-sops -d clusters/homelab/bootstrap/ghcr-secret.yaml | kubectl apply -f -
+sops -d bootstrap/ghcr-secret.yaml | kubectl apply -f -
 ```
 
 ---
@@ -292,7 +292,7 @@ sops -d clusters/homelab/bootstrap/ghcr-secret.yaml | kubectl apply -f -
 
 Restricts ArgoCD to only sync from the homelab GitHub repo:
 ```bash
-kubectl apply -f clusters/homelab/bootstrap/argocd-appproject.yaml
+kubectl apply -f bootstrap/argocd-appproject.yaml
 ```
 
 ### 8b. Apply bootstrap-apps
@@ -300,7 +300,7 @@ kubectl apply -f clusters/homelab/bootstrap/argocd-appproject.yaml
 This is the root Application that watches `gitops/argocd-apps/` and auto-syncs new
 Application manifests as they are added to the repo:
 ```bash
-kubectl apply -f clusters/homelab/bootstrap/bootstrap-apps.yaml
+kubectl apply -f bootstrap/bootstrap-apps.yaml
 ```
 
 ArgoCD will now auto-sync `bootstrap-apps` and create Application cards for all apps.
@@ -664,7 +664,7 @@ configs:
       jsonPointers:
         - /status/terminatingReplicas
 ```
-Applied via `helm upgrade argocd argo/argo-cd --version 9.5.2 -n argocd --values clusters/homelab/bootstrap/argocd-values.yaml`.
+Applied via `helm upgrade argocd argo/argo-cd --version 9.5.2 -n argocd --values bootstrap/argocd-values.yaml`.
 
 If you still see the error after a fresh install, verify the ConfigMap was applied:
 ```bash
