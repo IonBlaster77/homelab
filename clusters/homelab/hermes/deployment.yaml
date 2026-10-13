@@ -20,7 +20,7 @@ spec:
         # Bump when mcp-servers-configmap.yaml changes: the fragment is only
         # merged into config.yaml by an initContainer, so a ConfigMap edit
         # alone never reaches the running pod.
-        hermes/config-fragment-rev: "2026-10-13-multiplex-off"
+        hermes/config-fragment-rev: "2026-10-13-env-sync"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always
@@ -99,6 +99,67 @@ spec:
             - name: mcp-servers-fragment
               mountPath: /mcp-fragment
               readOnly: true
+
+        # Since v2026.9.x, agent sessions resolve credentials through the
+        # profile's secret scope (~/.hermes/.env). When the gateway serves
+        # more than one profile, a value missing from .env does NOT fall back
+        # to the container env (agent/secret_scope.py get_secret), so the
+        # SSH terminal target and the MCP bearer tokens below, which this
+        # deployment injects as env vars, became invisible: "SSH host and
+        # user are not configured" and HTTP 401 from infra-mcp. Copy them into
+        # the default profile's .env on every start. Idempotent: replaces only
+        # these keys and leaves Hermes' own entries alone. Values still come
+        # from hermes-secret / this manifest; nothing secret is committed.
+        - name: sync-env-secrets
+          image: busybox:1.38
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          env:
+            - name: TERMINAL_SSH_HOST
+              value: research-worker.research-worker.svc.cluster.local
+            - name: TERMINAL_SSH_USER
+              value: root
+            - name: TERMINAL_SSH_PORT
+              value: "22"
+            - name: TERMINAL_SSH_KEY
+              value: /home/hermes/.ssh/research-worker-key
+            - name: CRAWL4AI_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: CRAWL4AI_AUTH_TOKEN
+            - name: SEARXNG_MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: SEARXNG_MCP_AUTH_TOKEN
+            - name: INFRA_MCP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: INFRA_MCP_AUTH_TOKEN
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN"
+              F=/home/hermes/.hermes/.env
+              touch "$F"
+              TMP=$(mktemp /home/hermes/.hermes/.env.sync.XXXXXX)
+              PAT=$(echo "$KEYS" | tr ' ' '|')
+              grep -vE "^(export )?($PAT)=" "$F" > "$TMP" || true
+              for k in $KEYS; do
+                eval "v=\${$k}"
+                [ -n "$v" ] && printf '%s=%s\n' "$k" "$v" >> "$TMP"
+              done
+              chmod 600 "$TMP"
+              mv "$TMP" "$F"
+              echo "synced: $KEYS"
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
 
         # hermes-webui imports the agent in-process (`from run_agent import
         # AIAgent`) on every chat request. Copy the agent's source (not its
@@ -182,12 +243,6 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: SEARXNG_MCP_AUTH_TOKEN
-            # Operator override for gateway.multiplex_profiles (env beats
-            # config.yaml). Multiplexed gateways resolve secrets only from each
-            # profile's .env, hiding every credential below; see the note in
-            # mcp-servers-configmap.yaml.
-            - name: GATEWAY_MULTIPLEX_PROFILES
-              value: "false"
             - name: TERMINAL_SSH_HOST
               value: research-worker.research-worker.svc.cluster.local
             - name: TERMINAL_SSH_USER
