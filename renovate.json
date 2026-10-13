@@ -1,7 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "enabled": false,
   "timezone": "Australia/Adelaide",
+  "ignorePaths": [
+    "**/node_modules/**",
+    "clusters/homelab/talos/**",
+    "clusters/homelab/bootstrap/**",
+    "gitops/homepage-chart/charts/**"
+  ],
   "prConcurrentLimit": 15,
   "kubernetes": {
     "managerFilePatterns": ["/clusters/homelab/.+\\.ya?ml$/"]
