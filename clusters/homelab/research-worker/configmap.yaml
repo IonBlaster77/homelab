@@ -63,9 +63,26 @@ data:
     # ("Unable to create directory") even when it resolves to a valid empty
     # dir — create at the real path instead; /opt/venv still works fine for
     # reading through the symlink afterward.
+    #
+    # A base-image bump can change the system Python minor version (alpine
+    # 3.22 -> 3.24 moved 3.12 -> 3.14). The persisted venv then points at an
+    # interpreter that no longer exists, yet bin/pip is still there, so the
+    # check below would skip the rebuild. Detect the mismatch from
+    # pyvenv.cfg, note which packages the old venv had (from its dist-info
+    # dirs, since its pip can no longer run), wipe it, and reinstall them
+    # alongside the baseline.
+    SYSPY=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+    VENVPY=$(sed -n 's/^version *= *\([0-9]*\.[0-9]*\).*/\1/p' /workspace/venv/pyvenv.cfg 2>/dev/null)
+    KEEP=""
+    if [ -n "$VENVPY" ] && [ "$VENVPY" != "$SYSPY" ]; then
+      KEEP=$(ls -d /workspace/venv/lib/python$VENVPY/site-packages/*.dist-info 2>/dev/null \
+        | sed -E 's#.*/##; s/-[0-9][^-]*\.dist-info$//' | grep -vxE 'pip|setuptools|wheel' | tr '\n' ' ')
+      echo "venv built for Python $VENVPY but system is $SYSPY: rebuilding, carrying over: $KEEP"
+      find /workspace/venv -mindepth 1 -delete
+    fi
     if [ ! -x /workspace/venv/bin/pip ]; then
       python3 -m venv /workspace/venv
-      /workspace/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract
+      /workspace/venv/bin/pip install --no-cache-dir requests beautifulsoup4 lxml pandas pillow openpyxl pdfplumber pytesseract $KEEP
     fi
 
     # Hermes' code_execution tool invokes /usr/bin/python3 directly over a
