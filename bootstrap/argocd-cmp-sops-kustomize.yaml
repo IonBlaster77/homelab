@@ -1,0 +1,53 @@
+# Second Argo CD config management plugin, for the restructured layout
+# (kubernetes/**/<app>/ with kustomization.yaml, component subfolders and
+# *.sops.yaml secrets). Runs in its own repo-server sidecar (cmp-sops-kustomize,
+# see argocd-values.yaml / clusters/homelab/argocd-chart/values.yaml) so the
+# original argocd-cmp-sops plugin, used by every not-yet-migrated app, is
+# untouched.
+#
+# Apps opt in explicitly in their app.yaml:
+#   source:
+#     plugin:
+#       name: sops-kustomize-v1.0
+# There is deliberately no discover rule, so nothing is routed here by accident.
+#
+# Generate: copy the app folder to a temp dir, refuse any SOPS-encrypted file
+# that isn't named *.sops.yaml (it would otherwise reach the cluster still
+# encrypted), decrypt every *.sops.yaml in place in the copy, then
+# `kustomize build`. Decrypted values exist only in that temp dir inside the
+# sidecar and are removed on exit; they never reach git.
+#
+# Applied by hand during bootstrap (kubectl apply -f), like argocd-cmp-sops.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmp-sops-kustomize
+  namespace: argocd
+data:
+  plugin.yaml: |
+    apiVersion: argoproj.io/v1alpha1
+    kind: ConfigManagementPlugin
+    metadata:
+      name: sops-kustomize
+    spec:
+      version: v1.0
+      generate:
+        command:
+          - sh
+          - -c
+          - |
+            set -eu
+            WORK=$(mktemp -d)
+            trap 'rm -rf "$WORK"' EXIT
+            cp -a . "$WORK/src"
+            cd "$WORK/src"
+            misnamed=$(grep -rl --include='*.yaml' --include='*.yml' '^sops:' . | grep -v '\.sops\.yaml$' || true)
+            if [ -n "$misnamed" ]; then
+              echo "sops-kustomize: encrypted file(s) not named *.sops.yaml: $misnamed" >&2
+              exit 1
+            fi
+            find . -type f -name '*.sops.yaml' > "$WORK/encrypted"
+            while IFS= read -r f; do
+              sops -d -i "$f" || { echo "sops-kustomize: failed to decrypt $f" >&2; exit 1; }
+            done < "$WORK/encrypted"
+            kustomize build .

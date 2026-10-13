@@ -4,6 +4,14 @@ creation_rules:
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$"
 
+  # Restructured layout (kubernetes/**): every encrypted manifest is named
+  # *.sops.yaml (secret.sops.yaml / secret-<name>.sops.yaml), so one rule
+  # covers them all regardless of folder. The sops-kustomize Argo CD plugin
+  # decrypts exactly these files.
+  - path_regex: \.sops\.yaml$
+    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+    encrypted_regex: "^(data|stringData)$"
+
   # Kubernetes secret manifests - only encrypt secret values, keep metadata readable
   # encrypted_regex restricts SOPS to data/stringData so ArgoCD can see apiVersion/kind/metadata
   - path_regex: clusters/homelab/apps/.*secret.*\.yaml$
