@@ -1,7 +1,6 @@
-# Music Assistant — the audio engine for ZONED-AUDIO.md. Pinned to talos4 and
-# running hostNetwork because AirPlay requires LAN multicast in both directions;
-# see clusters/homelab/music-assistant/namespace.yaml for the full reasoning and
-# networkpolicy.yaml for why there is deliberately no CiliumNetworkPolicy.
+# Music Assistant: the audio engine for the whole-home zoned audio project
+# (docs/projects/zoned-audio.md). Runs hostNetwork pinned to talos4 because
+# AirPlay needs LAN multicast in both directions; see README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -12,7 +11,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/music-assistant
+    path: kubernetes/apps/home/music-assistant
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: music-assistant
