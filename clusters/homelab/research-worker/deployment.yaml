@@ -48,7 +48,7 @@ spec:
         # one else). Key-only auth against a dedicated keypair generated
         # specifically for this; see secret.yaml.
         - name: research-worker
-          image: alpine:3.22
+          image: alpine:3.24
           command:
             - /bin/sh
             - /etc/research-worker/entrypoint.sh
