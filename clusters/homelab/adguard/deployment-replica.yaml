@@ -5,6 +5,12 @@ metadata:
   namespace: adguard
 spec:
   replicas: 1
+  # Recreate, not RollingUpdate: the RWO config volume can only attach to one
+  # node, and the required anti-affinity forces a surge pod onto a different
+  # node, so a rolling update would hang on Multi-Attach forever.
+  strategy:
+    type: Recreate
+    rollingUpdate: null  # clear the defaulted RollingUpdate params on apply
   selector:
     matchLabels:
       app: adguard-replica
