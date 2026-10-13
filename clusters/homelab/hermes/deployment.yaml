@@ -182,6 +182,12 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: SEARXNG_MCP_AUTH_TOKEN
+            # Operator override for gateway.multiplex_profiles (env beats
+            # config.yaml). Multiplexed gateways resolve secrets only from each
+            # profile's .env, hiding every credential below; see the note in
+            # mcp-servers-configmap.yaml.
+            - name: GATEWAY_MULTIPLEX_PROFILES
+              value: "false"
             - name: TERMINAL_SSH_HOST
               value: research-worker.research-worker.svc.cluster.local
             - name: TERMINAL_SSH_USER
