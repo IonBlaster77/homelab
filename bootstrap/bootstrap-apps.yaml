@@ -14,5 +14,9 @@ spec:
     namespace: argocd
   syncPolicy:
     automated:
-      prune: true
+      # prune is OFF during the repo restructure: Application files move
+      # from gitops/argocd-apps/ into each app folder's app.yaml, and a
+      # path/include mistake must never let this root app delete child
+      # Applications. Re-enable once the restructure is complete.
+      prune: false
       selfHeal: true
