@@ -8,7 +8,17 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: gitops/argocd-apps
+    # During the restructure the root app finds Applications in BOTH places:
+    # the old gitops/argocd-apps/*.yaml and the new per-app
+    # kubernetes/**/app.yaml. An app moves by deleting its old file and adding
+    # its app.yaml (same Application name) in one commit, so Argo CD sees the
+    # same object and never deletes or recreates it. Tested 2026-10-13 with a
+    # throwaway Application: matched all 46 apps + the AppProject + a test
+    # app.yaml, and ignored a decoy file not named app.yaml.
+    path: .
+    directory:
+      recurse: true
+      include: '{gitops/argocd-apps/*.yaml,kubernetes/**/app.yaml}'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
