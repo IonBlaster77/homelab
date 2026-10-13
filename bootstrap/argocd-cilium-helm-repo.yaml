@@ -8,7 +8,7 @@
 # targetRevision: 1.17.0 and compute the diff against the live Cilium state.
 #
 # Apply during bootstrap AFTER ArgoCD is running:
-#   kubectl apply -f clusters/homelab/bootstrap/argocd-cilium-helm-repo.yaml
+#   kubectl apply -f bootstrap/argocd-cilium-helm-repo.yaml
 #
 # This is a plain (non-sensitive) Secret — no SOPS encryption needed since
 # helm.cilium.io is a public repo requiring no credentials.
