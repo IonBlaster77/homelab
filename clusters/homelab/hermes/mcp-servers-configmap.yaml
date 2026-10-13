@@ -25,6 +25,15 @@ data:
     # point of letting the agent fetch a missing tool mid-task.
     approvals:
       mode: smart
+      # Since v2026.9.x, WebUI chats arrive via the gateway's API server, which
+      # Hermes classes as an "unattended" platform: approvals.mode no longer
+      # applies there, only this binary approve/deny (default deny), and deny
+      # refuses every flagged command plus all execute_code. Approve, because
+      # the real guardrails are infrastructure: terminal + execute_code run in
+      # the isolated research-worker sandbox (no secrets, egress-restricted),
+      # infra-mcp is read-only RBAC, and hardline-catastrophic commands stay
+      # blocked regardless of this setting. Decided 2026-10-13.
+      unattended_mode: approve
     terminal:
       # Was 'local' — executing directly inside this container, which holds
       # LLM_API_KEY/API_SERVER_KEY/CRAWL4AI_AUTH_TOKEN/SEARXNG_MCP_AUTH_TOKEN
