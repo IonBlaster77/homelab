@@ -9,6 +9,11 @@ resources:
   - networkpolicy.yaml
   - secret-relay.sops.yaml
   - monitoring.yaml
+  # Gateway routes (live in the networking namespace) and the grant they need
+  - httproute.yaml
+  - httproute-relay.yaml
+  - httproute-minio-console.yaml
+  - referencegrant.yaml
   # Database
   - secret-db.sops.yaml
   - secret-db-backup.sops.yaml
