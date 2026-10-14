@@ -49,23 +49,23 @@ data:
        homepage.yaml, so they survive reordering/regrouping.
        ═══════════════════════════════════════════════════════════ */
 
-    #pgadmin-card, #argocd-card, #grafana-card, #longhorn-card, #hubble-card, #minio-card,
+    #pgadmin-card, #argocd-card, #grafana-card, #longhorn-card, #hubble-card,
     #authentik-card, #adguard-card, #kea-card,
     #jellyfin-card, #seerr-card,
     #radarr-card, #sonarr-card, #prowlarr-card, #qbittorrent-card, #nzbget-card, #bazarr-card, #arrdashboard-card,
-    #searxng-card, #crawl4ai-card, #hermes-card, #streamystats-card, #buzz-card,
+    #searxng-card, #crawl4ai-card, #hermes-card, #streamystats-card,
     #mikrotik-core-card, #unifi-card, #mikrotik-agg-card, #dell-switch-card, #hp-switch-card, #synology-card {
       position: relative !important;
       background-color: transparent !important;
     }
 
     #pgadmin-card::before, #argocd-card::before, #grafana-card::before, #longhorn-card::before,
-    #hubble-card::before, #minio-card::before,
+    #hubble-card::before,
     #authentik-card::before, #adguard-card::before, #kea-card::before,
     #jellyfin-card::before, #seerr-card::before,
     #radarr-card::before, #sonarr-card::before, #prowlarr-card::before, #qbittorrent-card::before,
     #nzbget-card::before, #bazarr-card::before, #arrdashboard-card::before,
-    #searxng-card::before, #crawl4ai-card::before, #hermes-card::before, #streamystats-card::before, #buzz-card::before,
+    #searxng-card::before, #crawl4ai-card::before, #hermes-card::before, #streamystats-card::before,
     #mikrotik-core-card::before, #unifi-card::before, #mikrotik-agg-card::before,
     #dell-switch-card::before, #hp-switch-card::before, #synology-card::before {
       content: "";
@@ -82,7 +82,6 @@ data:
     #grafana-card::before   { background-color: #F46800 !important; } /* Grafana orange    */
     #longhorn-card::before  { background-color: #4CB5F5 !important; } /* Longhorn blue     */
     #hubble-card::before    { background-color: #FDBA12 !important; } /* Cilium/Hubble gold*/
-    #minio-card::before     { background-color: #C72E49 !important; } /* MinIO red         */
 
     /* Network & Security */
     #authentik-card::before { background-color: #FD4B2D !important; } /* Authentik orange  */
@@ -107,7 +106,6 @@ data:
     #crawl4ai-card::before     { background-color: #6366F1 !important; }
     #hermes-card::before       { background-color: #06B6D4 !important; }
     #streamystats-card::before { background-color: #F97316 !important; }
-    #buzz-card::before         { background-color: #EC4899 !important; }
 
     /* Network Hardware */
     #mikrotik-core-card::before { background-color: #FFFFFF !important; }
