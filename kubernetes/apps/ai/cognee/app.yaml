@@ -8,6 +8,11 @@ kind: Application
 metadata:
   name: cognee
   namespace: argocd
+  annotations:
+    # Compare server-side, to match ServerSideApply below. The client-side
+    # diff flags fields the API server defaults (e.g. the HTTPRoute's
+    # backendRef group/kind/weight) as a phantom OutOfSync with no diff shown.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: homelab
   source:
