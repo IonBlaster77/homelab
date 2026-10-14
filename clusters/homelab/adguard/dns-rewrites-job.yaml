@@ -84,11 +84,9 @@ spec:
               add_rewrite "hubble.jupitertech.net"   "10.77.20.60"
               add_rewrite "buzz.jupitertech.net"     "10.77.20.60"
               add_rewrite "minio.jupitertech.net"    "10.77.20.60"
-              # LAN resolution for the two hostnames whose HTTPRoutes are live
-              # but which had no rewrite, so they resolved nowhere on the LAN.
-              # Public DNS for both is still pending in Cloudflare (tasks #4/#7);
-              # these entries are the LAN half only and are independent of it.
-              add_rewrite "cognee.jupitertech.net"   "10.77.20.60"
+              # LAN resolution for Buzz's raw-relay hostname, whose HTTPRoute is
+              # live but which had no rewrite. Public DNS is still pending in
+              # Cloudflare (task #7); this entry is the LAN half only.
               add_rewrite "relay.jupitertech.net"    "10.77.20.60"
               # Whole-home audio hub (ZONED-AUDIO.md). Both go via the Gateway
               # like everything else. Note Home Assistant ALSO has a direct LAN
@@ -102,3 +100,4 @@ spec:
               # existing record, so renames leave the old name resolving to
               # the gateway, where it matches no HTTPRoute and returns 404.
               del_rewrite "jellyseerr.jupitertech.net" "10.77.20.60"
+              del_rewrite "cognee.jupitertech.net"     "10.77.20.60"

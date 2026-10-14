@@ -25,7 +25,7 @@ are committed encrypted with SOPS/age, and nothing is changed by hand.
 - **Media:** Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, Seerr, qBittorrent (behind Gluetun), NZBGet, Recyclarr, Streamystats
 - **Home:** Home Assistant, Music Assistant, Homepage dashboard
 - **Network:** AdGuard Home (primary + replica, kept in sync), Kea DHCP
-- **AI:** Hermes agent with sandboxed tools: an isolated SSH research worker, Playwright browser, SearXNG, Crawl4AI, Cognee memory and a read-only infra MCP server
+- **AI:** Hermes agent with sandboxed tools: an isolated SSH research worker, Playwright browser, SearXNG, Crawl4AI and a read-only infra MCP server
 
 _A full app catalogue with links to each app's folder will be added once the
 restructure lands._
