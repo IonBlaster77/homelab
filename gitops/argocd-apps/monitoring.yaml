@@ -145,9 +145,13 @@ spec:
             # (see git history on this file) once real Pushover credentials
             # are provided.
             #
-            # Mounted at /etc/alertmanager/secrets/buzz-webhook-secret/{critical-alerts-url,warning-alerts-url}
-            secrets:
-              - buzz-webhook-secret
+            # NO NOTIFICATION CHANNEL since 2026-10-14: critical and warning
+            # alerts went to Buzz channels via webhooks until Buzz was
+            # decommissioned. Everything routes to "null" until a new
+            # off-cluster channel is chosen; alerts still fire and show in
+            # the Alertmanager and Grafana UIs. The old severity routing
+            # (critical batched per 5m / repeat 1h, warning per 15m /
+            # repeat 4h, grouped by severity) is in git history.
           config:
             global: {}
             route:
@@ -156,36 +160,8 @@ spec:
               group_wait: 30s
               group_interval: 5m
               repeat_interval: 4h
-              routes:
-                # group_by: [severity] here (not alertname/namespace) means
-                # every currently-firing alert at this severity is batched
-                # into a single message per group_interval window, instead
-                # of one chat message per alert — that's what actually
-                # keeps these channels skimmable instead of a spam feed.
-                - matchers:
-                    - severity="critical"
-                  receiver: buzz-critical
-                  group_by: ["severity"]
-                  group_wait: 30s
-                  group_interval: 5m
-                  repeat_interval: 1h
-                - matchers:
-                    - severity="warning"
-                  receiver: buzz-warning
-                  group_by: ["severity"]
-                  group_wait: 2m
-                  group_interval: 15m
-                  repeat_interval: 4h
             receivers:
               - name: "null"
-              - name: buzz-critical
-                webhook_configs:
-                  - url_file: /etc/alertmanager/secrets/buzz-webhook-secret/critical-alerts-url
-                    send_resolved: true
-              - name: buzz-warning
-                webhook_configs:
-                  - url_file: /etc/alertmanager/secrets/buzz-webhook-secret/warning-alerts-url
-                    send_resolved: true
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
