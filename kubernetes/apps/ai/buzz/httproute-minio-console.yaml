@@ -4,8 +4,8 @@ metadata:
   name: minio-console
   namespace: networking
   annotations:
-    # Temporary, for the handoff to the buzz app: stops this app pruning
-    # the live object when the file moves. Removed once buzz owns it.
+    # Temporary, from the handoff out of the gateway app: stopped that app
+    # pruning the live object when the file moved. Removed in the next step.
     argocd.argoproj.io/sync-options: Prune=false
 spec:
   parentRefs:

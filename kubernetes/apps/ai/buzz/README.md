@@ -7,7 +7,7 @@ until someone is invited.
 
 | | |
 |---|---|
-| **URL** | https://buzz.jupitertech.net (web and relay; `/pair-relay` for mobile QR pairing), plus `relay.jupitertech.net` |
+| **URL** | https://buzz.jupitertech.net (web and relay; `/pair-relay` for mobile QR pairing), `relay.jupitertech.net` (raw Nostr clients) and `minio.jupitertech.net` (MinIO console) |
 | **Images** | `ghcr.io/block/buzz:main` (relay and pairing relay), MinIO (the operator's default image), CloudNativePG Postgres 18 |
 | **Namespace** | `buzz` |
 | **Storage** | `buzz-db`, a 2-instance CloudNativePG cluster (5Gi each), and the `buzz-minio` Tenant (4 × 5Gi) for media |
@@ -40,6 +40,10 @@ MinIO (S3 API) for uploaded media. `DATABASE_URL` and `REDIS_URL` come from
 | `networkpolicy.yaml` | Default deny, then one rule per allowed flow (20 policies) |
 | `secret-relay.sops.yaml` | Relay Nostr identity key, git hook HMAC secret, DB and Redis URLs |
 | `monitoring.yaml` | PodMonitors for the database and MinIO |
+| `httproute.yaml` | `buzz.jupitertech.net` → relay, with `/pair-relay` rewritten to the pairing relay |
+| `httproute-relay.yaml` | `relay.jupitertech.net` → relay, for raw Nostr clients that can't pass Cloudflare Access |
+| `httproute-minio-console.yaml` | `minio.jupitertech.net` → the MinIO console |
+| `referencegrant.yaml` | Lets those routes (in the `networking` namespace) reach the Services here |
 | `secret-db.sops.yaml` | Credentials for the `buzz` database role |
 | `secret-db-backup.sops.yaml` | S3 credentials for the database backup bucket |
 | `database.yaml` | CloudNativePG `Cluster` `buzz-db` with Barman backups |
@@ -48,9 +52,6 @@ MinIO (S3 API) for uploaded media. `DATABASE_URL` and `REDIS_URL` come from
 | `secret-minio-metrics.sops.yaml` | Scoped bearer token for MinIO's metrics endpoint |
 | `minio-tenant.yaml` | Single-server MinIO Tenant `buzz-minio` |
 | `job-minio-bucket.yaml` | PostSync hook that creates the `buzz-media` bucket |
-
-The HTTPRoutes for `buzz.jupitertech.net` and `relay.jupitertech.net` still
-live in the gateway app. They move here in a follow-up.
 
 ## Gotchas
 
