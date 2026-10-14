@@ -24,3 +24,5 @@ spec:
     - https://helm.runix.net
     - https://kubernetes-sigs.github.io/metrics-server/
     - https://github.com/kubernetes-csi/external-snapshotter.git
+    # Buzz's Helm chart lives in its upstream repo, not a chart registry.
+    - https://github.com/block/buzz.git
