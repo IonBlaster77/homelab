@@ -19,18 +19,3 @@ spec:
     - port: 9121
       targetPort: 9121
       name: metrics
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: redis
-  namespace: redis
-  labels:
-    release: monitoring
-spec:
-  selector:
-    matchLabels:
-      app: redis
-  endpoints:
-    - port: metrics
-      interval: 30s
