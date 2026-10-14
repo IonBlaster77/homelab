@@ -3,10 +3,6 @@ kind: HTTPRoute
 metadata:
   name: buzz
   namespace: networking
-  annotations:
-    # Temporary, from the handoff out of the gateway app: stopped that app
-    # pruning the live object when the file moved. Removed in the next step.
-    argocd.argoproj.io/sync-options: Prune=false
 spec:
   parentRefs:
     - name: homelab-gateway

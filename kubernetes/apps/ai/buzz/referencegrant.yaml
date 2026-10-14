@@ -5,10 +5,6 @@ kind: ReferenceGrant
 metadata:
   name: allow-networking-to-buzz
   namespace: buzz
-  annotations:
-    # Temporary, from the handoff out of the gateway app: stopped that app
-    # pruning the live object when the file moved. Removed in the next step.
-    argocd.argoproj.io/sync-options: Prune=false
 spec:
   from:
     - group: gateway.networking.k8s.io
