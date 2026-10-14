@@ -223,11 +223,6 @@ data:
         """Read CloudNativePG cluster health and instance status. Empty namespace lists across all namespaces."""
         return _custom_list("cnpg_cluster_status", {"namespace": namespace}, "postgresql.cnpg.io", "v1", "clusters", namespace or None)
 
-    @mcp.tool()
-    def minio_tenant_status(namespace: str = "") -> str:
-        """Read MinIO Tenant health status. Empty namespace lists across all namespaces."""
-        return _custom_list("minio_tenant_status", {"namespace": namespace}, "minio.min.io", "v2", "tenants", namespace or None)
-
     TALOS_NODES = ["10.77.20.11", "10.77.20.12", "10.77.20.13", "10.77.20.14"]
     TALOSCTL = os.path.expanduser("~/.local/bin/talosctl")
 
