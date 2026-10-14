@@ -1,0 +1,16 @@
+# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
+# NOT listed: it is picked up by the root app, not by this folder's own app.
+# *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secret-db.sops.yaml
+  - secret-db-grafana.sops.yaml
+  - database.yaml
+  - monitoring.yaml
+  - configmap.yaml
+  - configmap-db-schema.yaml
+  - deployment.yaml
+  - service.yaml
+  - job-grafana-grants.yaml
