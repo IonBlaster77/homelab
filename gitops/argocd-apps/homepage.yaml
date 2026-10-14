@@ -369,8 +369,7 @@ spec:
                     id: playwright-mcp-card
                     # No href — internal only, no public hostname (same as
                     # Prometheus/Alertmanager/Argo Workflows above). No
-                    # widget — it's a pure MCP server, no stats API to poll,
-                    # same as Cognee below.
+                    # widget — it's a pure MCP server, no stats API to poll.
                     description: Interactive browser automation (MCP server) — no web UI
                     icon: mdi-google-chrome
                     # No siteMonitor, deliberately — this server has no route
@@ -428,18 +427,6 @@ spec:
                     namespace: hermes
                     app: hermes
                     podSelector: app=hermes
-                - Cognee:
-                    id: cognee-card
-                    href: https://cognee.jupitertech.net
-                    description: Shared cross-agent memory (MCP server)
-                    icon: mdi-brain
-                    # /health rather than / - cognee-mcp is an MCP endpoint, not
-                    # a web app, and the Python mcp SDK rejects requests whose
-                    # Host header is not in MCP_ALLOWED_HOSTS with a 421, which
-                    # would show as a permanently-down tile.
-                    siteMonitor: http://cognee-mcp.cognee.svc.cluster.local:8000/health
-                    namespace: cognee
-                    app: cognee-mcp
                 - Streamystats:
                     id: streamystats-card
                     href: https://streamystats.jupitertech.net
