@@ -153,16 +153,6 @@ spec:
                     siteMonitor: http://buzz-minio-console.buzz.svc.cluster.local:9090
                     namespace: buzz
                     podSelector: v1.min.io/tenant=buzz-minio
-                - MinIO — CNPG Backups:
-                    id: minio-backups-card
-                    # Second, separate MinIO tenant holding the CNPG Barman
-                    # backups (task #13). Deliberately not the same tenant as
-                    # buzz-minio - backups moved off it when that pool neared
-                    # its scheduling ceiling. No public hostname: internal only.
-                    description: Postgres backup object store — internal only
-                    icon: minio.png
-                    siteMonitor: http://cnpg-backups-minio-console.cnpg-backups.svc.cluster.local:9090
-                    namespace: cnpg-backups
                 - Prometheus:
                     id: prometheus-card
                     # No href: not exposed via the gateway. Grafana is the
