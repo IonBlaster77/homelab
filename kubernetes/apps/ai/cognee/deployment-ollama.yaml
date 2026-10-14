@@ -19,37 +19,6 @@
 # too long, ~20min observed, which a multi-GB pull always exceeds - and not
 # via a standing Job, since Job pod specs are immutable and a completed pull
 # has nothing left to reconcile). The model persists on the PVC below.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: cognee-ollama-models
-  namespace: cognee
-spec:
-  accessModes:
-    - ReadWriteOnce
-  # nvme, not ssd: all 3 replicas landed on the same node (talos4) with
-  # only 1/3 actually running - the ssd pool's capacity pressure (see
-  # database migrations, 2026-08-05) blocked Longhorn from scheduling
-  # replicas onto other nodes at all. nvme has ample headroom everywhere.
-  storageClassName: longhorn-nvme
-  resources:
-    requests:
-      storage: 30Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: cognee-ollama
-  namespace: cognee
-spec:
-  type: ClusterIP
-  selector:
-    app: cognee-ollama
-  ports:
-    - name: http
-      port: 11434
-      targetPort: 11434
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -2,23 +2,9 @@
 # Hermes will talk to. Deliberately just this, not a separate cognee/cognee
 # API server too: cognee-mcp embeds the cognee library directly and talks
 # to Postgres itself, so a standalone API server would just be duplicate
-# surface area for the same job. All-in-one Postgres (see cognee-db-cluster.yaml)
+# surface area for the same job. All-in-one Postgres (see database.yaml)
 # for graph+vectors+sessions+metadata, cognee-ollama for LLM+embeddings -
 # fully self-hosted, no cloud LLM dependency.
-apiVersion: v1
-kind: Service
-metadata:
-  name: cognee-mcp
-  namespace: cognee
-spec:
-  type: ClusterIP
-  selector:
-    app: cognee-mcp
-  ports:
-    - name: http
-      port: 8000
-      targetPort: 8000
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
