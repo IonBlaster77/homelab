@@ -1,0 +1,106 @@
+# Helm values for the upstream Buzz chart (github.com/block/buzz,
+# deploy/charts/buzz), passed in by app.yaml. The relay is owner-locked; the
+# namespace, database, MinIO and secrets it depends on are the other files in
+# this folder.
+#
+# Compromise on pinning: the chart itself (deploy/charts/buzz) is too new —
+# no commit that has both the chart AND a published GHCR image tag exists
+# yet, so the chart source floats on `main` (unavoidable for now).
+#
+# image.tag was originally pinned to a specific sha (sha-1fa63ba) for
+# reproducibility, but that build predates a multi-tenant "communities"
+# schema refactor that the current `main` migrations require (confirmed:
+# the pinned binary had zero references to `communities`/`community_id`,
+# vs. current migrations making community_id NOT NULL on every tenant-
+# scoped table — every event insert was failing FK/not-null checks).
+# Floating image.tag on `main` too keeps the binary and the schema it
+# expects from drifting apart, at the cost of losing image reproducibility
+# (same tradeoff already accepted for the chart source above). Revisit
+# pinning both to a single immutable commit once one exists.
+
+image:
+  tag: "main"
+
+replicaCount: 1
+
+relayUrl: "wss://buzz.jupitertech.net"
+
+# Mobile QR pairing needs this dedicated stateless relay (separate
+# buzz-pair-relay binary/port) — without it the client falls back to
+# a "legacy same-host /pair" convention the current relay no longer
+# serves (404). Routed at /pair-relay on the same hostname via the
+# gateway HTTPRoute, prefix stripped before forwarding.
+pairingRelay:
+  enabled: true
+  url: "wss://buzz.jupitertech.net/pair-relay"
+
+# Owner's Nostr pubkey (Krishna's account, created via the desktop
+# client's onboarding flow, confirmed against the live `users`
+# table). requireRelayMembership left at the chart default (true) —
+# only the owner is a member until explicitly added via
+# `buzz-admin add-member` or a relay invite.
+ownerPubkey: "6310be1fb6afb6152cfc9aa688673bce59c9742b48f7124661c45e0f34541f31"
+
+secrets:
+  existingSecret: buzz-relay-secrets
+
+# Git scratch volume as a per-pod emptyDir, not a PVC.
+#
+# With enabled: true the chart mounts a single ReadWriteOnce PVC
+# (buzz-git), and the chart hardcodes `strategy: RollingUpdate` with
+# maxUnavailable: 0 and no values hook to override it. Those two
+# combine into a permanent deadlock on every rollout: the new pod is
+# scheduled to a different node and blocks in ContainerCreating waiting
+# to attach the RWO volume, while the old pod — which holds that
+# attachment — is never terminated because maxUnavailable: 0 requires
+# the new one to go Ready first. Observed stuck for 22h
+# (ProgressDeadlineExceeded) with the old pod still serving, so it
+# presents as a frozen image rather than an outage. This recurs on
+# every upstream commit, since chart and image both float on `main`.
+#
+# enabled: false is upstream's own documented answer (see the chart's
+# values.yaml "Git scratch volume" comment): no volume to multi-attach,
+# each pod gets its own working space. Safe because nothing durable
+# lives here — repos are hydrated from object storage per request and
+# repo-name uniqueness lives in Postgres. Confirmed empirically before
+# the switch: the live PVC held 20K, i.e. nothing but lost+found.
+#
+# size is reused verbatim by the chart as the emptyDir sizeLimit.
+# Note ArgoCD auto-prune will delete the now-unreferenced buzz-git PVC.
+persistence:
+  git:
+    enabled: false
+    size: 10Gi
+
+externalPostgresql:
+  url: ""
+externalRedis:
+  url: ""
+
+# migrate.autoMigrate alone never actually ran anything — no
+# _sqlx_migrations table, only one stray table (audit_log) existed
+# after 20h of uptime, and the relay was silently failing background
+# jobs the whole time ("relation channels/workflows/events does not
+# exist"). The dedicated pre-upgrade Job is the reliable path.
+migrate:
+  preUpgradeJob:
+    enabled: true
+
+# The MinIO Operator names the Tenant's S3-facing Service "minio"
+# regardless of the Tenant's own name — not "<tenant-name>", as I'd
+# assumed. Verified against the live Service list. Port 80, not
+# 9000 — that's the Service's port (which targets 9000 on the pod).
+s3:
+  endpoint: "http://minio.buzz.svc.cluster.local"
+  bucket: "buzz-media"
+  addressingStyle: path
+
+ingress:
+  enabled: false
+httproute:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: monitoring

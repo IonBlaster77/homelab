@@ -1,0 +1,47 @@
+# Buzz: self-hosted Nostr-based workspace for people and AI agents.
+# See README.md.
+#
+# One Application, three sources:
+#   1. the upstream Helm chart (the relay and pairing relay),
+#   2. this repo as `$values`, so the chart reads values.yaml from here,
+#   3. this folder's own manifests (namespace, database, MinIO, secrets,
+#      network policy), rendered by the sops-kustomize plugin.
+# Merged from the old `buzz` (chart) and `buzz-config` Applications.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: buzz
+  namespace: argocd
+  annotations:
+    # Compare server-side, to match ServerSideApply below. The client-side
+    # diff flags fields the API server defaults as a phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: homelab
+  sources:
+    - repoURL: https://github.com/block/buzz.git
+      # Floats on main: see the pinning note at the top of values.yaml.
+      targetRevision: main
+      path: deploy/charts/buzz
+      helm:
+        releaseName: buzz
+        valueFiles:
+          - $values/kubernetes/apps/ai/buzz/values.yaml
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      ref: values
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/apps/ai/buzz
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: buzz
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

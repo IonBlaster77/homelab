@@ -40,30 +40,3 @@ spec:
           drop: [ALL]
         seccompProfile:
           type: RuntimeDefault
----
-# PodMonitor, not ServiceMonitor: none of the MinIO Operator's generated
-# Services (minio, buzz-minio-hl, buzz-minio-console) carry any labels at
-# all, so a ServiceMonitor's selector (which matches on Service labels)
-# can never find them — silently dropped the target rather than erroring.
-# The pods themselves DO carry v1.min.io/tenant, so select on that instead.
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  name: buzz-minio
-  namespace: buzz
-  labels:
-    release: monitoring
-spec:
-  selector:
-    matchLabels:
-      v1.min.io/tenant: buzz-minio
-  podMetricsEndpoints:
-    - port: minio-port
-      path: /minio/v2/metrics/cluster
-      interval: 30s
-      # Without this, MinIO returns 403 — this endpoint requires the
-      # scoped bearer token from `mc admin prometheus generate`, generated
-      # once and stored in minio-metrics-secret.yaml.
-      bearerTokenSecret:
-        name: buzz-minio-metrics-token
-        key: token
