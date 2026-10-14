@@ -16,7 +16,7 @@ are committed encrypted with SOPS/age, and nothing is changed by hand.
 | Ingress & access | Cilium Gateway, cert-manager (Let's Encrypt DNS-01), Cloudflare Tunnel + Cloudflare Access, Authentik SSO |
 | GitOps | Argo CD (app-of-apps), Renovate, Argo Workflows for image builds |
 | Storage | Longhorn (replicated block storage, backups to NAS), Synology NFS for media |
-| Databases | CloudNativePG (Postgres) with MinIO-backed backups, Redis |
+| Databases | CloudNativePG (Postgres), Redis |
 | Observability | kube-prometheus-stack (Prometheus, Alertmanager, Grafana), Loki + Alloy, blackbox probes |
 | Secrets | SOPS + age, decrypted inside Argo CD by a config management plugin |
 

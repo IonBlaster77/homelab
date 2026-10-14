@@ -34,28 +34,12 @@ spec:
             - port: "53"
               protocol: TCP
 ---
-# Ingress from any app that's been granted access — starting with Buzz.
-# Add another fromEndpoints entry here (namespace + app label) for each
-# future app that wants to share this Redis instance.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: redis-allow-ingress-from-buzz
-  namespace: redis
-spec:
-  endpointSelector:
-    matchLabels:
-      app: redis
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            io.kubernetes.pod.namespace: buzz
-      toPorts:
-        - ports:
-            - port: "6379"
-              protocol: TCP
----
 # Prometheus scraping the redis_exporter sidecar.
+#
+# No client app is admitted on 6379 right now (Buzz, the only one, was
+# decommissioned 2026-10-14). To let an app use this Redis, add a policy
+# like the old redis-allow-ingress-from-buzz (in git history): ingress
+# fromEndpoints its namespace (+ app label), toPorts 6379/TCP.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

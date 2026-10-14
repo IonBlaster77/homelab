@@ -82,12 +82,6 @@ spec:
               add_rewrite "crawl4ai.jupitertech.net" "10.77.20.60"
               add_rewrite "searxng.jupitertech.net"  "10.77.20.60"
               add_rewrite "hubble.jupitertech.net"   "10.77.20.60"
-              add_rewrite "buzz.jupitertech.net"     "10.77.20.60"
-              add_rewrite "minio.jupitertech.net"    "10.77.20.60"
-              # LAN resolution for Buzz's raw-relay hostname, whose HTTPRoute is
-              # live but which had no rewrite. Public DNS is still pending in
-              # Cloudflare (task #7); this entry is the LAN half only.
-              add_rewrite "relay.jupitertech.net"    "10.77.20.60"
               # Whole-home audio hub (ZONED-AUDIO.md). Both go via the Gateway
               # like everything else. Note Home Assistant ALSO has a direct LAN
               # address on 10.77.20.65 for device callbacks that should not
@@ -101,3 +95,6 @@ spec:
               # the gateway, where it matches no HTTPRoute and returns 404.
               del_rewrite "jellyseerr.jupitertech.net" "10.77.20.60"
               del_rewrite "cognee.jupitertech.net"     "10.77.20.60"
+              del_rewrite "buzz.jupitertech.net"       "10.77.20.60"
+              del_rewrite "minio.jupitertech.net"      "10.77.20.60"
+              del_rewrite "relay.jupitertech.net"      "10.77.20.60"
