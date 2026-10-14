@@ -15,6 +15,7 @@ resources:
   # MCP server
   - deployment-mcp.yaml
   - service-mcp.yaml
+  - httproute.yaml
   - referencegrant.yaml
   # Ollama (LLM)
   - pvc-ollama.yaml

@@ -38,13 +38,11 @@ Hermes / Gateway ──► cognee-mcp ──► cognee-db       (graph, vectors,
 | `monitoring.yaml` | PodMonitor scraping the database's metrics |
 | `deployment-mcp.yaml` | The Cognee MCP server and all its provider settings |
 | `service-mcp.yaml` | ClusterIP for the MCP server |
-| `referencegrant.yaml` | Lets the `networking` HTTPRoute reach `cognee-mcp` |
+| `httproute.yaml` | `cognee.jupitertech.net` → `cognee-mcp` (lives in the `networking` namespace) |
+| `referencegrant.yaml` | Lets that cross-namespace route reach `cognee-mcp` |
 | `pvc-ollama.yaml` | Model storage for the dedicated Ollama |
 | `deployment-ollama.yaml` | Ollama serving the LLM, pinned to the worker node `talos4` |
 | `service-ollama.yaml` | ClusterIP for Ollama |
-
-The HTTPRoute for `cognee.jupitertech.net` still lives in the gateway app. It
-moves here in a follow-up.
 
 ## Gotchas
 
