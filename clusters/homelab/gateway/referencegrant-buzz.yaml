@@ -4,6 +4,10 @@ kind: ReferenceGrant
 metadata:
   name: allow-networking-to-buzz
   namespace: buzz
+  annotations:
+    # Temporary, for the handoff to the buzz app: stops this app pruning
+    # the live object when the file moves. Removed once buzz owns it.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   from:
     - group: gateway.networking.k8s.io
