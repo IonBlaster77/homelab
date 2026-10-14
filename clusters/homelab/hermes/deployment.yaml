@@ -20,7 +20,7 @@ spec:
         # Bump when mcp-servers-configmap.yaml changes: the fragment is only
         # merged into config.yaml by an initContainer, so a ConfigMap edit
         # alone never reaches the running pod.
-        hermes/config-fragment-rev: "2026-10-13-unattended-approve"
+        hermes/config-fragment-rev: "2026-10-14-drop-cognee"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always
@@ -73,6 +73,12 @@ spec:
         # exist. Runs after fix-perms (needs the PVC already chowned to
         # 1000:1000) and as UID 1000 (least-privilege — it only touches its
         # own app's config file).
+        #
+        # mcp_servers is then replaced wholesale from the fragment, so git is
+        # authoritative for which MCP servers exist: a deep merge can only add
+        # or overwrite keys, so a server deleted from the fragment would
+        # otherwise live on in config.yaml forever. If that step ever fails it
+        # only warns, so a yq hiccup can't hold the pod in Init.
         - name: merge-mcp-config
           image: mikefarah/yq:4
           securityContext:
@@ -93,6 +99,9 @@ spec:
                 "$CONFIG_PATH" /mcp-fragment/mcp-servers-fragment.yaml \
                 > /tmp/config-merged.yaml
               mv /tmp/config-merged.yaml "$CONFIG_PATH"
+              yq -i '.mcp_servers = load("/mcp-fragment/mcp-servers-fragment.yaml").mcp_servers' "$CONFIG_PATH" \
+                || echo "WARN: could not make mcp_servers authoritative; deep-merged result kept"
+              echo "mcp_servers now: $(yq '.mcp_servers | keys | join(" ")' "$CONFIG_PATH" || true)"
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
