@@ -12,7 +12,7 @@ metadata:
 spec:
   instances: 2
   storage:
-    # nvme, not ssd - see kea-db-cluster.yaml (2026-08-05) for why.
+    # nvme, not ssd - see kubernetes/apps/network/kea/database.yaml (2026-08-05) for why.
     storageClass: longhorn-nvme
     size: 5Gi
   postgresql:
@@ -47,7 +47,7 @@ spec:
         # Cognee - cognee is the only role, on the only tenant, of this
         # entire CNPG cluster.
         superuser: true
-        # Explicit here (matching kea-db-cluster.yaml's role entries) even
+        # Explicit here (matching kea's database.yaml role entries) even
         # though these match CNPG's own webhook defaults - spec.managed.roles
         # is an atomic list, so ArgoCD's SSA dry-run comparison doesn't see
         # webhook-injected defaults the same way the real live object does,
@@ -81,29 +81,3 @@ spec:
         secretAccessKey:
           name: cognee-db-backup-s3-credentials
           key: SECRET_ACCESS_KEY
----
-apiVersion: postgresql.cnpg.io/v1
-kind: ScheduledBackup
-metadata:
-  name: cognee-db-backup
-  namespace: cognee
-spec:
-  schedule: "0 0 4 * * *" # 4am daily base backup - WAL archiving is continuous regardless
-  backupOwnerReference: self
-  method: barmanObjectStore
-  cluster:
-    name: cognee-db
----
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  name: cognee-db
-  namespace: cognee
-  labels:
-    release: monitoring
-spec:
-  selector:
-    matchLabels:
-      cnpg.io/cluster: cognee-db
-  podMetricsEndpoints:
-    - port: metrics

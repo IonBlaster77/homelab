@@ -1,19 +1,21 @@
-# Namespace, CNPG database (Postgres + pgvector, all-in-one - graph, vectors,
-# sessions, and metadata in one instance, no separate graph DB), and
-# NetworkPolicy for Cognee's central memory store. Separate from the future
-# cognee.yaml Application (the Cognee app + MCP server chart itself), same
-# split as authentik/authentik-config and buzz/buzz-config.
+# Cognee: self-hosted long-term memory for AI agents (MCP server, Postgres +
+# pgvector, dedicated Ollama). See README.md.
+#
+# Renamed from `cognee-config` in the restructure: this folder is the whole
+# app now, so there is no separate chart Application to pair it with.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: cognee-config
+  name: cognee
   namespace: argocd
 spec:
   project: homelab
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/cognee
+    path: kubernetes/apps/ai/cognee
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: cognee

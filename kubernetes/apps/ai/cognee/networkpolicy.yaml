@@ -3,7 +3,7 @@
 # Gateway-routed traffic arrives under Cilium's reserved:ingress identity,
 # not the client pod's own identity - fromEntities: ingress is required
 # here, not a namespace-based fromEndpoints selector (see
-# feedback_cilium_gateway_ingress_entity in memory - this exact gotcha has
+# the Cilium Gateway notes in the README - this exact gotcha has
 # bitten this cluster before, e.g. buzz-allow-ingress-from-gateway).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
@@ -68,7 +68,7 @@ spec:
 ---
 # cognee-mcp -> Streamystats' Ollama, for embeddings only (nomic-embed-text
 # is already pulled there - shared instance instead of duplicating the
-# download into cognee-ollama, which only needs gemma4:26b now).
+# download into cognee-ollama, which only serves the LLM now).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -90,7 +90,7 @@ spec:
 ---
 # cognee-mcp needs to download the HuggingFace tokenizer config once
 # (config.json/tokenizer files for token-counting during chunking, see
-# HUGGINGFACE_TOKENIZER in cognee-mcp.yaml) - caches locally after the
+# HUGGINGFACE_TOKENIZER in deployment-mcp.yaml) - caches locally after the
 # first successful pull. Same scoped-to-this-app pattern as
 # cognee-allow-ollama-egress-to-internet.
 apiVersion: cilium.io/v2
