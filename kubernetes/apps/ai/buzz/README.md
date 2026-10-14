@@ -62,6 +62,10 @@ live in the gateway app. They move here in a follow-up.
   at every rollout.
 - **Migrations run as a pre-upgrade Job.** `migrate.autoMigrate` alone never
   created the schema.
+- **The bucket hook uses `curl --aws-sigv4`, not `mc`.** MinIO no longer
+  publishes `minio/mc` (or `minio/minio`) publicly. The old hook image only
+  worked on the node that had it cached, and its stuck pull held a sync open
+  indefinitely, so the Job now also has a 5-minute deadline.
 - **The MinIO Service is called `minio`**, whatever the Tenant is named, and
   listens on port 80.
 - **The relay's private key is its identity.** Rotating
