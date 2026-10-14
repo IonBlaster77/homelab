@@ -36,10 +36,8 @@ spec:
 ---
 # Prometheus scraping the redis_exporter sidecar.
 #
-# No client app is admitted on 6379 right now (Buzz, the only one, was
-# decommissioned 2026-10-14). To let an app use this Redis, add a policy
-# like the old redis-allow-ingress-from-buzz (in git history): ingress
-# fromEndpoints its namespace (+ app label), toPorts 6379/TCP.
+# No client app is admitted on 6379 right now. README.md ("Adding a client")
+# shows the policy to add when an app should use this Redis.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

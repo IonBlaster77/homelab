@@ -1,0 +1,16 @@
+# Tells Prometheus (kube-prometheus-stack, which selects release: monitoring)
+# to scrape the redis_exporter sidecar on the Service's metrics port.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis
+  namespace: redis
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+    - port: metrics
+      interval: 30s

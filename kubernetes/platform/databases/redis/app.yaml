@@ -1,3 +1,5 @@
+# Redis: a single-instance Redis kept for learning and for future apps.
+# No client is admitted right now (see README.md for how to add one).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/redis
+    path: kubernetes/platform/databases/redis
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: redis
