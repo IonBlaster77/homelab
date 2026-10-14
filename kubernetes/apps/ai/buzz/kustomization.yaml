@@ -16,9 +16,7 @@ resources:
   - referencegrant.yaml
   # Database
   - secret-db.sops.yaml
-  - secret-db-backup.sops.yaml
   - database.yaml
-  - database-backup.yaml
   # MinIO (media storage)
   - secret-minio.sops.yaml
   - secret-minio-metrics.sops.yaml
