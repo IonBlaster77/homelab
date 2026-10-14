@@ -4,6 +4,10 @@ metadata:
   name: log-digest
   namespace: monitoring
 spec:
+  # Suspended 2026-10-14: the digest was posted to a Buzz channel, and Buzz
+  # was decommissioned. Point log-digest-webhook-secret at the new
+  # notification channel, then remove this line.
+  suspend: true
   schedule: "0 7 * * *"
   timeZone: "Australia/Adelaide"
   concurrencyPolicy: Forbid
