@@ -4,8 +4,8 @@ metadata:
   name: cognee
   namespace: networking
   annotations:
-    # Temporary, for the handoff to the cognee app: stops this app pruning
-    # the live route when the file moves. Removed once cognee owns it.
+    # Temporary, from the handoff out of the gateway app: stopped that app
+    # pruning the live route when the file moved. Removed in the next step.
     argocd.argoproj.io/sync-options: Prune=false
 spec:
   parentRefs:
