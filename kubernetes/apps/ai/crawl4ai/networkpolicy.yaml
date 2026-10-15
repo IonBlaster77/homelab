@@ -62,7 +62,7 @@ spec:
               protocol: TCP
 ---
 # Allow response traffic back to the node subnet for cross-node Envoy
-# connections (see clusters/homelab/hermes/networkpolicy.yaml for the
+# connections (see kubernetes/apps/ai/hermes/networkpolicy.yaml for the
 # native-routing-mode explanation this mirrors) — EXCEPT the K8s API VIP.
 # A plain toCIDR here (as hermes' own policy has it) is a blanket allow for
 # new connections on any port to the whole node subnet, not just replies —

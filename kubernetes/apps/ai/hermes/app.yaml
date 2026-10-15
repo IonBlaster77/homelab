@@ -1,3 +1,6 @@
+# Hermes: Nous Research's self-hosted AI agent, with a web UI and an SSH
+# sidecar; uses the other apps in kubernetes/apps/ai/ as its tools over MCP.
+# See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +11,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/hermes
+    path: kubernetes/apps/ai/hermes
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: hermes

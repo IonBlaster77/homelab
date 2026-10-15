@@ -5,7 +5,7 @@
 # approvals.mode, added together with the research-worker sandbox. Non-secret
 # by design — bearer tokens/keys are injected via Hermes' native ${VAR}
 # substitution or mounted files, reading from hermes-secret (see
-# deployment.yaml/secret.yaml).
+# deployment.yaml/secret.sops.yaml).
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -41,7 +41,7 @@ data:
       # exposure (terminal/code_execution were enabled by default) before
       # research-worker existed to point it at. Now points at the isolated,
       # no-secrets, egress-restricted sandbox instead — see
-      # clusters/homelab/research-worker/. Host/user/port/key come from
+      # kubernetes/apps/ai/research-worker/. Host/user/port/key come from
       # TERMINAL_SSH_* env vars on the hermes-agent container (set in
       # deployment.yaml), not from this file.
       backend: ssh
@@ -85,7 +85,7 @@ data:
           prompts: false
         supports_parallel_tool_calls: true
       playwright:
-        # Dedicated pod in its own namespace (clusters/homelab/playwright-mcp/)
+        # Dedicated pod in its own namespace (kubernetes/apps/ai/playwright-mcp/)
         # rather than Hermes spawning @playwright/mcp itself as a stdio
         # subprocess (the pattern in Playwright/Hermes' own docs) — keeps a
         # Chromium compromise confined to a disposable pod with no secrets
