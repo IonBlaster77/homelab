@@ -37,3 +37,5 @@ resources:
   # Daily log digest (suspended until an alert channel exists)
   - secret-log-digest-webhook.sops.yaml
   - cronjob-log-digest.yaml
+  - httproute-grafana.yaml
+  - referencegrant-grafana.yaml
