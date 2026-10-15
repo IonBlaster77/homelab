@@ -1,0 +1,38 @@
+# Homepage: the home.jupitertech.net dashboard (service tiles, status and
+# widgets). The upstream chart plus this folder (custom CSS, widget API
+# secrets) in one app. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homepage
+  namespace: argocd
+spec:
+  # project: default - kept from before the merge so nothing about
+  # permissions changed in the move. Moving it to the homelab project (whose
+  # sourceRepos would need the jameswynn chart repo) is a separate cleanup.
+  project: default
+  sources:
+    - repoURL: https://jameswynn.github.io/helm-charts
+      chart: homepage
+      targetRevision: 2.1.0
+      helm:
+        releaseName: homepage
+        valueFiles:
+          - $values/kubernetes/apps/other/homepage/values.yaml
+    # This folder: applies its own manifests (custom CSS, secrets) and, as
+    # ref "values", supplies values.yaml to the chart above.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/apps/other/homepage
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: homepage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
