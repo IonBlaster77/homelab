@@ -28,10 +28,13 @@ Gateway, so Authentik isn't involved.
 
 ## Gotchas
 
-- **Remote access depends on this.** If Authentik is down, new remote logins
-  to every public hostname fail (existing Cloudflare Access sessions last
-  until they expire). Fix it from the LAN. Enabling One-time PIN in Cloudflare
-  Access as a second login method would remove that dependency.
+- **Remote access depends on this, by design.** Every remote login must be
+  Authentik username + password + 2FA. There is deliberately **no fallback
+  login method** (no Cloudflare Access One-time PIN or email code), because
+  any fallback would bypass both factors. If Authentik is down, new remote
+  logins to every public hostname fail (existing Cloudflare Access sessions
+  last until they expire); fix it from the LAN. Make Authentik itself more
+  resilient rather than adding another way in.
 - **`auth.` must not sit behind Cloudflare Access.** Access would need
   Authentik to log you into Authentik. That's why it has a Bypass policy and
   its own cloudflared route.
