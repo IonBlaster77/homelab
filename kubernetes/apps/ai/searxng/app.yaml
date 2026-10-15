@@ -1,3 +1,5 @@
+# SearXNG: private metasearch engine, plus an MCP bridge that gives Hermes a
+# web-search tool. See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/searxng
+    path: kubernetes/apps/ai/searxng
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: searxng

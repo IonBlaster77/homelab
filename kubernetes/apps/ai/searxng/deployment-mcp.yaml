@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searxng-mcp
+  namespace: searxng
+  labels:
+    app: searxng-mcp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: searxng-mcp
+  template:
+    metadata:
+      labels:
+        app: searxng-mcp
+    spec:
+      serviceAccountName: searxng-sa
+      restartPolicy: Always
+      # Same class of collision risk as the core deployment above — disabled
+      # defensively even though MCP_HTTP_PORT/SEARXNG_URL don't collide today.
+      enableServiceLinks: false
+      containers:
+        - name: searxng-mcp
+          image: isokoliuk/mcp-searxng:1.16.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: searxng-mcp-config
+          env:
+            - name: MCP_HTTP_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: searxng-secret
+                  key: SEARXNG_MCP_AUTH_TOKEN
+          ports:
+            - containerPort: 3000
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            # Image's default user is the symbolic "node" (uid 1000), not a
+            # numeric UID kubelet can verify on its own — same class of issue
+            # as crawl4ai's "appuser", confirmed by running `id` in the image.
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
