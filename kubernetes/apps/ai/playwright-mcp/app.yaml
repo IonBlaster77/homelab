@@ -1,3 +1,5 @@
+# playwright-mcp: a disposable headless browser that Hermes drives over MCP
+# for interactive browsing. See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/playwright-mcp
+    path: kubernetes/apps/ai/playwright-mcp
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: playwright-mcp
