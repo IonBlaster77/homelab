@@ -1,0 +1,28 @@
+# Gateway API CRDs (upstream v1.2.1, vendored). Must exist before Cilium's
+# Gateway API support and before the gateway app; see README.md for the
+# fresh-cluster sync order.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-api-crds
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply below, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: kubernetes/platform/networking/gateway-api-crds
+    plugin:
+      name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: false    # never auto-delete CRDs: that would delete every Gateway and route
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true  # required for CRDs (avoids annotation size limits)
