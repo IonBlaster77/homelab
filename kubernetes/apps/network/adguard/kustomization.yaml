@@ -1,0 +1,23 @@
+# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
+# NOT listed: it is picked up by the root app, not by this folder's own app.
+# *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secret-api.sops.yaml
+  - secret-sync.sops.yaml
+  # Primary (the one you edit) and replica (kept in step by adguard-sync)
+  - pvc-primary.yaml
+  - deployment-primary.yaml
+  - service-primary.yaml
+  - pvc-replica.yaml
+  - deployment-replica.yaml
+  - service-replica.yaml
+  - deployment-sync.yaml
+  # DNS on the LAN VIP, and the web UI behind the Gateway
+  - service-dns.yaml
+  - service-ui.yaml
+  - referencegrant.yaml
+  # PostSync hook: applies the *.jupitertech.net rewrites
+  - job-dns-rewrites.yaml
