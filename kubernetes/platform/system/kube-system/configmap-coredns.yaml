@@ -18,7 +18,7 @@
 #     waiting on its Longhorn PVC), pod DNS keeps working via the router
 #     without any manual intervention, then prefers AdGuard again once it's
 #     healthy. Node-level DNS is untouched (nodes still point at 10.77.20.1
-#     directly per clusters/homelab/talos/*.yaml) — that's the literal
+#     directly per talos/*.yaml at the repo root) — that's the literal
 #     "boot off the router" fallback and requires no change.
 #   - Both are IPs, not hostnames: forwarding to a hostname CoreDNS itself
 #     would need to resolve is circular.
