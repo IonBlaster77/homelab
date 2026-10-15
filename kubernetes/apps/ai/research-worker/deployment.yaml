@@ -46,7 +46,7 @@ spec:
         # egress-restricted sandbox (see networkpolicy.yaml — ingress on the
         # SSH port is allowed only from the hermes namespace's own pod, no
         # one else). Key-only auth against a dedicated keypair generated
-        # specifically for this; see secret.yaml.
+        # specifically for this; see secret.sops.yaml.
         - name: research-worker
           image: alpine:3.24
           command:
