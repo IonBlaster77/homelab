@@ -1,0 +1,12 @@
+# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
+# NOT listed: it is picked up by the root app, not by this folder's own app.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # CoreDNS: DNS for every pod in the cluster
+  - configmap-coredns.yaml
+  # node-uncordon: uncordons each node when it comes back up
+  - serviceaccount-node-uncordon.yaml
+  - clusterrole-node-uncordon.yaml
+  - clusterrolebinding-node-uncordon.yaml
+  - daemonset-node-uncordon.yaml

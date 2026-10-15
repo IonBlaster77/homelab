@@ -1,3 +1,6 @@
+# kube-system: the few things this repo manages inside the kube-system
+# namespace (Talos owns the rest): the CoreDNS config, and node-uncordon.
+# See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +11,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/kube-system
+    path: kubernetes/platform/system/kube-system
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -17,4 +22,5 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
+      # kube-system always exists (Talos creates it); never let Argo CD try.
       - CreateNamespace=false
