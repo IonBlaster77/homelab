@@ -26,7 +26,7 @@ Cloudflare API, Let's Encrypt checks it, and the record is removed.
 | `clusterissuer-staging.yaml` | `letsencrypt-staging`: untrusted test certificates, generous rate limits |
 
 The **`Certificate`** object itself (`jupitertech-wildcard`) lives with the
-Gateway (`clusters/homelab/gateway/`), because the resulting TLS Secret must
+Gateway (`kubernetes/platform/networking/gateway/`), because the resulting TLS Secret must
 be in the `networking` namespace next to the Gateway.
 
 ## Gotchas

@@ -10,7 +10,7 @@
 #
 # TLS:
 #   cert-manager issues a wildcard cert for *.jupitertech.net from Let's Encrypt
-#   via Cloudflare DNS-01 challenge (see clusters/homelab/gateway/certificate.yaml).
+#   via Cloudflare DNS-01 challenge (see certificate.yaml in this folder).
 #   The cert is stored as secret "jupitertech-wildcard-tls" in this namespace.
 #
 # Listeners:
