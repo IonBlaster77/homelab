@@ -27,6 +27,7 @@ schedule, and serves the Kubernetes snapshot API.
 | `storageclass-nvme.yaml` | `longhorn-nvme`, opt-in fast class (NVMe pool) for databases |
 | `volumesnapshotclass.yaml` | `longhorn-backup-vsc`: CSI snapshots that become NAS backups (`type: bak`) |
 | `*-volume-labeler.yaml`, `job-enable-recurring-jobs.yaml` | PostSync hook that labels **every** volume into the `default` backup group |
+| `httproute.yaml`, `referencegrant.yaml` | `longhorn.jupitertech.net` → the UI (route lives in the `networking` namespace) |
 
 ## How a volume gets backed up
 

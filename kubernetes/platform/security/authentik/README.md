@@ -24,6 +24,7 @@ Gateway, so Authentik isn't involved.
 | `namespace.yaml` | The `authentik` namespace |
 | `secret-authentik.sops.yaml` | `authentik-secret`: Authentik's secret key (SOPS/age encrypted) |
 | `cluster-authentik-db.yaml`, `podmonitor-authentik-db.yaml`, `secret-authentik-db.sops.yaml` | Its PostgreSQL (CNPG, 2 instances) and metrics |
+| `httproute.yaml`, `referencegrant.yaml` | `auth.jupitertech.net` via the Gateway, for LAN access (remote access arrives through cloudflared directly) |
 | `service-ldap.yaml`, `service-radius.yaml` | LoadBalancers on 10.77.20.61 (LDAP) and .62 (RADIUS), for outposts that don't exist yet |
 
 ## Gotchas

@@ -20,10 +20,9 @@ for Authentik, Grafana and Kea): browse tables, run queries, check activity.
 | `kustomization.yaml` | Lists this folder's own manifests |
 | `namespace.yaml` | The `pgadmin` namespace |
 | `secret.sops.yaml` | `pgadmin-credentials`: the initial admin login (SOPS/age encrypted) |
+| `httproute.yaml`, `referencegrant.yaml` | `pgadmin.jupitertech.net` → pgAdmin (route lives in the `networking` namespace) |
 
 The chart makes the Deployment, Service, PVC and a Kubernetes NetworkPolicy.
-The HTTPRoute and ReferenceGrant still live in the `gateway` app
-(`clusters/homelab/gateway/`) until the route handoff.
 
 ## How the two sources fit together
 

@@ -23,11 +23,11 @@ configured in `values.yaml`.
 | `configmap-custom-css.yaml` | `custom.css`, mounted over `/app/config/custom.css` (the per-card brand tints) |
 | `secret-synology.sops.yaml` | Synology widget credentials, loaded as env vars (SOPS/age encrypted) |
 | `secret-arr-keys.sops.yaml` | API keys for the *arr widgets, loaded as env vars (SOPS/age encrypted) |
+| `httproute.yaml`, `referencegrant.yaml` | `home.jupitertech.net` → Homepage (route lives in the `networking` namespace) |
 
 The chart makes the Deployment, Service, ConfigMap, ServiceAccount (+ token
 Secret) and the ClusterRole/Binding that lets the Kubernetes widgets read
-cluster status. The HTTPRoute and ReferenceGrant still live in the `gateway`
-app (`clusters/homelab/gateway/`) until the route handoff.
+cluster status.
 
 ## Editing the dashboard
 
