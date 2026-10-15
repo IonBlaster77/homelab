@@ -1,0 +1,25 @@
+# Media stack: Jellyfin plus the *arr automation (Sonarr, Radarr, Prowlarr,
+# Bazarr, Seerr), the download clients (qBittorrent behind a Gluetun VPN,
+# NZBGet) and their helpers. One component per subfolder. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: media
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: kubernetes/apps/media/media-stack
+    plugin:
+      name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: media
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

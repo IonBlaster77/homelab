@@ -2,7 +2,7 @@
 # Re-acquire library files the LG C1 cannot decode.
 #
 # Prerequisite: the HDR10+/10bit/x264 custom formats from
-# clusters/homelab/media/recyclarr.yaml must already be synced into
+# kubernetes/apps/media/media-stack/recyclarr/configmap.yaml must already be synced into
 # Radarr/Sonarr, otherwise the searches below will just re-grab the same
 # incompatible releases. Verify with:
 #   kubectl -n media logs job/<latest recyclarr job> | tail
