@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arr-dashboard
+  namespace: media
+  labels:
+    app: arr-dashboard
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: arr-dashboard
+  template:
+    metadata:
+      labels:
+        app: arr-dashboard
+        app.kubernetes.io/name: arr-dashboard
+    spec:
+      containers:
+        - name: arr-dashboard
+          image: khak1s/arr-dashboard:latest
+          ports:
+            - name: web
+              containerPort: 3000
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Australia/Adelaide
+            # Required for OIDC: the app validates that any submitted redirect_uri's
+            # origin matches this exactly (open-redirect protection). Without it,
+            # OIDC setup fails with "Redirect URI must match the application URL
+            # origin" against whatever internal default the app falls back to.
+            - name: APP_URL
+              value: https://arrdashboard.jupitertech.net
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 3
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 1Gi
+              cpu: 1000m
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: arr-dashboard-config

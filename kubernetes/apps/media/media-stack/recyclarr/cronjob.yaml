@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: recyclarr
+  namespace: media
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          # Recyclarr writes migration/state data into RECYCLARR_CONFIG_DIR, but a
+          # ConfigMap volume is always read-only — so recyclarr.yml is copied from
+          # the ConfigMap into a writable emptyDir before the real run.
+          initContainers:
+            - name: copy-config
+              image: ghcr.io/recyclarr/recyclarr:8.7.3
+              command:
+                - sh
+                - -c
+                - cp /input/recyclarr.yml /config/recyclarr.yml
+              volumeMounts:
+                - name: config-input
+                  mountPath: /input
+                - name: config
+                  mountPath: /config
+          containers:
+            - name: recyclarr
+              image: ghcr.io/recyclarr/recyclarr:8.7.3
+              args:
+                - sync
+              env:
+                - name: TZ
+                  value: Australia/Adelaide
+                - name: RECYCLARR_CONFIG_DIR
+                  value: /config
+              envFrom:
+                - secretRef:
+                    name: recyclarr-secret
+              volumeMounts:
+                - name: config
+                  mountPath: /config
+          volumes:
+            - name: config-input
+              configMap:
+                name: recyclarr-config
+                items:
+                  - key: recyclarr.yml
+                    path: recyclarr.yml
+            - name: config
+              emptyDir: {}

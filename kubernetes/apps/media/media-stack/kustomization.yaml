@@ -1,0 +1,27 @@
+# The shared pieces here, then one folder per component (each has its own
+# kustomization.yaml listing its files). app.yaml is deliberately NOT listed:
+# it is picked up by the root app. *.sops.yaml files anywhere below are
+# decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Shared
+  - namespace.yaml
+  - pv-media-nfs.yaml
+  - pvc-media-nfs.yaml
+  - referencegrant.yaml
+  # Watching
+  - jellyfin/
+  - seerr/
+  # Automation
+  - sonarr/
+  - radarr/
+  - prowlarr/
+  - bazarr/
+  - recyclarr/
+  - arr-dashboard/
+  # Downloading
+  - qbittorrent/
+  - nzbget/
+  - unpackerr/
+  - flaresolverr/
