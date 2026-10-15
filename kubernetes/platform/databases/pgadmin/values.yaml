@@ -1,0 +1,19 @@
+existingSecret: pgadmin-credentials
+env:
+  email: admin@jupitertech.net
+
+persistentVolume:
+  enabled: true
+  storageClass: longhorn-ssd
+  size: 2Gi
+
+service:
+  type: ClusterIP
+  port: 80
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
