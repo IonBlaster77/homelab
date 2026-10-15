@@ -7,6 +7,10 @@ metadata:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
+  # Hooks re-run on every real sync; a stuck image pull or a hung AdGuard API
+  # must not hold the sync open forever. The rewrites are idempotent, so the
+  # next sync simply retries.
+  activeDeadlineSeconds: 300
   template:
     spec:
       restartPolicy: OnFailure
