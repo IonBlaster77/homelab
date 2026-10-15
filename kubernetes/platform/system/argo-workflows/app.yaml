@@ -1,0 +1,51 @@
+# Argo Workflows: runs multi-step jobs as pods (here: container image builds
+# with BuildKit). The upstream chart plus this folder (build-sandbox
+# namespace, network policies, the build-image template) in one app.
+# See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply below, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  # project: default (not homelab) - kept from before the merge so nothing
+  # about permissions changed in the move. Moving it to the homelab project
+  # (whose sourceRepos would need argo-helm) is a separate cleanup.
+  project: default
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-workflows
+      targetRevision: 2.0.0
+      helm:
+        valueFiles:
+          - $values/kubernetes/platform/system/argo-workflows/values.yaml
+    # This folder: applies its own manifests (argo-builds namespace, network
+    # policies, WorkflowTemplate) and, as ref "values", supplies values.yaml.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/system/argo-workflows
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-workflows
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    # managedNamespaceMetadata labels the namespace ArgoCD creates, so the PSA
+    # labels land without a separate ordering-sensitive namespace manifest.
+    managedNamespaceMetadata:
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        pod-security.kubernetes.io/enforce: restricted
+        pod-security.kubernetes.io/warn: restricted
+    syncOptions:
+      - CreateNamespace=true
+      # The Workflow CRDs are large enough to blow the annotation size limit on
+      # a client-side apply - same reason the monitoring app uses SSA.
+      - ServerSideApply=true

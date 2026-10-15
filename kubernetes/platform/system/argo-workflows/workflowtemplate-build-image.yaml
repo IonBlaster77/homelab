@@ -77,7 +77,7 @@ spec:
           # the RuntimeDefault seccomp profile blocks it - the symptom is
           # "fork/exec /proc/self/exe: operation not permitted" and a
           # buildkitd socket that never appears. This is the reason the
-          # namespace has to be PSA `privileged`; see namespace.yaml.
+          # namespace has to be PSA `privileged`; see namespace-argo-builds.yaml.
           seccompProfile:
             type: Unconfined
           # NOTE: allowPrivilegeEscalation is deliberately left unset (i.e.
