@@ -440,7 +440,7 @@ Sync `cnpg` from the ArgoCD UI.
 
 > **⚠️ PSA enforcement:** The monitoring namespace requires `privileged` enforcement for
 > node-exporter (hostNetwork, hostPID, hostPath). This is handled by
-> `clusters/homelab/monitoring/namespace.yaml` which ArgoCD applies. If node-exporter
+> `kubernetes/platform/observability/monitoring/namespace.yaml` which ArgoCD applies. If node-exporter
 > pods show `0/4` Running after sync, check:
 > ```bash
 > kubectl get pods -n monitoring | grep node-exporter
@@ -450,7 +450,7 @@ Sync `cnpg` from the ArgoCD UI.
 > namespace manually (e.g. via `CreateNamespace=true`) before the namespace.yaml synced,
 > you may need to force-sync or manually apply:
 > ```bash
-> kubectl apply -f clusters/homelab/monitoring/namespace.yaml
+> kubectl apply -f kubernetes/platform/observability/monitoring/namespace.yaml
 > kubectl rollout restart daemonset monitoring-prometheus-node-exporter -n monitoring
 > ```
 
@@ -705,10 +705,10 @@ kubectl patch application <APP_NAME> -n argocd --type json \
 **Root cause:** The cluster-wide PSA default is `baseline`, which blocks node-exporter's
 required host capabilities.
 
-**Fix (already in git):** `clusters/homelab/monitoring/namespace.yaml` labels the monitoring
+**Fix (already in git):** `kubernetes/platform/observability/monitoring/namespace.yaml` labels the monitoring
 namespace `privileged`. If the label wasn't applied before node-exporter started:
 ```bash
-kubectl apply -f clusters/homelab/monitoring/namespace.yaml
+kubectl apply -f kubernetes/platform/observability/monitoring/namespace.yaml
 kubectl rollout restart daemonset monitoring-prometheus-node-exporter -n monitoring
 ```
 
