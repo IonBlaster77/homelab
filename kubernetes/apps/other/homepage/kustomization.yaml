@@ -8,3 +8,5 @@ resources:
   - configmap-custom-css.yaml
   - secret-synology.sops.yaml
   - secret-arr-keys.sops.yaml
+  - httproute.yaml
+  - referencegrant.yaml
