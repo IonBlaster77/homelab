@@ -29,7 +29,7 @@
 # IP assignments on VLAN 20 (10.77.20.0/24):
 #   10.77.20.50  — ArgoCD server      (pinned in clusters/homelab/bootstrap/argocd-values.yaml)
 #   10.77.20.51  — Longhorn UI        (pinned in kubernetes/platform/storage/longhorn/values.yaml)
-#   10.77.20.60  — shared Gateway     (pinned in clusters/homelab/gateway/gateway.yaml)
+#   10.77.20.60  — shared Gateway     (pinned in kubernetes/platform/networking/gateway/gateway.yaml)
 #   10.77.20.53+ — future services    (assigned from pool in clusters/homelab/cilium/ip-pool.yaml)
 
 apiVersion: argoproj.io/v1alpha1

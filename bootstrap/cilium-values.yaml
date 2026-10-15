@@ -101,7 +101,7 @@ bgpControlPlane:
 #   Gateway       — a load balancer with named listeners (HTTP on 80, HTTPS on 443)
 #   HTTPRoute     — per-app routing rules attached to the Gateway
 #
-# The Gateway resource (clusters/homelab/gateway/gateway.yaml) pins the shared
+# The Gateway resource (kubernetes/platform/networking/gateway/gateway.yaml) pins the shared
 # LoadBalancer to 10.77.20.60 via lbipam.cilium.io/ips annotation — all app
 # traffic enters the cluster through that single IP.
 #

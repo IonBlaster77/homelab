@@ -1,0 +1,29 @@
+# The shared Gateway (10.77.20.60) that every HTTPS hostname goes through,
+# its wildcard certificate, and the HTTP->HTTPS redirect. Apps own their own
+# HTTPRoutes; see README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: kubernetes/platform/networking/gateway
+    plugin:
+      name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: networking
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: baseline
+        pod-security.kubernetes.io/enforce-version: latest
+    syncOptions:
+      - CreateNamespace=true
