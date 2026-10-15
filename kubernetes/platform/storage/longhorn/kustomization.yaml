@@ -1,0 +1,18 @@
+# Lists the manifests this folder adds next to the chart. app.yaml and
+# values.yaml are deliberately NOT listed: app.yaml is picked up by the root
+# app, and values.yaml is input to the chart, not a manifest.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # Where backups go, and when
+  - setting-backup-target.yaml
+  - recurringjob.yaml
+  # Storage classes for the two disk pools, and the snapshot class
+  - storageclass-ssd.yaml
+  - storageclass-nvme.yaml
+  - volumesnapshotclass.yaml
+  # PostSync hook: enrolls every volume in the "default" backup group
+  - serviceaccount-volume-labeler.yaml
+  - clusterrole-volume-labeler.yaml
+  - clusterrolebinding-volume-labeler.yaml
+  - job-enable-recurring-jobs.yaml

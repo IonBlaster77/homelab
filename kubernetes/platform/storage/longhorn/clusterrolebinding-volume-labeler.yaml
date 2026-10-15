@@ -1,0 +1,12 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: longhorn-volume-labeler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: longhorn-volume-labeler
+subjects:
+  - kind: ServiceAccount
+    name: longhorn-volume-labeler
+    namespace: longhorn-system

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: enable-recurring-jobs
+  namespace: longhorn-system
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  # Hooks re-run on every real sync; a stuck image pull must not hold the
+  # sync open forever. The labeling is idempotent, so the next sync retries.
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      serviceAccountName: longhorn-volume-labeler
+      restartPolicy: OnFailure
+      containers:
+        - name: labeler
+          # bitnami/* public Docker Hub tags were sunset (Aug 2025); use the
+          # maintained rancher/kubectl image instead. It is FROM scratch — only
+          # /bin/kubectl, no shell and no xargs — so the labeler must be a single
+          # shell-free `kubectl label --all` call (not a get|xargs pipeline), run
+          # directly via the image's /bin/kubectl entrypoint.
+          image: rancher/kubectl:v1.36.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            # rancher/kubectl declares its user by name (USER kubectl), which
+            # kubelet can't verify against runAsNonRoot; pin the numeric UID the
+            # image assigns that user (useradd -u 1000) so the check passes.
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - label
+            - volumes.longhorn.io
+            - --all
+            - recurring-job-group.longhorn.io/default=enabled
+            - -n
+            - longhorn-system
+            - --overwrite

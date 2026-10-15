@@ -1,0 +1,53 @@
+# Longhorn: replicated block storage for every PersistentVolume in the
+# cluster, plus the NAS backups. The upstream chart plus this folder (backup
+# target, backup schedules, StorageClasses, snapshot class) in one app.
+# See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+spec:
+  # project: default - kept from before the merge so nothing about
+  # permissions changed in the move; moving to homelab is a separate cleanup.
+  project: default
+  sources:
+    - repoURL: https://charts.longhorn.io
+      chart: longhorn
+      targetRevision: 1.7.2
+      helm:
+        valueFiles:
+          - $values/kubernetes/platform/storage/longhorn/values.yaml
+    # This folder: applies its own manifests and, as ref "values", supplies
+    # values.yaml to the chart above.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/storage/longhorn
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    managedNamespaceMetadata:
+      labels:
+        pod-security.kubernetes.io/enforce: privileged
+        pod-security.kubernetes.io/enforce-version: latest
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+        - .spec.preserveUnknownFields
+        - .status
+    - group: ""
+      kind: Service
+      jqPathExpressions:
+        - .spec.ports[].nodePort
