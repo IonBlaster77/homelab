@@ -525,7 +525,7 @@ kubectl get applications -n argocd
 ## Phase 13 — AdGuard DNS Rewrites (automated via ArgoCD PostSync hook)
 
 DNS rewrites are declared in git and applied automatically by ArgoCD after each sync
-via `clusters/homelab/adguard/dns-rewrites-job.yaml`. No manual steps required.
+via `kubernetes/apps/network/adguard/job-dns-rewrites.yaml`. No manual steps required.
 
 The PostSync Job calls the AdGuard API using credentials from the `adguard-api-credentials`
 Secret and idempotently adds each rewrite only if it doesn't already exist. Rewrites
@@ -533,7 +533,7 @@ currently configured:
 
 | Domain | Answer |
 |---|---|
-| `nas.jupitertech.net` | `10.77.20.20` |
+| `nas.jupitertech.net` | `10.77.10.20` (management VLAN, DSM UI; NFS uses `10.77.20.20` by IP) |
 | `argocd.jupitertech.net` | `10.77.20.60` |
 | `grafana.jupitertech.net` | `10.77.20.60` |
 | `longhorn.jupitertech.net` | `10.77.20.60` |
