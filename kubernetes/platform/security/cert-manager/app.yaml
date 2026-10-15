@@ -1,0 +1,43 @@
+# cert-manager: requests and renews TLS certificates from Let's Encrypt
+# (DNS-01 via Cloudflare). The upstream chart plus this folder (the two
+# ClusterIssuers and the Cloudflare API token) in one app. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply below, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  # project: default - kept from before the merge so nothing about
+  # permissions changed in the move; moving to homelab is a separate cleanup.
+  project: default
+  sources:
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      # v1.20.3: upgraded from v1.16.3 to fix the Cloudflare DNS-01 cleanup
+      # bug (pre-1.17.1 built DELETE /zones//dns_records/<id> -> CF 7003, so
+      # challenge TXT records were never cleaned up; cert-manager#7549).
+      targetRevision: v1.20.3
+      helm:
+        valueFiles:
+          - $values/kubernetes/platform/security/cert-manager/values.yaml
+    # This folder: applies its own manifests (issuers, token) and, as ref
+    # "values", supplies values.yaml to the chart above.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/security/cert-manager
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
