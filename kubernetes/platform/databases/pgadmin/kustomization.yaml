@@ -1,0 +1,9 @@
+# Lists the manifests this folder adds next to the chart. app.yaml and
+# values.yaml are deliberately NOT listed: app.yaml is picked up by the root
+# app, and values.yaml is input to the chart, not a manifest.
+# *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secret.sops.yaml
