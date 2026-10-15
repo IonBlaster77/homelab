@@ -1,3 +1,5 @@
+# infra-mcp: read-only cluster/infra tools for Hermes over MCP (pods, logs,
+# Argo, Longhorn, CNPG, Talos, Prometheus, Loki, Hubble). See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/infra-mcp
+    path: kubernetes/apps/ai/infra-mcp
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: infra-mcp
