@@ -40,10 +40,13 @@ Job alone doesn't make the app OutOfSync, so a refresh won't run it.
 ## Gotchas
 
 - **`add_rewrite` matches by domain only.** It never updates an existing
-  rewrite. To change an answer, add a `del_rewrite` for the old one (domain
-  *and* old answer), sync, then add the new one. Example: `nas.jupitertech.net`
-  still answers the pre-April management address 10.77.10.20 although this
-  file says 10.77.20.20, because the old rewrite was never deleted.
+  rewrite, so changing an answer in this file does nothing on its own. To
+  change one: add a `del_rewrite` for the old answer (domain *and* old
+  answer), sync, then change the `add_rewrite` line and sync again. Check the
+  live answer afterwards; the file and AdGuard can silently disagree.
+- **`nas.jupitertech.net` is the management address** (10.77.10.20, DSM UI).
+  The NAS's data interface, 10.77.20.20 on the server VLAN, is what NFS uses,
+  always by IP.
 - **To retire a hostname, use `del_rewrite`** in the "Retired" list. Removing
   the `add_rewrite` line alone leaves the record in AdGuard forever.
 - **`Recreate`, never `RollingUpdate`.** Each instance has an RWO volume and a
