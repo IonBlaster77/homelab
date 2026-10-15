@@ -25,8 +25,10 @@ spec:
       terminationGracePeriodSeconds: 60
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:latest
-          imagePullPolicy: Always
+          # Pinned by tag and digest (the version that was running when
+          # :latest was retired, 2026-10-15). Upgrade deliberately: bump both.
+          image: cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
+          imagePullPolicy: IfNotPresent
           command:
             - cloudflared
             - tunnel
