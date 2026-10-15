@@ -1,0 +1,39 @@
+# Grafana Alloy: the log collector. A DaemonSet that tails every node's pod
+# logs (CRI format), ships Kubernetes events, and listens for RFC5424 syslog
+# on :1514 (exposed on standard :514 by service-syslog.yaml). All -> Loki.
+# The upstream chart plus this folder (logging namespace, syslog
+# LoadBalancer) in one app. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy
+  namespace: argocd
+spec:
+  # project: default - kept from before the merge so nothing about
+  # permissions changed in the move; moving to homelab is a separate cleanup.
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 1.11.0
+      helm:
+        releaseName: alloy
+        valueFiles:
+          - $values/kubernetes/platform/observability/alloy/values.yaml
+    # This folder: applies its own manifests (namespace, syslog LoadBalancer)
+    # and, as ref "values", supplies values.yaml to the chart above.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/observability/alloy
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: logging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
