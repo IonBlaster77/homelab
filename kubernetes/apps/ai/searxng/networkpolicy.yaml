@@ -63,7 +63,7 @@ spec:
             - port: "80"
               protocol: TCP
 ---
-# Reply-traffic allows (see clusters/homelab/hermes/networkpolicy.yaml for the
+# Reply-traffic allows (see kubernetes/apps/ai/hermes/networkpolicy.yaml for the
 # native-routing-mode explanation this mirrors) — needed on both pods since
 # both have egress. EXCEPT the K8s API VIP: a plain toCIDR here is a blanket
 # allow for new connections on any port to the whole node subnet, not just

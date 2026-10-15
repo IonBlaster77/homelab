@@ -210,7 +210,7 @@ spec:
               protocol: TCP
 ---
 # Egress to infra-mcp (#45, its own pod/namespace — see
-# clusters/homelab/infra-mcp/).
+# kubernetes/apps/ai/infra-mcp/).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -231,7 +231,7 @@ spec:
               protocol: TCP
 ---
 # Egress to the research-worker terminal sandbox (its own pod/namespace —
-# see clusters/homelab/research-worker/), port 22 for terminal.backend: ssh.
+# see kubernetes/apps/ai/research-worker/), port 22 for terminal.backend: ssh.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -252,7 +252,7 @@ spec:
               protocol: TCP
 ---
 # Egress to the Playwright MCP interactive browser server (its own pod/
-# namespace — see clusters/homelab/playwright-mcp/).
+# namespace — see kubernetes/apps/ai/playwright-mcp/).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
