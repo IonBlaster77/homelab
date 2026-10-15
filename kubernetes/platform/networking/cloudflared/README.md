@@ -12,7 +12,7 @@ browser → Cloudflare (Access login) → tunnel → cloudflared → Cilium Gate
 | | |
 |---|---|
 | **URL** | None of its own; it carries every public hostname. Metrics on `cloudflared-metrics:2000` |
-| **Image** | `cloudflare/cloudflared:latest` (see Gotchas) |
+| **Image** | `cloudflare/cloudflared`, pinned by tag and digest in `deployment.yaml` |
 | **Namespace** | `cloudflared` |
 | **Storage** | None |
 | **Depends on** | Cloudflare (tunnel + Access), the Cilium Gateway, Authentik, the sops-kustomize plugin |
@@ -44,8 +44,9 @@ browser → Cloudflare (Access login) → tunnel → cloudflared → Cilium Gate
   problem. It's also the one hostname with an Access *Bypass* policy.
 - **`noTLSVerify` towards the Gateway:** the wildcard cert doesn't match the
   in-cluster service name. Traffic stays inside the cluster.
-- **The image is `:latest` with `imagePullPolicy: Always`,** so any restart
-  can pull a new cloudflared version. Pinning a tag (and letting Renovate
-  bump it) would make upgrades deliberate.
+- **Upgrades are deliberate.** The image is pinned by tag *and* digest
+  (until October 2026 it was `:latest` with `imagePullPolicy: Always`, so
+  any restart could silently upgrade it). To upgrade, change both in
+  `deployment.yaml`; the rolling update keeps one replica up throughout.
 - **Ingress rules are read at start.** After editing `configmap.yaml`, delete
   the pods one at a time (2 replicas keep the tunnel up).
