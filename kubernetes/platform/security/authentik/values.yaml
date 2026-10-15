@@ -1,0 +1,50 @@
+authentik:
+  postgresql:
+    host: authentik-db-rw.authentik.svc.cluster.local
+    name: authentik
+    user: authentik
+    password: ""
+
+global:
+  env:
+    - name: AUTHENTIK_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: authentik-secret
+          key: secret-key
+    - name: AUTHENTIK_POSTGRESQL__PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: authentik-db-credentials
+          key: password
+
+server:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: monitoring
+  replicas: 2
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: authentik
+                app.kubernetes.io/component: server
+            topologyKey: kubernetes.io/hostname
+
+worker:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: monitoring
+  replicas: 1
+
+postgresql:
+  enabled: false
