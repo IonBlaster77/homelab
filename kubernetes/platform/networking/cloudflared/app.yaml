@@ -1,3 +1,6 @@
+# cloudflared: the Cloudflare Tunnel connector. All public *.jupitertech.net
+# traffic enters the cluster through it (outbound-only, no open ports at
+# home). See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +11,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/cloudflared
+    path: kubernetes/platform/networking/cloudflared
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: cloudflared

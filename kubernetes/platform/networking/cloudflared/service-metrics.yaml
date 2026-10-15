@@ -14,18 +14,3 @@ spec:
     - port: 2000
       targetPort: 2000
       name: metrics
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: cloudflared
-  namespace: cloudflared
-  labels:
-    release: monitoring
-spec:
-  selector:
-    matchLabels:
-      app: cloudflared
-  endpoints:
-    - port: metrics
-      interval: 30s
