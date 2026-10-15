@@ -29,6 +29,7 @@ kube-prometheus-stack:
 | `namespace.yaml` | The `monitoring` namespace and its PSA labels |
 | `cluster-grafana-db.yaml`, `podmonitor-grafana-db.yaml`, `secret-grafana-db.sops.yaml` | Grafana's PostgreSQL (CNPG, 2 instances) and its metrics |
 | `secret-grafana-admin.sops.yaml` | Grafana admin login |
+| `httproute-grafana.yaml`, `referencegrant-grafana.yaml` | `grafana.jupitertech.net` → Grafana (route lives in the `networking` namespace) |
 | `podmonitor-cnpg.yaml`, `prometheusrule-cnpg.yaml` | CNPG operator metrics and upstream CNPG alert rules |
 | `prometheusrule-{argocd,authentik,hubble,infra}.yaml` | Our alert rules |
 | `*-blackbox-exporter.yaml` | Active probes for things with no `/metrics`: AdGuard DNS, Kea API, NAS NFS, the Cilium Gateway |

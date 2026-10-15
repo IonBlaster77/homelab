@@ -25,7 +25,8 @@ keeps answering while one is restarted.
 | `deployment-replica.yaml`, `pvc-replica.yaml`, `service-replica.yaml` | The replica, on a different node (anti-affinity) |
 | `deployment-sync.yaml`, `secret-sync.sops.yaml` | adguardhome-sync: copies the primary's config to the replica |
 | `service-dns.yaml` | LoadBalancer **10.77.20.53** → both instances, port 53 UDP+TCP |
-| `service-ui.yaml`, `referencegrant.yaml` | The primary's UI, for the HTTPRoute (still in the gateway app) |
+| `service-ui.yaml` | The primary's web UI (ClusterIP) |
+| `httproute.yaml`, `referencegrant.yaml` | `adguard.jupitertech.net` → the UI (route lives in the `networking` namespace) |
 | `secret-api.sops.yaml` | Admin login the hook uses to call the API |
 | `job-dns-rewrites.yaml` | PostSync hook: adds/removes `*.jupitertech.net` rewrites |
 
