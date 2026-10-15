@@ -1,7 +1,6 @@
-# Cluster-wide snapshot-controller (watches VolumeSnapshot -> creates
-# VolumeSnapshotContent). Distinct from Longhorn's own per-CSI-driver
-# csi-snapshotter sidecar, which already runs but has nothing to do without
-# this. See volumesnapshot-crds.yaml for why this exists (task #13).
+# Cluster-wide snapshot-controller: watches VolumeSnapshots and creates
+# VolumeSnapshotContents, which Longhorn's csi-snapshotter sidecar then acts
+# on. Straight from the upstream CSI repo. See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

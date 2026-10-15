@@ -1,0 +1,26 @@
+# Kubernetes-native VolumeSnapshot CRDs (snapshot.storage.k8s.io), straight
+# from the upstream CSI external-snapshotter repo. Not installed by default,
+# and not Longhorn's own snapshots.longhorn.io. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: volumesnapshot-crds
+  namespace: argocd
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/kubernetes-csi/external-snapshotter.git
+    targetRevision: v8.6.0
+    path: client/config/crd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      # Never auto-delete CRDs: deleting one deletes every VolumeSnapshot of
+      # that kind, and their contents (deletionPolicy: Delete) take the
+      # Longhorn backups with them. Same rule as gateway-api-crds.
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
