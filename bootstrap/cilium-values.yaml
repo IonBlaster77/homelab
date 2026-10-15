@@ -7,7 +7,7 @@
 #     --version 1.17.0 \
 #     --values bootstrap/cilium-values.yaml
 #
-# After ArgoCD is up, the cilium ArgoCD Application (gitops/argocd-apps/cilium.yaml)
+# After ArgoCD is up, the cilium ArgoCD Application (kubernetes/platform/networking/cilium/app.yaml)
 # takes over management of this release using the same values.
 # Check latest version: helm search repo cilium/cilium
 

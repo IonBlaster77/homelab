@@ -14,7 +14,7 @@
 #   6. If the node goes down, another node takes over the lease and
 #      re-announces — failover in ~15s based on the lease settings above
 #
-# Applied by: gitops/argocd-apps/cilium-config.yaml (after Cilium is running)
+# Applied by the cilium app (this folder, via kustomization.yaml); see README.md.
 
 apiVersion: cilium.io/v2alpha1
 kind: CiliumL2AnnouncementPolicy
