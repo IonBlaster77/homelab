@@ -1,3 +1,5 @@
+# research-worker: the isolated, no-secrets sandbox Hermes uses as its
+# terminal (terminal.backend: ssh). See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/research-worker
+    path: kubernetes/apps/ai/research-worker
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: research-worker
