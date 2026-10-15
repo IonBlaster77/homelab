@@ -1,19 +1,5 @@
 # Streamystats web UI (Next.js) — the dashboard served at
 # streamystats.jupitertech.net via the shared Cilium Gateway.
-apiVersion: v1
-kind: Service
-metadata:
-  name: streamystats
-  namespace: streamystats
-spec:
-  type: ClusterIP
-  selector:
-    app: streamystats
-  ports:
-    - name: http
-      port: 3000
-      targetPort: 3000
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

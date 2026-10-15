@@ -1,6 +1,6 @@
 ---
 # Default deny all ingress and egress for the streamystats namespace.
-# See clusters/homelab/crawl4ai/networkpolicy.yaml for why this is a list with
+# See kubernetes/apps/ai/crawl4ai/networkpolicy.yaml for why this is a list with
 # one EMPTY RULE (- {}) rather than an empty list: `ingress: []` is rejected by
 # Cilium as malformed and would silently leave the namespace unprotected.
 apiVersion: cilium.io/v2

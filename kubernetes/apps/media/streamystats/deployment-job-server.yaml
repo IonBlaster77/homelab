@@ -1,20 +1,6 @@
 # Streamystats job server — runs the scheduled syncs against Jellyfin
 # (activity, items, users, embeddings, cleanup). The Next.js UI talks to it
 # over JOB_SERVER_URL; it is not exposed outside the cluster.
-apiVersion: v1
-kind: Service
-metadata:
-  name: job-server
-  namespace: streamystats
-spec:
-  type: ClusterIP
-  selector:
-    app: job-server
-  ports:
-    - name: http
-      port: 3005
-      targetPort: 3005
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:

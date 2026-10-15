@@ -1,3 +1,5 @@
+# Streamystats: Jellyfin watch statistics and recommendations, with its own
+# Postgres (VectorChord) and a local Ollama embedding server. See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/streamystats
+    path: kubernetes/apps/media/streamystats
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: streamystats

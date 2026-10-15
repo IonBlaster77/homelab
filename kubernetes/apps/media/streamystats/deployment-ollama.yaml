@@ -8,33 +8,6 @@
 # to chat LLMs and run comfortably on the cluster's Kaby Lake CPUs; no GPU is
 # needed. Larger models buy little for short media metadata while costing much
 # slower initial embedding and more vector storage.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: ollama-models
-  namespace: streamystats
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: longhorn-ssd
-  resources:
-    requests:
-      storage: 20Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: ollama
-  namespace: streamystats
-spec:
-  type: ClusterIP
-  selector:
-    app: ollama
-  ports:
-    - name: http
-      port: 11434
-      targetPort: 11434
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
