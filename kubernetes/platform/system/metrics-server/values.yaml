@@ -1,0 +1,11 @@
+args:
+  # Talos kubelets present self-signed serving certs — skip TLS verification.
+  - --kubelet-insecure-tls
+  # Use node IPs rather than hostnames; Talos nodes don't register with
+  # resolvable DNS names inside the cluster.
+  - --kubelet-preferred-address-types=InternalIP
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
