@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-server
+  namespace: streamystats
+spec:
+  type: ClusterIP
+  selector:
+    app: job-server
+  ports:
+    - name: http
+      port: 3005
+      targetPort: 3005

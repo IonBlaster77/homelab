@@ -10,20 +10,6 @@
 # Version is pinned to the tag upstream's docker-compose pins (pg17-v0.4.1)
 # rather than the newest pg17-v1.1.1 — the VectorChord extension API changed
 # between them and Streamystats' schema is written against 0.4.x.
-apiVersion: v1
-kind: Service
-metadata:
-  name: vectorchord
-  namespace: streamystats
-spec:
-  type: ClusterIP
-  selector:
-    app: vectorchord
-  ports:
-    - name: postgres
-      port: 5432
-      targetPort: 5432
----
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
