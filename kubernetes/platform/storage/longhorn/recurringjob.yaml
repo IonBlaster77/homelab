@@ -1,0 +1,45 @@
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: hourly-backup
+  namespace: longhorn-system
+spec:
+  name: hourly-backup
+  cron: "0 * * * *"
+  task: backup
+  groups:
+    - default
+  retain: 24
+  concurrency: 2
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: daily-backup
+  namespace: longhorn-system
+spec:
+  name: daily-backup
+  # 02:00 Adelaide. These crons are evaluated in **UTC**, not local time —
+  # confirmed empirically: Backup CRs from cron "0 2 * * *" were stamped
+  # 02:0xZ. So the previous "2am" schedule was really running at 11:30am
+  # Adelaide, a 23-minute backup sweep in the middle of the working day.
+  #
+  # Must not share a minute with hourly-backup ("0 * * * *"): both target the
+  # same `default` group, and a Longhorn backup takes a per-volume lock in the
+  # backupstore that the loser fails on outright ("failed to acquire lock ...
+  # please try again later") rather than waiting or retrying. That collision
+  # is what produced four LonghornBackupFailed alerts.
+  #
+  # Adelaide is UTC+9:30, so a local :30 time lands exactly on a UTC hour
+  # boundary — i.e. 02:30 Adelaide IS 17:00 UTC, straight into the hourly run.
+  # Keeping the UTC minute at :30 (max separation from any hourly) therefore
+  # requires the local time to be on the hour. Hence 02:00, not 02:30.
+  #
+  # Drifts to 03:00 Adelaide over ACDT (UTC+10:30); accepted deliberately
+  # rather than chasing daylight saving.
+  cron: "30 16 * * *"
+  task: backup
+  groups:
+    - default
+  retain: 30
+  concurrency: 2

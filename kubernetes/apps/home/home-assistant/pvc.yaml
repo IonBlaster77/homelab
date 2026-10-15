@@ -4,7 +4,7 @@
 #
 # longhorn-ssd is the cluster default class. This PVC inherits the `default`
 # recurring-job group, so it is picked up by the hourly/daily Longhorn backups
-# to the NAS (daily runs 02:00 Adelaide — see clusters/homelab/longhorn/).
+# to the NAS (daily runs 02:00 Adelaide — see kubernetes/platform/storage/longhorn/recurringjob.yaml).
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
