@@ -1,3 +1,5 @@
+# Crawl4AI: headless-Chromium web crawler that turns pages into clean
+# markdown; Hermes' "read this URL" tool over MCP. See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,7 +10,9 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    path: clusters/homelab/crawl4ai
+    path: kubernetes/apps/ai/crawl4ai
+    plugin:
+      name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: crawl4ai
