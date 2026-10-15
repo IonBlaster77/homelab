@@ -9,7 +9,7 @@ with no secrets and no way back into Hermes.
 | | |
 |---|---|
 | **URL** | None. Hermes uses `playwright-mcp.playwright-mcp.svc:8931` in-cluster; deliberately not on the Gateway |
-| **Image** | `mcr.microsoft.com/playwright`, pinned by digest; `@playwright/mcp` is installed from npm at start |
+| **Image** | `mcr.microsoft.com/playwright`, pinned by digest; `@playwright/mcp` (pinned version) is installed from npm at start |
 | **Namespace** | `playwright-mcp` (PSA `restricted`) |
 | **Storage** | None (emptyDirs only; a 1Gi in-memory `/dev/shm`) |
 | **Depends on** | npm registry at pod start. Used by Hermes |
@@ -44,8 +44,10 @@ browser rather than a human clicking approve:
 
 ## Gotchas
 
-- **`@playwright/mcp@latest` is installed at every start**, so a restart can
-  pick up a new version. Pin it if an upstream release ever breaks things.
+- **`@playwright/mcp` is pinned** (in `deployment.yaml`'s init container),
+  though it's still downloaded from npm at every start. Until October 2026 it
+  was `@latest`, so any restart could silently upgrade it. Upgrade by bumping
+  the version; the browser build it installs changes with it.
 - **The browser needs `install-browser chrome-for-testing`.** `--browser
   chromium` actually means that channel, and a plain `playwright install
   chromium` doesn't fetch it ("Browser not installed" on every navigate).

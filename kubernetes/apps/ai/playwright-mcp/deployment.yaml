@@ -73,7 +73,10 @@ spec:
             - -c
             - |
               set -e
-              npm install -g @playwright/mcp@latest --prefix /opt/pw-mcp
+              # Pinned to the version that was running when @latest was
+              # retired (2026-10-15). Bump deliberately; the browser build
+              # installed below follows this version.
+              npm install -g @playwright/mcp@0.0.83 --prefix /opt/pw-mcp
               npx --prefix /opt/pw-mcp @playwright/mcp install-browser chrome-for-testing
           volumeMounts:
             - name: pw-mcp-bin
