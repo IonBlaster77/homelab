@@ -1,0 +1,39 @@
+# Lists the manifests this folder adds next to the chart. app.yaml and
+# values.yaml are deliberately NOT listed: app.yaml is picked up by the root
+# app, and values.yaml is input to the chart, not a manifest.
+# *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  # Grafana's database (CloudNativePG) and the Grafana admin login
+  - secret-grafana-admin.sops.yaml
+  - secret-grafana-db.sops.yaml
+  - cluster-grafana-db.yaml
+  - podmonitor-grafana-db.yaml
+  # CNPG operator metrics + upstream alert rules
+  - podmonitor-cnpg.yaml
+  - prometheusrule-cnpg.yaml
+  # Alert rules
+  - prometheusrule-argocd.yaml
+  - prometheusrule-authentik.yaml
+  - prometheusrule-hubble.yaml
+  - prometheusrule-infra.yaml
+  # blackbox exporter: active probes (DNS, Kea API, NAS NFS, Gateway)
+  - configmap-blackbox-exporter.yaml
+  - deployment-blackbox-exporter.yaml
+  - service-blackbox-exporter.yaml
+  - probe-blackbox-exporter.yaml
+  # MikroTik router exporter
+  - secret-mikrotik-exporter.sops.yaml
+  - deployment-mikrotik-exporter.yaml
+  - service-mikrotik-exporter.yaml
+  - servicemonitor-mikrotik-exporter.yaml
+  # UniFi poller
+  - secret-unifi-poller.sops.yaml
+  - deployment-unifi-poller.yaml
+  - service-unifi-poller.yaml
+  - servicemonitor-unifi-poller.yaml
+  # Daily log digest (suspended until an alert channel exists)
+  - secret-log-digest-webhook.sops.yaml
+  - cronjob-log-digest.yaml

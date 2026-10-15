@@ -1,0 +1,17 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: grafana-db
+  namespace: monitoring
+spec:
+  instances: 2
+  storage:
+    # nvme, not ssd - see kubernetes/apps/network/kea/database.yaml (2026-08-05) for why.
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: grafana
+      owner: grafana
+      secret:
+        name: grafana-db-credentials

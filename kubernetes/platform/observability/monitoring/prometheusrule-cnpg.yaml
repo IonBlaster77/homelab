@@ -1,24 +1,3 @@
-# Per-cluster PodMonitors live next to each Cluster CR (grafana-db-cluster.yaml,
-# kea-db-cluster.yaml, authentik-db-cluster.yaml). This covers the operator
-# itself, plus CloudNativePG's own recommended alert rules (upstream:
-# docs/src/samples/monitoring/{podmonitor,prometheusrule}.yaml), unmodified.
-apiVersion: monitoring.coreos.com/v1
-kind: PodMonitor
-metadata:
-  name: cnpg-controller-manager
-  namespace: monitoring
-  labels:
-    release: monitoring
-spec:
-  namespaceSelector:
-    matchNames:
-      - cnpg-system
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: cloudnative-pg
-  podMetricsEndpoints:
-    - port: metrics
----
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:

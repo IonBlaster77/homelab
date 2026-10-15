@@ -25,7 +25,7 @@
 # meminfo residual and MemAvailable were both flat across the same window. So
 # treat roughly 0.8-1.3 GiB as normal and do NOT read a few hundred MiB of
 # drift as a leak. The reliable signal is node:memory_unaccounted_bytes (the
-# recording rule in clusters/homelab/monitoring/infra-alerts.yaml), which held
+# recording rule in kubernetes/platform/observability/monitoring/prometheusrule-infra.yaml), which held
 # to within 0.02 GiB on every node over the same 22h. Use this script to
 # confirm the memory TYPE once that rule fires, not as the tripwire itself.
 #
