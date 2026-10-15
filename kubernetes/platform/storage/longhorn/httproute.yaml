@@ -3,7 +3,7 @@
 # Routes https://longhorn.jupitertech.net → longhorn-system/longhorn-frontend:80
 #
 # Cross-namespace backend: HTTPRoute is in "networking", Service is in "longhorn-system".
-# referencegrant-longhorn.yaml in the longhorn-system namespace authorises this.
+# the ReferenceGrant in this folder authorises this.
 
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

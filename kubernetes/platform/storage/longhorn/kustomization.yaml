@@ -16,3 +16,5 @@ resources:
   - clusterrole-volume-labeler.yaml
   - clusterrolebinding-volume-labeler.yaml
   - job-enable-recurring-jobs.yaml
+  - httproute.yaml
+  - referencegrant.yaml
