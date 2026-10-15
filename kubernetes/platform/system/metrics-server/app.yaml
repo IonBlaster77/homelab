@@ -1,0 +1,29 @@
+# metrics-server: serves the resource metrics API (metrics.k8s.io) behind
+# `kubectl top` and HorizontalPodAutoscalers. Upstream Helm chart; our
+# values live in values.yaml next to this file. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+spec:
+  project: homelab
+  sources:
+    - repoURL: https://kubernetes-sigs.github.io/metrics-server/
+      chart: metrics-server
+      targetRevision: 3.13.0
+      helm:
+        releaseName: metrics-server
+        valueFiles:
+          - $values/kubernetes/platform/system/metrics-server/values.yaml
+    # This repo, only to supply values.yaml to the chart above ($values).
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
