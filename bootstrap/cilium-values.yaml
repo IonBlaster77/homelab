@@ -83,7 +83,7 @@ l2announcements:
 # When you're ready for BGP:
 #   1. Configure your router (pfSense/OPNsense/Mikrotik) with an ASN and
 #      accept peering from the node IPs
-#   2. Create a CiliumBGPPeeringPolicy in clusters/homelab/cilium/
+#   2. Create a CiliumBGPPeeringPolicy in kubernetes/platform/networking/cilium/
 #   3. Verify routes appear on the router
 #   4. Delete the CiliumL2AnnouncementPolicy (l2-policy.yaml) — done
 #   NO WIPE, NO REINSTALL, just a config change.

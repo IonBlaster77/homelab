@@ -785,4 +785,4 @@ Verify the L2 policy interface name matches the actual NIC:
 ```bash
 talosctl --nodes 10.77.20.11 get addresses
 ```
-The interface should be `enp0s31f6`. If it differs, update `clusters/homelab/cilium/l2-policy.yaml`.
+The interface should be `enp0s31f6`. If it differs, update `kubernetes/platform/networking/cilium/ciliuml2announcementpolicy.yaml`.

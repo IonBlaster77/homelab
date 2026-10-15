@@ -22,7 +22,7 @@
 #   10.77.20.61–99    — free pool for future LoadBalancer services
 #   ──────────────────────────────────────────────────────────────────
 #
-# Applied by: gitops/argocd-apps/cilium-config.yaml (sync AFTER cilium app)
+# Applied by the cilium app (this folder, via kustomization.yaml); see README.md.
 
 apiVersion: cilium.io/v2alpha1
 kind: CiliumLoadBalancerIPPool

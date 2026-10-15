@@ -1,9 +1,11 @@
-# ArgoCD Application — Cilium CNI (umbrella Helm chart, git-path source)
+# ArgoCD Application — Cilium CNI (umbrella Helm chart, git-path source) plus
+# its cluster config (LoadBalancer IP pool, L2 announcements, BGP policy) and
+# the Hubble UI route. See README.md.
 #
-# Source is now clusters/homelab/cilium-chart/ in this git repo — an umbrella
-# chart that declares cilium v1.17.0 as a dependency.  The chart tarball is
-# vendored in cilium-chart/charts/cilium-1.17.0.tgz so ArgoCD never reaches
-# out to helm.cilium.io at sync time.
+# Source 1 is chart/ in this folder — an umbrella chart that declares cilium
+# v1.17.0 as a dependency. The chart tarball is vendored in
+# chart/charts/cilium-1.17.0.tgz so ArgoCD never reaches out to
+# helm.cilium.io at sync time. Source 2 is this folder itself (kustomization.yaml).
 #
 # Why umbrella chart instead of direct Helm repo source?
 #   ArgoCD v3 has a semver bug: when repoURL is a Helm HTTP index, the
@@ -13,7 +15,7 @@
 #   (which has the exact version + digest) and skips all version resolution.
 #
 # This Application takes over management of the Cilium Helm release that was
-# installed manually during bootstrap (clusters/homelab/bootstrap/cilium-values.yaml).
+# installed manually during bootstrap (bootstrap/cilium-values.yaml).
 # ArgoCD "adopts" the existing release because the release name (cilium),
 # namespace (kube-system), and all resource names match.
 #
@@ -21,16 +23,16 @@
 # a bad Cilium upgrade breaks all cluster networking instantly.
 #
 # To upgrade Cilium:
-#   1. Edit clusters/homelab/cilium-chart/Chart.yaml — bump the dependency version
-#   2. Run: helm dependency update clusters/homelab/cilium-chart
+#   1. Edit chart/Chart.yaml — bump the dependency version
+#   2. Run: helm dependency update kubernetes/platform/networking/cilium/chart
 #   3. Commit Chart.lock and charts/cilium-X.Y.Z.tgz, delete the old .tgz
 #   4. Manually sync this Application in ArgoCD
 #
 # IP assignments on VLAN 20 (10.77.20.0/24):
-#   10.77.20.50  — ArgoCD server      (pinned in clusters/homelab/bootstrap/argocd-values.yaml)
+#   10.77.20.50  — ArgoCD server      (pinned in bootstrap/argocd-values.yaml)
 #   10.77.20.51  — Longhorn UI        (pinned in kubernetes/platform/storage/longhorn/values.yaml)
 #   10.77.20.60  — shared Gateway     (pinned in kubernetes/platform/networking/gateway/gateway.yaml)
-#   10.77.20.53+ — future services    (assigned from pool in clusters/homelab/cilium/ip-pool.yaml)
+#   10.77.20.53+ — future services    (assigned from pool in ciliumloadbalancerippool.yaml)
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -39,14 +41,21 @@ metadata:
   namespace: argocd
 spec:
   project: homelab
-  source:
-    repoURL: https://github.com/IonBlaster77/homelab.git
-    targetRevision: HEAD
-    path: clusters/homelab/cilium-chart
-    helm:
-      # releaseName must match the existing Helm release so ArgoCD adopts it
-      # rather than creating a duplicate release alongside the bootstrapped one.
-      releaseName: cilium
+  sources:
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/networking/cilium/chart
+      helm:
+        # releaseName must match the existing Helm release so ArgoCD adopts it
+        # rather than creating a duplicate release alongside the bootstrapped one.
+        releaseName: cilium
+    # This folder: the IP pool, L2 and BGP policies (formerly the separate
+    # cilium-config app) and the Hubble UI route, via kustomization.yaml.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/networking/cilium
+      plugin:
+        name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
