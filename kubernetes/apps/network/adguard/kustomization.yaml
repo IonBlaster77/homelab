@@ -21,3 +21,4 @@ resources:
   - referencegrant.yaml
   # PostSync hook: applies the *.jupitertech.net rewrites
   - job-dns-rewrites.yaml
+  - httproute.yaml
