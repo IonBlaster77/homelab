@@ -9,8 +9,8 @@
 #   Let's Encrypt verifies it, then cert-manager deletes it.
 #   This works for internal clusters (no inbound HTTP required).
 #
-# The Cloudflare API token is in clusters/homelab/cert-manager/cloudflare-secret.yaml
-# (SOPS encrypted, applied by the cert-manager-config ArgoCD Application).
+# The Cloudflare API token is in secret-cloudflare.sops.yaml (this folder)
+# (SOPS encrypted, applied by the cert-manager Argo CD Application).
 
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
