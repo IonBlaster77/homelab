@@ -6,8 +6,7 @@
   "ignorePaths": [
     "**/node_modules/**",
     "talos/**",
-    "bootstrap/**",
-    "gitops/homepage-chart/charts/**"
+    "bootstrap/**"
   ],
   "prConcurrentLimit": 15,
   "kubernetes": {
