@@ -24,7 +24,7 @@
 #   - template / env references   e.g.  {{VAR}}, ${VAR}, $VAR, $__env{VAR}, !env_var VAR
 #   - reference-style keys that name a secret rather than contain one:
 #     secretName, secretKeyRef, existingSecret, privateKeySecretRef, ...
-#   - vendored CRDs under clusters/homelab/gateway-api-crds/
+#   - vendored CRDs under kubernetes/platform/networking/gateway-api-crds/
 #
 set -euo pipefail
 
@@ -68,7 +68,7 @@ check_file() {
   local file="$1"
   [ -f "$file" ] || return 0
   case "$file" in
-    clusters/homelab/gateway-api-crds/*) return 0 ;;
+    kubernetes/platform/networking/gateway-api-crds/*) return 0 ;;
   esac
 
   # SOPS-encrypted files are allowed to carry secret fields.

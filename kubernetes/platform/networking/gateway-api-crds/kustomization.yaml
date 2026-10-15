@@ -1,0 +1,7 @@
+# Vendored upstream CRDs, kept byte-for-byte as released so upgrades are a
+# file swap. app.yaml is deliberately NOT listed: the root app picks it up.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - crds-standard-v1.2.1.yaml
+  - crd-tlsroutes-experimental-v1.2.1.yaml
