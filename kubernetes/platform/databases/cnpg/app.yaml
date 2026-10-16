@@ -27,7 +27,14 @@ spec:
     namespace: cnpg-system
   syncPolicy:
     automated:
-      prune: true
+      # prune: false protects the CRDs this chart ships. If a chart upgrade or
+      # values change ever stopped rendering one, pruning would delete it, and
+      # Kubernetes would delete every object of that kind:
+      #   every Postgres database (authentik, grafana, kea) and its volumes.
+      # Cost: anything the chart drops or renames stays behind (shown as
+      # OutOfSync "requires pruning"); after upgrades, delete leftovers by hand.
+      # Never tick Prune on a manual sync of this app without reading the diff.
+      prune: false
       selfHeal: true
     syncOptions:
       - CreateNamespace=true

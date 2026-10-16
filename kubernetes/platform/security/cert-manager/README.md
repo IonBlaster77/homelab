@@ -38,10 +38,16 @@ be in the `networking` namespace next to the Gateway.
   challenge records were never deleted and renewals wedged in "Renewing".
 - **Stay on v1.17.1 or newer.** Older versions can't clean up challenge
   records with Cloudflare's current API (error 7003).
-- **The chart installs cert-manager's CRDs** (`installCRDs: true`), and the
-  app has `prune: true`. Deleting the `Certificate` CRD deletes the
-  certificate object (the TLS Secret survives, but stops renewing). Check
-  the rendered CRD list on chart upgrades.
+- **The chart installs cert-manager's CRDs** (`installCRDs: true`), **so this
+  app has `prune: false`.** Deleting the `Certificate` CRD would delete the
+  certificate object (the TLS Secret survives, but stops renewing), and with
+  pruning on, a chart upgrade or values rename that stopped rendering it
+  would do exactly that.
+- **After every upgrade, check for leftovers.** With pruning off, anything
+  the chart drops or renames, and any file you delete from this folder,
+  stays in the cluster; Argo CD shows it as "requires pruning". Delete it by
+  hand once you've checked it's obsolete. Never tick **Prune** on a manual
+  sync of this app without reading the diff.
 - **`startupapicheck`** is a chart hook Job that runs on every sync to confirm
   the webhook answers. If a sync hangs, look at it first.
 - **Renewal happens ~30 days before expiry.** If HTTPS starts failing near
