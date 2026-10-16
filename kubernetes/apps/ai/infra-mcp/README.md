@@ -18,7 +18,7 @@ Every tool call is written to stdout as a JSON audit line.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | Namespace with Pod Security `restricted` |
 | `serviceaccount.yaml` | `infra-mcp-sa`; the only app here that mounts its token, because reading the API is its job |
