@@ -18,7 +18,7 @@ keeps answering while one is restarted.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | The `adguard` namespace |
 | `deployment-primary.yaml`, `pvc-primary.yaml`, `service-primary.yaml` | The primary: the instance you configure |
