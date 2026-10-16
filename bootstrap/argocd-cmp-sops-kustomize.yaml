@@ -1,7 +1,7 @@
 # Second Argo CD config management plugin, for the restructured layout
 # (kubernetes/**/<app>/ with kustomization.yaml, component subfolders and
 # *.sops.yaml secrets). Runs in its own repo-server sidecar (cmp-sops-kustomize,
-# see argocd-values.yaml / clusters/homelab/argocd-chart/values.yaml) so the
+# see argocd-values.yaml / kubernetes/platform/system/argocd/chart/values.yaml) so the
 # original argocd-cmp-sops plugin, used by every not-yet-migrated app, is
 # untouched.
 #

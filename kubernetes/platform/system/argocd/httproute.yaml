@@ -6,7 +6,7 @@
 # so it serves plain HTTP on port 80. TLS is terminated at the Gateway.
 #
 # Cross-namespace backend: HTTPRoute is in "networking", Service is in "argocd".
-# referencegrant-argocd.yaml in the argocd namespace authorises this.
+# the ReferenceGrant in this folder authorises this.
 
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

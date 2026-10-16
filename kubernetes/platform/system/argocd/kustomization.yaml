@@ -1,0 +1,7 @@
+# The manifests this folder adds next to the chart (chart/ is source 1 of
+# app.yaml and is NOT listed here). app.yaml is picked up by the root app.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - httproute.yaml
+  - referencegrant.yaml
