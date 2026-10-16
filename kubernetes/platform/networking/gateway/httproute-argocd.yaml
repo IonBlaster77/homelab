@@ -11,6 +11,9 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
+  annotations:
+    # Temporary: route handoff in progress (zero-gap move between apps).
+    argocd.argoproj.io/sync-options: Prune=false
   name: argocd
   namespace: networking
 spec:
