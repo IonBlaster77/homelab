@@ -27,3 +27,11 @@ spec:
     - https://helm.runix.net
     - https://kubernetes-sigs.github.io/metrics-server/
     - https://github.com/kubernetes-csi/external-snapshotter.git
+    # Upstream charts of apps moved from the default project (2026-10)
+    - https://argoproj.github.io/argo-helm
+    - https://charts.jetstack.io
+    - https://charts.longhorn.io
+    - https://cloudnative-pg.github.io/charts
+    - https://grafana.github.io/helm-charts
+    - https://jameswynn.github.io/helm-charts
+    - https://prometheus-community.github.io/helm-charts
