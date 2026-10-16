@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "enabled": false,
+  "enabled": true,
   "timezone": "Australia/Adelaide",
   "ignorePaths": [
     "**/node_modules/**",
