@@ -24,7 +24,7 @@ hosted LLM APIs and uses the rest of `kubernetes/apps/ai/` as its tools:
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | Namespace, PSA `baseline` |
 | `serviceaccount.yaml`, `role.yaml`, `rolebinding.yaml` | The pod's ServiceAccount and its (namespace-scoped) role |

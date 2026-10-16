@@ -6,6 +6,9 @@ kind: Application
 metadata:
   name: hermes
   namespace: argocd
+  annotations:
+    # Required with ServerSideApply, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: homelab
   source:
@@ -22,4 +25,5 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=true
