@@ -9,9 +9,7 @@ metadata:
   name: alloy
   namespace: argocd
 spec:
-  # project: default - kept from before the merge so nothing about
-  # permissions changed in the move; moving to homelab is a separate cleanup.
-  project: default
+  project: homelab
   sources:
     - repoURL: https://grafana.github.io/helm-charts
       chart: alloy

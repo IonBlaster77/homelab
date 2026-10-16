@@ -48,5 +48,3 @@ ConfigMap and Homepage picks it up. Widget secrets are referenced as
 - **Widgets call services directly**, bypassing the Gateway, so each app's
   network policy has an "allow from homepage" rule. A new widget usually
   needs one too.
-- **Project `default`.** This app still uses the `default` AppProject;
-  moving it to `homelab` is a pending cleanup.
