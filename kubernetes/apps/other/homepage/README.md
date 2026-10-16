@@ -17,7 +17,7 @@ configured in `values.yaml`.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application with two sources: the chart, and this folder |
+| `app.yaml` | Argo CD Application with two sources: the chart, and this folder. Server-Side Apply |
 | `values.yaml` | Image tag, RBAC, env, and the whole dashboard config (`config:` → settings, services, widgets, bookmarks, kubernetes) |
 | `kustomization.yaml` | Lists this folder's own manifests |
 | `configmap-custom-css.yaml` | `custom.css`, mounted over `/app/config/custom.css` (the per-card brand tints) |
