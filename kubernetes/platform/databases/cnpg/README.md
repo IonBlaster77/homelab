@@ -27,9 +27,16 @@ of Postgres pods with volumes, failover, connection Services
 
 ## Gotchas
 
-- **The chart ships the CRDs, including `Cluster`.** Deleting that CRD
-  deletes every database in the cluster. This app still has `prune: true`;
-  check any chart upgrade's rendered CRD list before syncing.
+- **The chart ships the CRDs, including `Cluster`, so this app has
+  `prune: false`.** Deleting that CRD would delete every database in the
+  cluster, and with pruning on, a chart upgrade or values typo that stopped
+  rendering it would do exactly that.
+- **After every upgrade, check for leftovers.** With pruning off, anything
+  the chart drops or renames stays behind; Argo CD shows the app OutOfSync
+  with the item marked "requires pruning". Delete it by hand after checking
+  it really is obsolete (a renamed operator Deployment would otherwise leave
+  two operators running). Never tick **Prune** on a manual sync of this app
+  without reading the diff.
 - **Exactly one operator.** A second, forgotten operator (installed in
   `default` in April) fought this one over the webhook certificate in
   October 2026 and caused x509 errors on every database change. If CNPG

@@ -42,9 +42,16 @@ nothing is missing:
 
 ## Gotchas
 
-- **The chart ships Longhorn's CRDs** (volumes, backups, settings…) and the
-  app has `prune: true`. Losing those CRDs would remove every volume and
-  backup record. Check the rendered CRD list on any chart upgrade.
+- **The chart ships Longhorn's CRDs** (volumes, backups, settings…) and always
+  renders them (no chart option to split them out), **so this app has
+  `prune: false`.** Losing those CRDs would remove every volume and backup
+  record; with pruning on, a chart upgrade that stopped rendering one would
+  do exactly that.
+- **After every upgrade, check for leftovers.** With pruning off, anything
+  the chart drops or renames, and any file you delete from this folder
+  (StorageClasses, RecurringJobs, …), stays in the cluster; Argo CD shows it
+  as "requires pruning". Delete it by hand once you've checked it's obsolete.
+  Never tick **Prune** on a manual sync of this app without reading the diff.
 - **Deleting this Application runs Longhorn's uninstaller first.** The chart's
   `pre-delete` hook (`longhorn-uninstall`) becomes an Argo CD PreDelete hook,
   so the Application carries `pre-delete-finalizer.argocd.argoproj.io`: if the
