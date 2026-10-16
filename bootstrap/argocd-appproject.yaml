@@ -1,3 +1,7 @@
+# First-install copy of the `homelab` AppProject (applied by hand in the
+# bootstrap runbook, before Argo CD can sync anything). The live, Argo-managed
+# copy is kubernetes/platform/system/argocd/appproject-homelab.yaml; keep the
+# two spec-identical.
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
@@ -10,6 +14,7 @@ spec:
     - https://charts.goauthentik.io
     - https://helm.runix.net
     - https://kubernetes-sigs.github.io/metrics-server/
+    - https://github.com/kubernetes-csi/external-snapshotter.git
   destinations:
     - namespace: '*'
       server: https://kubernetes.default.svc
