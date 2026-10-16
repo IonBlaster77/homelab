@@ -17,7 +17,7 @@ it by service name.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | Namespace with PSA `privileged`, required for `hostNetwork` |
 | `deployment.yaml` | The server: `hostNetwork`, pinned to `talos4`, `Recreate` strategy |
