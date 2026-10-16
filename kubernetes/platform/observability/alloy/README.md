@@ -19,7 +19,7 @@ gathers three streams and pushes them all to Loki:
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application with two sources: the chart, and this folder |
+| `app.yaml` | Argo CD Application with two sources: the chart, and this folder. Server-Side Apply |
 | `values.yaml` | DaemonSet with control-plane tolerations, the `/var/log` mount, the syslog port, and the Alloy pipeline itself (`alloy.configMap.content`) |
 | `kustomization.yaml` | Lists this folder's own manifests |
 | `namespace.yaml` | The `logging` namespace, PSA `privileged` |
