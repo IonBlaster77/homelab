@@ -19,7 +19,7 @@ things in it that Talos doesn't:
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `configmap-coredns.yaml` | The Corefile: cluster names first, everything else forwarded to AdGuard (10.77.20.53), falling back to the router |
 | `serviceaccount-`, `clusterrole-`, `clusterrolebinding-node-uncordon.yaml` | Permission to `get` and `patch` nodes, nothing else |
