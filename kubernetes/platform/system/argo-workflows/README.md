@@ -42,7 +42,5 @@ namespace itself is created by Argo CD with its PSA labels
   images until one is added.
 - **Parallelism is capped at 2** to protect cluster CPU; raise it when there
   is dedicated build capacity.
-- **Project `default`.** This app still uses the `default` AppProject;
-  moving it to `homelab` is a pending cleanup.
 - **Server-Side Apply** is required: the Workflow CRDs are too large for a
   client-side apply's last-applied annotation.

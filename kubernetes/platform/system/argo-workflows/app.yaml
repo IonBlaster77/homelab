@@ -11,10 +11,7 @@ metadata:
     # Required with ServerSideApply below, or Argo CD shows phantom OutOfSync.
     argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
-  # project: default (not homelab) - kept from before the merge so nothing
-  # about permissions changed in the move. Moving it to the homelab project
-  # (whose sourceRepos would need argo-helm) is a separate cleanup.
-  project: default
+  project: homelab
   sources:
     - repoURL: https://argoproj.github.io/argo-helm
       chart: argo-workflows

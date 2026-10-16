@@ -7,10 +7,7 @@ metadata:
   name: homepage
   namespace: argocd
 spec:
-  # project: default - kept from before the merge so nothing about
-  # permissions changed in the move. Moving it to the homelab project (whose
-  # sourceRepos would need the jameswynn chart repo) is a separate cleanup.
-  project: default
+  project: homelab
   sources:
     - repoURL: https://jameswynn.github.io/helm-charts
       chart: homepage
