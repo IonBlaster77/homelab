@@ -18,8 +18,8 @@ spec:
             summary: "ArgoCD app {{ $labels.name }} has been Degraded for 10m+"
             description: "Short health flaps are normal during rollouts; this has been sustained, not transient."
         - alert: ArgoCDAppOutOfSync
-          # argocd/cilium are manual-sync by design (see gitops/argocd-apps/
-          # cilium.yaml) — sitting OutOfSync between deliberate syncs is
+          # argocd/cilium are manual-sync by design (see kubernetes/platform/networking/cilium/
+          # app.yaml) — sitting OutOfSync between deliberate syncs is
           # their normal resting state, not drift worth paging on. cilium
           # in particular has a known cosmetic OutOfSync on ServiceMonitor/
           # hubble (content matches the rendered chart byte-for-byte; looks

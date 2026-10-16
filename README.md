@@ -32,25 +32,26 @@ restructure lands._
 
 ## Repository layout
 
-**Target** (in progress):
+Every app is one folder:
 
 ```
 kubernetes/
-├── platform/<category>/<app>/   # the cluster's foundations
-└── apps/<category>/<app>/       # what runs on it
+├── platform/<category>/<app>/   # the cluster's foundations: networking, storage,
+│                                #   databases, observability, security, system
+└── apps/<category>/<app>/       # what runs on it: ai, home, media, network, other
     ├── README.md                # what it is, URL, dependencies, gotchas
     ├── app.yaml                 # the Argo CD Application for this folder
     ├── kustomization.yaml       # lists the manifests below
-    ├── values.yaml              # Helm-based apps only
+    ├── values.yaml              # Helm-based apps only (or chart/ for vendored charts)
     └── deployment.yaml, service.yaml, networkpolicy.yaml, httproute.yaml, secret.sops.yaml, …
 ```
 
-**Today:**
+The root Application (`bootstrap/bootstrap-apps.yaml`) picks up every
+`kubernetes/**/app.yaml`, so adding an app is adding a folder.
 
 | Path | Contents |
 |---|---|
-| `clusters/homelab/` | Manifests for each app (being migrated into `kubernetes/`) |
-| `gitops/argocd-apps/` | Argo CD Application definitions (moving into each app's `app.yaml`) |
+| `kubernetes/` | Every app, one folder each (see above) |
 | `bootstrap/` | One-time cluster seed: Argo CD install values, root app, project, bootstrap secrets |
 | `talos/` | Talos machine configs (SOPS-encrypted secrets), applied with `talosctl` |
 | `docs/` | Runbooks and project notes |

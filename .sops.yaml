@@ -4,61 +4,16 @@ creation_rules:
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$"
 
-  # Restructured layout (kubernetes/**): every encrypted manifest is named
-  # *.sops.yaml (secret.sops.yaml / secret-<name>.sops.yaml), so one rule
-  # covers them all regardless of folder. The sops-kustomize Argo CD plugin
-  # decrypts exactly these files.
+  # Every Kubernetes Secret in kubernetes/** is named *.sops.yaml
+  # (secret.sops.yaml / secret-<name>.sops.yaml), so one rule covers them all
+  # regardless of folder. The sops-kustomize Argo CD plugin decrypts exactly
+  # these files. Only data/stringData is encrypted, so Argo CD can still read
+  # apiVersion/kind/metadata.
   - path_regex: \.sops\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(data|stringData)$"
 
-  # Kubernetes secret manifests - only encrypt secret values, keep metadata readable
-  # encrypted_regex restricts SOPS to data/stringData so ArgoCD can see apiVersion/kind/metadata
-  - path_regex: clusters/homelab/apps/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # ArgoCD bootstrap secrets
+  # Argo CD bootstrap secrets (applied by hand in the bootstrap runbook)
   - path_regex: (^|/)bootstrap/[^/]*secret[^/]*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # cert-manager secrets (Cloudflare API token etc.)
-  - path_regex: clusters/homelab/cert-manager/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # AdGuard Home secrets (sync credentials etc.)
-  - path_regex: clusters/homelab/adguard/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # Monitoring secrets (Grafana DB credentials, admin password)
-  - path_regex: clusters/homelab/monitoring/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # Authentik secrets (DB credentials, secret key)
-  - path_regex: clusters/homelab/authentik/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # pgAdmin secrets (admin credentials)
-  - path_regex: clusters/homelab/pgadmin/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # Homepage secrets (NAS widget credentials)
-  - path_regex: clusters/homelab/homepage/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # Cloudflare Tunnel secret (tunnel token)
-  - path_regex: clusters/homelab/cloudflared/.*secret.*\.yaml$
-    age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
-    encrypted_regex: "^(data|stringData)$"
-
-  # Catch-all for any new app directories — covers secret files not matched above
-  - path_regex: clusters/homelab/.*secret.*\.yaml$
     age: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
     encrypted_regex: "^(data|stringData)$"
