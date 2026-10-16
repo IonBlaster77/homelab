@@ -1,0 +1,12 @@
+# The manifests this folder adds next to the chart (chart/ is source 1 of
+# app.yaml and is NOT listed here). app.yaml is picked up by the root app.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  # LoadBalancer IPs: which addresses, and how they're announced on the LAN
+  - ciliumloadbalancerippool.yaml
+  - ciliuml2announcementpolicy.yaml
+  - ciliumbgppeeringpolicy.yaml
+  # Hubble UI behind the shared Gateway
+  - httproute-hubble.yaml
+  - referencegrant-hubble.yaml

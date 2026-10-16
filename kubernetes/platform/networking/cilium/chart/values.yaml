@@ -1,11 +1,11 @@
 # Cilium values — nested under "cilium:" because this is an umbrella chart.
 # The subchart name in Chart.yaml is "cilium", so Helm requires all values
 # to live under that key.  These must stay in sync with:
-#   clusters/homelab/bootstrap/cilium-values.yaml  (used for manual bootstrap)
+#   bootstrap/cilium-values.yaml  (used for manual bootstrap)
 #
 # To upgrade Cilium:
 #   1. Bump version in Chart.yaml dependencies + Chart.lock
-#   2. Run: helm dependency update clusters/homelab/cilium-chart
+#   2. Run: helm dependency update kubernetes/platform/networking/cilium/chart
 #   3. Commit Chart.lock (and the updated .tgz in charts/ if vendored)
 #   4. Manually sync the "cilium" ArgoCD Application
 
