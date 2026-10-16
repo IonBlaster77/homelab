@@ -224,6 +224,7 @@ config:
             siteMonitor: http://home-assistant.home-assistant.svc.cluster.local:8123
             namespace: home-assistant
             app: home-assistant
+            podSelector: app=home-assistant
         - Music Assistant:
             id: music-assistant-card
             href: https://music.jupitertech.net
@@ -235,6 +236,7 @@ config:
             siteMonitor: http://music-assistant.music-assistant.svc.cluster.local:8095
             namespace: music-assistant
             app: music-assistant
+            podSelector: app=music-assistant
 
     - Media Management:
         - Radarr:
