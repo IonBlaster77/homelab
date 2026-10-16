@@ -15,7 +15,7 @@ for Authentik, Grafana and Kea): browse tables, run queries, check activity.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application with two sources: the chart, and this folder |
+| `app.yaml` | Argo CD Application with two sources: the chart, and this folder. Server-Side Apply |
 | `values.yaml` | Chart values: use the existing login secret, 2Gi volume, ClusterIP service, resources |
 | `kustomization.yaml` | Lists this folder's own manifests |
 | `namespace.yaml` | The `pgadmin` namespace |
