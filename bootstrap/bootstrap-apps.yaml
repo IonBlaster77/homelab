@@ -8,25 +8,22 @@ spec:
   source:
     repoURL: https://github.com/IonBlaster77/homelab.git
     targetRevision: HEAD
-    # During the restructure the root app finds Applications in BOTH places:
-    # the old gitops/argocd-apps/*.yaml and the new per-app
-    # kubernetes/**/app.yaml. An app moves by deleting its old file and adding
-    # its app.yaml (same Application name) in one commit, so Argo CD sees the
-    # same object and never deletes or recreates it. Tested 2026-10-13 with a
-    # throwaway Application: matched all 46 apps + the AppProject + a test
-    # app.yaml, and ignored a decoy file not named app.yaml.
+    # The root app: every app folder's app.yaml becomes a child Application,
+    # so adding an app is adding a folder. (Until October 2026 it also read
+    # gitops/argocd-apps/*.yaml, the old layout.)
     path: .
     directory:
       recurse: true
-      include: '{gitops/argocd-apps/*.yaml,kubernetes/**/app.yaml}'
+      include: 'kubernetes/**/app.yaml'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
   syncPolicy:
     automated:
-      # prune is OFF during the repo restructure: Application files move
-      # from gitops/argocd-apps/ into each app folder's app.yaml, and a
-      # path/include mistake must never let this root app delete child
-      # Applications. Re-enable once the restructure is complete.
-      prune: false
+      # Deleting an app folder removes its Application. No child Application
+      # has the resources-finalizer, so that does NOT cascade to the app's
+      # workloads; decommissioning an app is a deliberate separate step
+      # (see docs/runbooks). prune was off during the October 2026
+      # restructure and re-enabled after it.
+      prune: true
       selfHeal: true

@@ -45,8 +45,15 @@ nothing is missing:
 - **The chart ships Longhorn's CRDs** (volumes, backups, settings…) and the
   app has `prune: true`. Losing those CRDs would remove every volume and
   backup record. Check the rendered CRD list on any chart upgrade.
-- **`deleting-confirmation-flag` stays `false`.** Longhorn refuses to uninstall
-  while it is, which guards against an accidental chart deletion.
+- **Deleting this Application runs Longhorn's uninstaller first.** The chart's
+  `pre-delete` hook (`longhorn-uninstall`) becomes an Argo CD PreDelete hook,
+  so the Application carries `pre-delete-finalizer.argocd.argoproj.io`: if the
+  Application is ever deleted, or pruned by the root app because this folder
+  disappeared, Argo CD runs the uninstall Job before removing it.
+- **`deleting-confirmation-flag` must stay `false`.** While it is, that
+  uninstall Job refuses to remove Longhorn. It is the only thing standing
+  between an accidental Application deletion and every volume in the
+  cluster. Never set it to `true` unless you really mean to uninstall.
 - **Backup crons are UTC.** The daily job's comment explains why 02:00
   Adelaide is `30 16 * * *`, and why it must never share a minute with the
   hourly job (a per-volume lock makes the second one fail).
