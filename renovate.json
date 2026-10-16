@@ -6,24 +6,39 @@
   "ignorePaths": [
     "**/node_modules/**",
     "talos/**",
-    "bootstrap/**"
+    "bootstrap/**",
+    "kubernetes/**/chart/charts/**"
   ],
   "prConcurrentLimit": 15,
   "kubernetes": {
-    "managerFilePatterns": ["/clusters/homelab/.+\\.ya?ml$/"]
+    "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
   },
   "helm-values": {
-    "managerFilePatterns": ["/gitops/.+values\\.ya?ml$/"]
+    "managerFilePatterns": ["/^kubernetes/.+/values\\.ya?ml$/"]
+  },
+  "argocd": {
+    "managerFilePatterns": ["/^kubernetes/.+/app\\.yaml$/"]
   },
   "packageRules": [
     {
-      "matchManagers": ["kubernetes", "helm-values"],
+      "matchManagers": ["kubernetes", "helm-values", "argocd"],
       "commitMessageTopic": "{{depName}}"
     },
     {
       "matchManagers": ["kubernetes"],
       "matchPackageNames": ["ollama/ollama"],
       "enabled": false
+    },
+    {
+      "description": "cilium and argocd are manual-sync: merging does nothing until someone syncs them, and a full sync is the risky part.",
+      "matchFileNames": [
+        "kubernetes/platform/networking/cilium/**",
+        "kubernetes/platform/system/argocd/**"
+      ],
+      "addLabels": ["manual-sync"],
+      "prBodyNotes": [
+        "This app is manual-sync. After merging, review `argocd app diff` and sync deliberately; never full-sync cilium or argocd without checking the diff."
+      ]
     }
   ],
   "labels": ["renovate"],
