@@ -16,7 +16,7 @@ bridge (`mcp-searxng`), turns it into a `web_search` tool for the Hermes agent.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | Namespace with Pod Security `restricted` |
 | `serviceaccount.yaml`, `role.yaml`, `rolebinding.yaml` | A token-less ServiceAccount bound to an empty Role: the pods get no API access |
