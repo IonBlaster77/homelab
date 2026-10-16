@@ -1,0 +1,8 @@
+# Store text with Unix line endings regardless of the editor's OS (files are
+# edited from both Windows and WSL). Binary chart tarballs are left alone.
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.md   text eol=lf
+*.sh   text eol=lf
+*.json text eol=lf
+*.tgz  binary
