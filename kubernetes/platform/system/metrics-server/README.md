@@ -18,7 +18,7 @@ independent.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application: the upstream chart plus this repo as `$values` |
+| `app.yaml` | Argo CD Application: the upstream chart plus this repo as `$values`. Server-Side Apply |
 | `values.yaml` | Our chart values |
 
 There are no manifests here: everything comes from the chart.
