@@ -297,7 +297,7 @@ kubectl apply -f bootstrap/argocd-appproject.yaml
 
 ### 8b. Apply bootstrap-apps
 
-This is the root Application that watches `gitops/argocd-apps/` and auto-syncs new
+This is the root Application that watches every `kubernetes/**/app.yaml` and auto-syncs new
 Application manifests as they are added to the repo:
 ```bash
 kubectl apply -f bootstrap/bootstrap-apps.yaml
@@ -562,7 +562,7 @@ To force re-apply outside of a normal sync (e.g. if rewrites were manually delet
 
 ```bash
 kubectl delete job adguard-dns-rewrites -n adguard --ignore-not-found
-kubectl apply -f clusters/homelab/adguard/dns-rewrites-job.yaml
+kubectl apply -f kubernetes/apps/network/adguard/job-dns-rewrites.yaml
 ```
 
 > **Note on NAT hairpinning:** The MikroTik already handles hairpin NAT, so internal
