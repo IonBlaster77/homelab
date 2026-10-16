@@ -4,8 +4,8 @@ kubeconfig
 kubeconfig*.yaml
 
 # Binaries and installers
-argocd
-argocd-linux-amd64
+/argocd
+/argocd-linux-amd64
 *.exe
 *.zst
 *.zip

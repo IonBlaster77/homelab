@@ -7,7 +7,3 @@ resources:
   - certificate.yaml
   - gateway.yaml
   - httproute-redirect.yaml
-  # Routes for apps that haven't moved into the new layout yet; each goes to
-  # its app (argocd) when that app moves.
-  - httproute-argocd.yaml
-  - referencegrant-argocd.yaml

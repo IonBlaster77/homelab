@@ -1,3 +1,7 @@
+# Argo CD managing itself: umbrella chart (argo-cd 9.5.2, vendored in
+# chart/charts/) plus this folder (the argocd.jupitertech.net route).
+# MANUAL sync: a failed self-sync can take down the whole CD system.
+# See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -8,14 +12,21 @@ metadata:
     argocd.argoproj.io/sync-wave: "-1"
 spec:
   project: homelab
-  source:
-    repoURL: https://github.com/IonBlaster77/homelab.git
-    targetRevision: HEAD
-    path: clusters/homelab/argocd-chart
-    helm:
-      # releaseName must match the existing Helm release so ArgoCD adopts it
-      # rather than creating a duplicate release alongside the bootstrapped one.
-      releaseName: argocd
+  sources:
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/system/argocd/chart
+      helm:
+        # releaseName must match the existing Helm release so ArgoCD adopts it
+        # rather than creating a duplicate release alongside the bootstrapped one.
+        releaseName: argocd
+    # This folder: the Argo CD route (and, later, the homelab AppProject) via
+    # kustomization.yaml.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/system/argocd
+      plugin:
+        name: sops-kustomize-v1.0
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

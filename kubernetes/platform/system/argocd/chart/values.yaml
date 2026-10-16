@@ -1,11 +1,11 @@
 # ArgoCD values — nested under "argo-cd:" because this is an umbrella chart.
 # The subchart name in Chart.yaml is "argo-cd", so Helm requires all values
 # to live under that key.  These must stay in sync with:
-#   clusters/homelab/bootstrap/argocd-values.yaml  (used for manual bootstrap)
+#   bootstrap/argocd-values.yaml  (used for manual bootstrap)
 #
 # To upgrade ArgoCD:
 #   1. Bump version in Chart.yaml dependencies
-#   2. Run: helm dependency update clusters/homelab/argocd-chart
+#   2. Run: helm dependency update kubernetes/platform/system/argocd/chart
 #   3. Commit Chart.lock and the new charts/argo-cd-X.Y.Z.tgz, delete the old .tgz
 #   4. Manually sync the "argocd" ArgoCD Application
 
