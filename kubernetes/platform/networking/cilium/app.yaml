@@ -39,6 +39,12 @@ kind: Application
 metadata:
   name: cilium
   namespace: argocd
+  annotations:
+    # Compare the way it applies (Server-Side Apply): without this, fields the
+    # API server defaults (BGP peerPort, HTTPRoute weight, ...) show up as
+    # phantom OutOfSync. Tested 2026-10-16: server-side diff of the whole app
+    # was clean apart from one stale annotation, cleared in the same change.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: homelab
   sources:

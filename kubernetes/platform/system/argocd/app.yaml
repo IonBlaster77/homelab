@@ -10,6 +10,9 @@ metadata:
   annotations:
     # Prevent ArgoCD from deleting itself if this Application is accidentally removed.
     argocd.argoproj.io/sync-wave: "-1"
+    # Compare the way it applies (Server-Side Apply): without this, fields the
+    # API server defaults show up as phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
 spec:
   project: homelab
   sources:

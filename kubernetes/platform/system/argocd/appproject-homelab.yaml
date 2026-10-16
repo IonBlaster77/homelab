@@ -6,9 +6,6 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  annotations:
-    # Temporary: route handoff in progress (zero-gap move between apps).
-    argocd.argoproj.io/sync-options: Prune=false
   name: homelab
   namespace: argocd
 spec:
