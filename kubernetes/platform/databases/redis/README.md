@@ -17,7 +17,7 @@ for future apps and as something to learn from.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | Namespace with Pod Security `restricted` |
 | `secret.sops.yaml` | `redis-credentials`: the password (SOPS/age encrypted) |
