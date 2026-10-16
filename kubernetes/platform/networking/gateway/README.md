@@ -22,7 +22,7 @@ Cloudflare tunnel ────────────┘
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | The `networking` namespace |
 | `gateway.yaml` | `homelab-gateway`: HTTP (80) and HTTPS (443) listeners; `allowedRoutes: All` namespaces, though by convention every route lives in `networking` |
