@@ -34,7 +34,7 @@ backups. Every component also mounts the shared library.
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | The shared files plus every component folder |
 | `namespace.yaml` | The `media` namespace, PSA `privileged` (for Gluetun; see Gotchas) |
 | `pv-media-nfs.yaml`, `pvc-media-nfs.yaml` | The library: NAS `10.77.20.20:/volume1/Media` over NFSv4, `ReadWriteMany`, reclaim `Retain` |
