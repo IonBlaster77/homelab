@@ -21,7 +21,7 @@ browser → Cloudflare (Access login) → tunnel → cloudflared → Cilium Gate
 
 | File | What it is |
 |---|---|
-| `app.yaml` | Argo CD Application for this folder |
+| `app.yaml` | Argo CD Application for this folder. Server-Side Apply |
 | `kustomization.yaml` | Lists the manifests below |
 | `namespace.yaml` | The `cloudflared` namespace |
 | `serviceaccount.yaml` | Token-less ServiceAccount |
