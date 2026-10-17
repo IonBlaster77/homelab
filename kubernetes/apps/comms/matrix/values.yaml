@@ -10,6 +10,11 @@ serverName: matrix.jupitertech.net
 # controller (Cilium's is off). If one is ever enabled they would go live.
 ingress:
   tlsEnabled: false
+  annotations:
+    # Argo CD only calls an Ingress Healthy once a controller gives it an
+    # address; with no controller these would sit "Progressing" forever and
+    # hold every sync open. They are unused, so skip their health check.
+    argocd.argoproj.io/ignore-healthcheck: "true"
 
 # Not used: voice/video calls (needs UDP + TURN), the extra admin UI (one less
 # public surface), and the bundled Postgres (we use CloudNativePG instead).
