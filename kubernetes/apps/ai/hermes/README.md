@@ -45,10 +45,22 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
 
 - **#hermes** (in the Homelab space): answers every message; also its home
   room for scheduled output.
-- **#alerts-critical / #alerts-warning:** answers only when @mentioned,
-  e.g. reply to an alert with "@hermes why did this fire?".
-- **Only `@kmoorthy` can trigger it.** Alerts posted by `@alertbot` do not
-  start agent turns, and the daily digest (an `m.notice`) is ignored.
+- **#alerts-critical:** every alert from `@alertbot` gets an automatic
+  investigation, posted in that alert's thread (Summary / Investigation /
+  Findings / Likely cause / Follow-ups), per the **alert-triage** skill
+  (`configmap-skill-alert-triage.yaml`, mounted into the skills tree).
+  Read-only: it diagnoses and plans, never changes anything.
+- **#alerts-warning:** answers only when @mentioned. Warnings and the log
+  digest get a **daily review** instead (Hermes cron jobs, below).
+- **Who can trigger it:** `@kmoorthy`, and `@alertbot` (critical alerts).
+  Invites are only accepted from those two. The digest (an `m.notice`) is
+  ignored. `MATRIX_APPROVAL_REQUIRE_SENDER=false` lets the owner answer
+  approval prompts raised during alert-triggered turns.
+- **Daily review cron jobs** live in Hermes' own state (`~/.hermes/cron`,
+  on the PVC), not in git: `daily-warning-review` (→ #alerts-warning) and
+  `daily-log-digest-review` (→ #log-digest), 22:00 UTC (08:30 Adelaide in
+  summer, 07:30 in winter; after the 07:00 digest). `hermes cron list` shows
+  them.
 - Rooms are unencrypted (`MATRIX_E2EE_MODE=off`). Element X makes **direct
   messages encrypted by default**, so DMs to `@hermes` won't be readable:
   use the #hermes room.

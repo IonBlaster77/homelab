@@ -12,6 +12,7 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - configmap-mcp-servers.yaml
+  - configmap-skill-alert-triage.yaml
   - deployment.yaml
   - service-webui.yaml
   - service-ssh.yaml
