@@ -25,3 +25,21 @@ data:
       room-mapping:
         alerts-critical: "!IHSCVidCmFd2py1dGRxtgeUYgjkKuKI2XUxLb8JFd3E"
         alerts-warning: "!0lyEnSgrdxRHsROoG4CWcRCnb_ZAKqSloxs2_lghhww"
+    # A firing template is REQUIRED (the receiver refuses to start without
+    # one). This is the project's default plus the namespace. No separate
+    # resolved-template: the default one shows only .Labels.name, which most
+    # alerts lack, so resolved alerts reuse this template (in green).
+    templating:
+      firing-template: |
+        {{ $color := "yellow" }}
+        {{ if eq .Alert.Labels.severity "warning" }}{{ $color = "orange" }}{{ else if eq .Alert.Labels.severity "critical" }}{{ $color = "red" }}{{ end }}
+        {{ if eq .Alert.Status "resolved" }}{{ $color = "green" }}{{ end }}
+        <p>
+          <strong><font color="{{ $color }}">{{ .Alert.Status | ToUpper }}</font></strong>
+          {{ if .Alert.Labels.alertname }}{{ .Alert.Labels.alertname }}{{ end }}
+          {{ if .Alert.Labels.namespace }}({{ .Alert.Labels.namespace }}){{ end }}
+          &gt;&gt;
+          {{ if .Alert.Labels.severity }}{{ .Alert.Labels.severity | ToUpper }}: {{ end }}
+          {{ if .Alert.Annotations.description }}{{ .Alert.Annotations.description }}{{ else if .Alert.Annotations.summary }}{{ .Alert.Annotations.summary }}{{ end }}
+          {{ if .Alert.Annotations.runbook_url }}&gt;&gt; <a href="{{ .Alert.Annotations.runbook_url }}">Runbook</a>{{ end }}
+        </p>
