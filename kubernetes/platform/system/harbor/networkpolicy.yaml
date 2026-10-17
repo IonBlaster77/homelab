@@ -1,0 +1,187 @@
+---
+# Default deny all ingress and egress for every pod in the harbor namespace.
+# (One empty rule = deny-all; an empty list is rejected by Cilium. See
+# kubernetes/apps/ai/crawl4ai/networkpolicy.yaml.)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-default-deny
+  namespace: harbor
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# Harbor's components (nginx, core, portal, jobservice, registry, trivy,
+# exporter) and its database talk to each other freely.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-intra-namespace
+  namespace: harbor
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-dns
+  namespace: harbor
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The Gateway (browsers, docker clients, Talos nodes pulling through the
+# mirror) reaches only Harbor's nginx front end. Container port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-gateway-ingress
+  namespace: harbor
+spec:
+  endpointSelector:
+    matchLabels:
+      app: harbor
+      component: nginx
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Reply traffic to cross-node Envoy (Gateway) connections, as in the other
+# apps, EXCEPT the Kubernetes API VIP. Also how core reaches Authentik
+# (auth.jupitertech.net resolves to the Gateway VIP) for OIDC sign-in.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-node-egress
+  namespace: harbor
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: component
+        operator: In
+        values: [nginx, core]
+  egress:
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
+---
+# Fetching from the public registries Harbor proxies (Docker Hub, ghcr,
+# quay, registry.k8s.io, ...) and the Trivy vulnerability database. Public
+# addresses only, HTTPS/HTTP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-internet
+  namespace: harbor
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: component
+        operator: In
+        values: [core, jobservice, registry, trivy]
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# The HA Redis (kubernetes/platform/databases/redis): Sentinel (26379) to find
+# the primary, then Redis (6379). The redis namespace admits this in
+# redis-allow-ingress-from-harbor.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-redis
+  namespace: harbor
+spec:
+  endpointSelector:
+    matchLabels:
+      app: harbor
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: redis
+            app: redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "26379"
+              protocol: TCP
+---
+# Database pods: the CloudNativePG operator manages them, and they talk to
+# the Kubernetes API (instance manager).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-db-allow-apiserver-and-operator
+  namespace: harbor
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: harbor-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+---
+# Prometheus scrapes Harbor's metrics endpoints (ServiceMonitor, port 8001).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: harbor-allow-prometheus
+  namespace: harbor
+spec:
+  endpointSelector:
+    matchLabels:
+      app: harbor
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "8001"
+              protocol: TCP

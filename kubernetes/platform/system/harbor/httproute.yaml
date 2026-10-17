@@ -1,0 +1,25 @@
+# registry.jupitertech.net: Harbor (web UI and the Docker registry API) via
+# Harbor's own nginx on the "harbor" Service. LAN-ONLY: AdGuard resolves it
+# to the Gateway; there is no Cloudflare DNS record, so it is not reachable
+# from the internet. Talos nodes pull through it as their registry mirror.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - registry.jupitertech.net
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: harbor
+          namespace: harbor
+          port: 80

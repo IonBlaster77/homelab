@@ -25,6 +25,7 @@ schedule, and serves the Kubernetes snapshot API.
 | `recurringjob.yaml` | `hourly-backup` and `daily-backup`, both for the `default` group |
 | `storageclass-ssd.yaml` | `longhorn-ssd`, the **cluster default** class (SSD pool) |
 | `storageclass-nvme.yaml` | `longhorn-nvme`, opt-in fast class (NVMe pool) for databases |
+| `storageclass-nvme-single.yaml` | `longhorn-nvme-single`: NVMe pool, **one replica**, for big re-creatable data (Harbor's image store). No failover if its node is down |
 | `volumesnapshotclass.yaml` | `longhorn-backup-vsc`: CSI snapshots that become NAS backups (`type: bak`) |
 | `*-volume-labeler.yaml`, `job-enable-recurring-jobs.yaml` | PostSync hook that labels **every** volume into the `default` backup group |
 | `httproute.yaml`, `referencegrant.yaml` | `longhorn.jupitertech.net` → the UI (route lives in the `networking` namespace) |

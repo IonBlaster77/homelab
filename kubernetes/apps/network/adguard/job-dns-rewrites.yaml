@@ -93,6 +93,8 @@ spec:
               add_rewrite "matrix.jupitertech.net"   "10.77.20.60"
               add_rewrite "account.jupitertech.net"  "10.77.20.60"
               add_rewrite "chat.jupitertech.net"     "10.77.20.60"
+              # Harbor (kubernetes/platform/system/harbor): LAN-only registry and pull-through cache.
+              add_rewrite "registry.jupitertech.net" "10.77.20.60"
               # Whole-home audio hub (ZONED-AUDIO.md). Both go via the Gateway
               # like everything else. Note Home Assistant ALSO has a direct LAN
               # address on 10.77.20.65 for device callbacks that should not

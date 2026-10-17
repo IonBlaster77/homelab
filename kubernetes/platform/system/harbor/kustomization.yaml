@@ -1,0 +1,24 @@
+# Renders the Harbor chart (helmCharts, needs the plugin's --enable-helm) plus
+# this folder's own manifests. app.yaml is deliberately NOT listed: it is
+# picked up by the root app. *.sops.yaml files (including the secret values
+# file) are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: harbor
+    repo: https://helm.goharbor.io
+    version: 1.19.4
+    releaseName: harbor
+    namespace: harbor
+    valuesFile: values.yaml
+    additionalValuesFiles:
+      - values-secret.sops.yaml
+resources:
+  - namespace.yaml
+  - secret-harbor.sops.yaml
+  - secret-harbor-token.sops.yaml
+  - cluster-harbor-db.yaml
+  - httproute.yaml
+  - referencegrant.yaml
+  - servicemonitor.yaml
+  - networkpolicy.yaml

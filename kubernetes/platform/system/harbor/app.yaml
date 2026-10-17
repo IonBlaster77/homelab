@@ -1,0 +1,33 @@
+# Harbor: the homelab's container registry. Pull-through cache for the public
+# registries the cluster pulls from (Talos nodes use it as their mirror) and a
+# private registry for images built in-cluster. LAN-only. See README.md.
+#
+# Single source: the chart is rendered by Kustomize (helmCharts in
+# kustomization.yaml) inside the sops-kustomize plugin, so its secret values
+# can live in an encrypted values-secret.sops.yaml.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: harbor
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/IonBlaster77/homelab.git
+    targetRevision: HEAD
+    path: kubernetes/platform/system/harbor
+    plugin:
+      name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: harbor
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - CreateNamespace=true

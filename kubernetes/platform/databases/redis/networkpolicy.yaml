@@ -67,6 +67,29 @@ spec:
             - port: "26379"
               protocol: TCP
 ---
+# Harbor (kubernetes/platform/system/harbor): asks Sentinel for the primary
+# (26379), then talks to it (6379).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-allow-ingress-from-harbor
+  namespace: redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app: redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: harbor
+            app: harbor
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "26379"
+              protocol: TCP
+---
 # Prometheus scraping the redis_exporter sidecar.
 #
 # No client app is admitted on 6379 right now. README.md ("Adding a client")

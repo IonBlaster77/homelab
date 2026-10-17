@@ -11,6 +11,7 @@ resources:
   # Storage classes for the two disk pools, and the snapshot class
   - storageclass-ssd.yaml
   - storageclass-nvme.yaml
+  - storageclass-nvme-single.yaml
   - volumesnapshotclass.yaml
   # PostSync hook: enrolls every volume in the "default" backup group
   - serviceaccount-volume-labeler.yaml
