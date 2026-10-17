@@ -4,10 +4,10 @@ metadata:
   name: log-digest
   namespace: monitoring
 spec:
-  # Suspended 2026-10-14: the digest was posted to a Buzz channel, and Buzz
-  # was decommissioned. Point log-digest-webhook-secret at the new
-  # notification channel, then remove this line.
-  suspend: true
+  # Daily error-count summary per namespace (from Loki), posted to the Matrix
+  # room #log-digest as @alertbot over the in-cluster network (Synapse's
+  # HAProxy in the matrix namespace; a matrix CiliumNetworkPolicy allows
+  # exactly this pod label). Replaced the Buzz channel on 2026-10-17.
   schedule: "0 7 * * *"
   timeZone: "Australia/Adelaide"
   concurrencyPolicy: Forbid
@@ -15,8 +15,12 @@ spec:
     spec:
       backoffLimit: 2
       template:
+        metadata:
+          labels:
+            app: log-digest
         spec:
           restartPolicy: OnFailure
+          automountServiceAccountToken: false
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -30,11 +34,16 @@ spec:
                 capabilities:
                   drop: ["ALL"]
               env:
-                - name: WEBHOOK_URL
+                - name: MATRIX_TOKEN
                   valueFrom:
                     secretKeyRef:
-                      name: log-digest-webhook-secret
-                      key: webhook-url
+                      name: log-digest-matrix
+                      key: token
+                - name: MATRIX_ROOM
+                  valueFrom:
+                    secretKeyRef:
+                      name: log-digest-matrix
+                      key: room-id
               command: ["/bin/sh", "-c"]
               args:
                 - |
@@ -57,6 +66,9 @@ spec:
 
                   DIGEST_ESCAPED=$(printf '%s' "$DIGEST" | sed ':a;N;$!ba;s/\\/\\\\/g;s/"/\\"/g;s/\n/\\n/g')
 
-                  curl -sf -X POST -H "Content-Type: application/json" \
-                    -d "{\"digest\":\"$DIGEST_ESCAPED\"}" \
-                    "$WEBHOOK_URL"
+                  # m.notice: shown like a bot message and never triggers other bots.
+                  curl -sf -X PUT \
+                    -H "Authorization: Bearer $MATRIX_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"msgtype\":\"m.notice\",\"body\":\"$DIGEST_ESCAPED\"}" \
+                    "http://matrix-synapse.matrix.svc.cluster.local:8008/_matrix/client/v3/rooms/$MATRIX_ROOM/send/m.room.message/digest-$(date +%s)"

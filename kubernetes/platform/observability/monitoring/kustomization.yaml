@@ -36,7 +36,7 @@ resources:
   - servicemonitor-unifi-poller.yaml
   # Daily log digest (suspended until an alert channel exists)
   - secret-alertmanager-matrix.sops.yaml
-  - secret-log-digest-webhook.sops.yaml
+  - secret-log-digest-matrix.sops.yaml
   - cronjob-log-digest.yaml
   - httproute-grafana.yaml
   - referencegrant-grafana.yaml

@@ -233,3 +233,24 @@ spec:
         - ports:
             - port: "12345"
               protocol: TCP
+---
+# The daily log-digest CronJob (monitoring namespace) posts to #log-digest
+# through Synapse's HAProxy. Only pods with that exact label.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-log-digest
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: haproxy
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app: log-digest
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP
