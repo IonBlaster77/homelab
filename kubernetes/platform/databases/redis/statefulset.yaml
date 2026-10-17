@@ -82,16 +82,27 @@ spec:
               SVC=redis.redis.svc.cluster.local
               ME="$(hostname).$SVC"
               ORD="${HOSTNAME##*-}"
-              MASTER=""
-              for i in 0 1 2; do
-                PEER="redis-$i.$SVC"
-                [ "$PEER" = "$ME" ] && continue
-                ANS=$(timeout 3 redis-cli -h "$PEER" -p 26379 sentinel get-master-addr-by-name mymaster 2>/dev/null | head -1 || true)
-                case "$ANS" in
-                  ""|*nil*|*ERR*|*Could*|*refused*) ;;
-                  *) MASTER="$ANS"; break ;;
-                esac
-              done
+              ask() {
+                for i in 0 1 2; do
+                  PEER="redis-$i.$SVC"
+                  [ "$PEER" = "$ME" ] && continue
+                  ANS=$(timeout 3 redis-cli -h "$PEER" -p 26379 sentinel get-master-addr-by-name mymaster 2>/dev/null | head -1 || true)
+                  case "$ANS" in
+                    ""|*nil*|*ERR*|*Could*|*refused*) ;;
+                    *) echo "$ANS"; return ;;
+                  esac
+                done
+              }
+              MASTER=$(ask)
+              # Sentinels naming THIS (just-starting) pod as primary usually
+              # means the old primary restarted faster than the failover
+              # (5s detection + election). Wait it out and ask again, so a
+              # restarting ex-primary doesn't come up as a second primary.
+              if [ "$MASTER" = "$ME" ]; then
+                echo "Sentinels still name this pod as primary; waiting 15s for any failover"
+                sleep 15
+                MASTER=$(ask)
+              fi
               if [ -z "$MASTER" ]; then
                 if [ "$ORD" = "0" ]; then MASTER="$ME"; else MASTER="redis-0.$SVC"; fi
                 echo "no Sentinel answered: primary is $MASTER (cold start rule)"
