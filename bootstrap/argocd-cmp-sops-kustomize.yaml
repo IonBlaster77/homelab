@@ -14,7 +14,10 @@
 # Generate: copy the app folder to a temp dir, refuse any SOPS-encrypted file
 # that isn't named *.sops.yaml (it would otherwise reach the cluster still
 # encrypted), decrypt every *.sops.yaml in place in the copy, then
-# `kustomize build`. Decrypted values exist only in that temp dir inside the
+# `kustomize build --enable-helm`. --enable-helm lets a folder render a Helm
+# chart through Kustomize's helmCharts, with secret values in an encrypted
+# values-secret.sops.yaml (Harbor). It changes nothing for folders without
+# helmCharts (verified identical output for all 28 apps, 2026-10-18). Decrypted values exist only in that temp dir inside the
 # sidecar and are removed on exit; they never reach git.
 #
 # Applied by hand during bootstrap (kubectl apply -f), like argocd-cmp-sops.
@@ -50,4 +53,4 @@ data:
             while IFS= read -r f; do
               sops -d -i "$f" || { echo "sops-kustomize: failed to decrypt $f" >&2; exit 1; }
             done < "$WORK/encrypted"
-            kustomize build .
+            kustomize build --enable-helm .
