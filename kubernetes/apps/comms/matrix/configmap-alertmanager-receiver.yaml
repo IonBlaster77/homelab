@@ -1,0 +1,27 @@
+# Config for matrix-alertmanager-receiver: the bridge that turns Alertmanager
+# webhooks into Matrix messages, posted as @alertbot. ${...} values are filled
+# from the matrix-alertbot Secret (env vars) at startup.
+# Room IDs are not secret. Rooms (in the "Homelab" space) were created by
+# ~/homelab/restructure-tools/matrix-rooms.sh; to re-point a room, change its ID.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: matrix-alertmanager-receiver
+  namespace: matrix
+data:
+  config.yaml: |
+    http:
+      port: 12345
+      alerts-path-prefix: /alerts
+      metrics-path: /metrics
+      metrics-enabled: true
+      basic-username: alertmanager
+      basic-password: ${WEBHOOK_PASSWORD}
+    matrix:
+      # In-cluster: HAProxy in front of Synapse. Never leaves the namespace.
+      homeserver-url: http://matrix-synapse.matrix.svc.cluster.local:8008
+      user-id: "@alertbot:matrix.jupitertech.net"
+      access-token: ${ACCESS_TOKEN}
+      room-mapping:
+        alerts-critical: "!IHSCVidCmFd2py1dGRxtgeUYgjkKuKI2XUxLb8JFd3E"
+        alerts-warning: "!0lyEnSgrdxRHsROoG4CWcRCnb_ZAKqSloxs2_lghhww"

@@ -203,3 +203,33 @@ spec:
               protocol: TCP
             - port: "8081"
               protocol: TCP
+---
+# The alert bridge accepts webhooks ONLY from Alertmanager (plus Prometheus
+# scraping its metrics). It reaches Synapse inside the namespace (allowed by
+# matrix-allow-intra-namespace) and nothing else.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-alertmanager-to-receiver
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager-receiver
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: alertmanager
+      toPorts:
+        - ports:
+            - port: "12345"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "12345"
+              protocol: TCP
