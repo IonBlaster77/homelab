@@ -1,0 +1,21 @@
+# Prometheus scrapes Harbor's metrics (core, exporter, jobservice, registry:
+# the Services with an "http-metrics" port, 8001). Defined here, not by the
+# chart: the chart's ServiceMonitor already carries "release: harbor", so
+# adding the "release: monitoring" label kube-prometheus-stack selects on
+# produced a duplicate YAML key that Kustomize rejects.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: harbor
+  namespace: harbor
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app.kubernetes.io/name
+  endpoints:
+    - port: http-metrics
+      honorLabels: true
+  selector:
+    matchLabels:
+      release: harbor
+      app: harbor

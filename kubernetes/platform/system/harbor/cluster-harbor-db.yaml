@@ -1,0 +1,18 @@
+# Harbor's database. No credentials secret is supplied, so CloudNativePG
+# generates one (harbor-db-app: username, password, uri) and Harbor reads the
+# password from it (database.external.existingSecret, key "password").
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: harbor-db
+  namespace: harbor
+spec:
+  instances: 2
+  storage:
+    # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: registry
+      owner: harbor

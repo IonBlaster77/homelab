@@ -1,0 +1,36 @@
+# StorageClass: longhorn-nvme-single
+#
+# NVMe disk pool, ONE replica. For large data that can be re-created or
+# re-downloaded, where 3 replicas would just triple the disk cost:
+#   - Harbor's image store (cached upstream images re-download on demand)
+#
+# Trade-off: if the node holding the replica is down, the volume is
+# unavailable until it returns (no failover). Pick this only where that is
+# acceptable. Volumes still get the nightly/hourly NAS backups like any other
+# Longhorn volume (the labeler adds every volume to the "default" group).
+#
+# NVMe rather than SSD: the SSD pool shares its disk with Talos' own /var
+# (container images, logs), so a big, growing volume there can squeeze the
+# node itself. The NVMe disks are dedicated to Longhorn.
+#
+# dataLocality best-effort keeps the replica on the node running the pod
+# when it can, so reads and writes stay local.
+#
+# Usage in a PVC:
+#   storageClassName: longhorn-nvme-single
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-nvme-single
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "1"
+  staleReplicaTimeout: "30"
+  diskSelector: "nvme"
+  dataLocality: "best-effort"
