@@ -8,5 +8,6 @@ resources:
   - secret.sops.yaml
   - statefulset.yaml
   - service.yaml
+  - poddisruptionbudget.yaml
   - servicemonitor.yaml
   - networkpolicy.yaml

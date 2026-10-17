@@ -1,0 +1,13 @@
+# Voluntary disruptions (node drains, upgrades) may take down at most ONE
+# Redis pod at a time, so the other two keep a primary + replica and the
+# Sentinels keep their 2-of-3 quorum.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis
+  namespace: redis
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: redis

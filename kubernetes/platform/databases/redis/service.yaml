@@ -1,6 +1,7 @@
-# Headless (clusterIP: None) since there's only one pod and StatefulSet DNS
-# (redis-0.redis.redis.svc.cluster.local) is enough — no load-balancing
-# needed across a single backend.
+# Headless: gives every pod its stable DNS name (redis-N.redis.redis.svc...),
+# which the pods use to find and announce each other. publishNotReadyAddresses
+# lets those names resolve before a pod is Ready, so a starting pod can be
+# reached during bootstrap.
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,12 +11,33 @@ metadata:
     app: redis
 spec:
   clusterIP: None
+  publishNotReadyAddresses: true
   selector:
     app: redis
   ports:
     - port: 6379
       targetPort: 6379
       name: redis
+    - port: 26379
+      targetPort: 26379
+      name: sentinel
     - port: 9121
       targetPort: 9121
       name: metrics
+---
+# What clients point at: any Sentinel answers "where is the primary of
+# mymaster?". Clients then connect to that primary directly on 6379.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-sentinel
+  namespace: redis
+  labels:
+    app: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 26379
+      targetPort: 26379
+      name: sentinel

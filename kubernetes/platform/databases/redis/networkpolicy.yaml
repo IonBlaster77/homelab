@@ -34,6 +34,39 @@ spec:
             - port: "53"
               protocol: TCP
 ---
+# The 3 Redis pods talk to each other: replicas stream from the primary
+# (6379), Sentinels watch every Redis (6379) and gossip/vote with each other
+# (26379), and the init container asks peers' Sentinels who the primary is.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-allow-intra-cluster
+  namespace: redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app: redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            app: redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "26379"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            app: redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "26379"
+              protocol: TCP
+---
 # Prometheus scraping the redis_exporter sidecar.
 #
 # No client app is admitted on 6379 right now. README.md ("Adding a client")
