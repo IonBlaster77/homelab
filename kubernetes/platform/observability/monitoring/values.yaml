@@ -18,7 +18,11 @@ prometheus-node-exporter:
 prometheus:
   prometheusSpec:
     retention: 60d
-    retentionSize: 45GB
+    # Size cap below the 50Gi volume, leaving room for the WAL: at 45GB the
+    # volume sat at ~88% and would trip KubePersistentVolumeFillingUp
+    # (warning below 15% free). 38GB keeps it near 78%; the oldest data is
+    # dropped first, so history is roughly 50 days instead of 60.
+    retentionSize: 38GB
     storageSpec:
       volumeClaimTemplate:
         spec:
