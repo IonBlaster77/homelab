@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matrix-alertmanager-receiver
+  namespace: matrix
+  labels:
+    app.kubernetes.io/name: alertmanager-receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager-receiver
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alertmanager-receiver
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: receiver
+          image: docker.io/metio/matrix-alertmanager-receiver:2026.9.23@sha256:e9ab88b729762f3c294152ef8440a5d2915fa1dd6af53a2483d1c0a083079a55
+          args:
+            - --config-path=/config/config.yaml
+          envFrom:
+            - secretRef:
+                name: matrix-alertbot
+          ports:
+            - name: http
+              containerPort: 12345
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 12345
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: 12345
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: matrix-alertmanager-receiver

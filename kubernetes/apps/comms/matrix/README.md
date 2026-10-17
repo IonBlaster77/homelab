@@ -35,6 +35,25 @@ Web.
 | `httproute-account.yaml` | `account.` → MAS |
 | `httproute-chat.yaml` | `chat.` → Element Web |
 | `referencegrant.yaml` | Lets the routes (in `networking`) reach this namespace's Services |
+| `secret-matrix-alertbot.sops.yaml` | `@alertbot`'s access token and the bridge's webhook password (SOPS/age) |
+| `configmap-alertmanager-receiver.yaml` | Alert bridge config: room mapping (`alerts-critical`, `alerts-warning`) |
+| `deployment-alertmanager-receiver.yaml`, `service-alertmanager-receiver.yaml` | The alert bridge ([matrix-alertmanager-receiver](https://github.com/metio/matrix-alertmanager-receiver)), posting as `@alertbot` |
+
+## Rooms
+
+All in the **Homelab** space (`#homelab:matrix.jupitertech.net`), created by
+`@alertbot` with you as co-creator (full power). Invite-only, unencrypted,
+never federated.
+
+| Room | Receives |
+|---|---|
+| `#alerts-critical` | Alertmanager `severity=critical`, batched every 5m, repeated hourly while firing |
+| `#alerts-warning` | Alertmanager `severity=warning`, batched every 15m, repeated every 4h |
+| `#log-digest` | Daily 07:00 error-count summary from Loki |
+
+Routing lives in `kubernetes/platform/observability/monitoring/values.yaml`
+(`alertmanager.config`). Rooms use room version 12: the creator must not be
+listed in power levels, so the owner is added via `additional_creators`.
 | `networkpolicy.yaml` | Default-deny plus explicit allows; see below |
 
 ## Security model

@@ -8,10 +8,14 @@ resources:
   - namespace.yaml
   - secret-matrix-db-mas.sops.yaml
   - secret-matrix-mas-upstream.sops.yaml
+  - secret-matrix-alertbot.sops.yaml
   - cluster-matrix-db.yaml
   - database-mas.yaml
   - httproute-matrix.yaml
   - httproute-account.yaml
   - httproute-chat.yaml
   - referencegrant.yaml
+  - configmap-alertmanager-receiver.yaml
+  - deployment-alertmanager-receiver.yaml
+  - service-alertmanager-receiver.yaml
   - networkpolicy.yaml

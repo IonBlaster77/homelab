@@ -121,23 +121,18 @@ alertmanager:
           resources:
             requests:
               storage: 2Gi
-    # pushover-credentials was never actually created (the Secret
-    # object didn't exist), which meant the pod sat at Init:0/1
-    # forever waiting on a volume mount for a Secret that would
-    # never appear — no alerts were ever delivered, on any severity,
-    # the whole time this app has been "Synced/Healthy". Pushover
-    # is on hold indefinitely; dropping the mount so the pod can
-    # actually start. Re-add the secrets/receivers/route below
-    # (see git history on this file) once real Pushover credentials
-    # are provided.
-    #
-    # NO NOTIFICATION CHANNEL since 2026-10-14: critical and warning
-    # alerts went to Buzz channels via webhooks until Buzz was
-    # decommissioned. Everything routes to "null" until a new
-    # off-cluster channel is chosen; alerts still fire and show in
-    # the Alertmanager and Grafana UIs. The old severity routing
-    # (critical batched per 5m / repeat 1h, warning per 15m /
-    # repeat 4h, grouped by severity) is in git history.
+    # Mounted at /etc/alertmanager/secrets/alertmanager-matrix/webhook-password:
+    # the basic-auth password for the Matrix alert bridge. Keep this list in
+    # step with real Secrets: a missing one leaves the pod stuck at Init
+    # (that is what happened with the old pushover-credentials).
+    secrets:
+      - alertmanager-matrix
+  # Alerts go to Matrix (kubernetes/apps/comms/matrix) through the in-cluster
+  # matrix-alertmanager-receiver bridge, never over the internet. Same routing
+  # as the old Buzz channels: one room per severity, and group_by severity so
+  # every firing alert of that severity is batched into one message per
+  # group_interval instead of one message per alert. Anything else (Watchdog,
+  # InfoInhibitor, severity=info/none) stays on "null".
   config:
     global: {}
     route:
@@ -146,5 +141,36 @@ alertmanager:
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 4h
+      routes:
+        - matchers:
+            - severity="critical"
+          receiver: matrix-critical
+          group_by: ["severity"]
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 1h
+        - matchers:
+            - severity="warning"
+          receiver: matrix-warning
+          group_by: ["severity"]
+          group_wait: 2m
+          group_interval: 15m
+          repeat_interval: 4h
     receivers:
       - name: "null"
+      - name: matrix-critical
+        webhook_configs:
+          - url: http://matrix-alertmanager-receiver.matrix.svc.cluster.local:12345/alerts/alerts-critical
+            send_resolved: true
+            http_config:
+              basic_auth:
+                username: alertmanager
+                password_file: /etc/alertmanager/secrets/alertmanager-matrix/webhook-password
+      - name: matrix-warning
+        webhook_configs:
+          - url: http://matrix-alertmanager-receiver.matrix.svc.cluster.local:12345/alerts/alerts-warning
+            send_resolved: true
+            http_config:
+              basic_auth:
+                username: alertmanager
+                password_file: /etc/alertmanager/secrets/alertmanager-matrix/webhook-password
