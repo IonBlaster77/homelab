@@ -17,7 +17,7 @@ spec:
       # v1.20.3: upgraded from v1.16.3 to fix the Cloudflare DNS-01 cleanup
       # bug (pre-1.17.1 built DELETE /zones//dns_records/<id> -> CF 7003, so
       # challenge TXT records were never cleaned up; cert-manager#7549).
-      targetRevision: v1.20.3
+      targetRevision: v1.21.2
       helm:
         valueFiles:
           - $values/kubernetes/platform/security/cert-manager/values.yaml
