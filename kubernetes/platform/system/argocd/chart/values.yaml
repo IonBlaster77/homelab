@@ -54,6 +54,15 @@ argo-cd:
       resource.customizations.ignoreDifferences.apps_StatefulSet: |
         jsonPointers:
           - /status/terminatingReplicas
+      # This cluster routes with Gateway API and has NO Ingress controller, so
+      # Ingresses a chart renders anyway (e.g. Element's ESS chart for Matrix)
+      # never get a load-balancer address. Argo CD's built-in check would keep
+      # them "Progressing" forever and hold every sync of that app open.
+      resource.customizations.health.networking.k8s.io_Ingress: |
+        hs = {}
+        hs.status = "Healthy"
+        hs.message = "Unused: no Ingress controller in this cluster (Gateway API is used)"
+        return hs
       # Custom Lua health checks for CRDs ArgoCD doesn't understand natively.
       resource.customizations.health.monitoring.coreos.com_Prometheus: |
         hs = {}
