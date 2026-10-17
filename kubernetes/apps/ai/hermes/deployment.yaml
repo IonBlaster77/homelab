@@ -306,7 +306,7 @@ spec:
               cpu: "500m"
 
         - name: hermes-webui
-          image: ghcr.io/nesquena/hermes-webui:0.52.512@sha256:8e7f8a0cc292ccec77f78ed62f723f6f29c013faa76f9f51214848bf01314b53
+          image: ghcr.io/nesquena/hermes-webui:0.52.515@sha256:4d4a2fbe5c68dfeccc9f56284d9ab654041fde4f9b138104262a7ac86b67a37b
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
