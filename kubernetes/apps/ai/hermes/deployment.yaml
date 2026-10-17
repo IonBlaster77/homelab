@@ -163,7 +163,7 @@ spec:
             - -c
             - |
               set -e
-              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN MATRIX_HOMESERVER MATRIX_USER_ID MATRIX_ACCESS_TOKEN MATRIX_ALLOWED_USERS MATRIX_ALLOWED_ROOMS MATRIX_FREE_RESPONSE_ROOMS MATRIX_HOME_ROOM MATRIX_REQUIRE_MENTION MATRIX_PROCESS_NOTICES MATRIX_E2EE_MODE"
+              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN MATRIX_HOMESERVER MATRIX_USER_ID MATRIX_ACCESS_TOKEN MATRIX_ALLOWED_USERS MATRIX_ALLOWED_ROOMS MATRIX_FREE_RESPONSE_ROOMS MATRIX_HOME_ROOM MATRIX_REQUIRE_MENTION MATRIX_PROCESS_NOTICES MATRIX_E2EE_MODE MATRIX_APPROVAL_REQUIRE_SENDER"
               F=/home/hermes/.hermes/.env
               touch "$F"
               TMP=$(mktemp /home/hermes/.hermes/.env.sync.XXXXXX)
@@ -225,6 +225,9 @@ spec:
                 path: research-worker-key
         - name: research-worker-key-staged
           emptyDir: {}
+        - name: skill-alert-triage
+          configMap:
+            name: hermes-skill-alert-triage
 
       containers:
         - name: hermes-agent
@@ -287,6 +290,12 @@ spec:
             - name: research-worker-key-staged
               mountPath: /home/hermes/.ssh/research-worker-key
               subPath: research-worker-key
+              readOnly: true
+            # Repo-managed skill (configmap-skill-alert-triage.yaml), placed
+            # inside the PVC-backed skills tree. Restart the pod to update.
+            - name: skill-alert-triage
+              mountPath: /home/hermes/.hermes/skills/devops/alert-triage/SKILL.md
+              subPath: SKILL.md
               readOnly: true
           resources:
             requests:
