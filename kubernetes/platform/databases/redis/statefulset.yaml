@@ -1,23 +1,27 @@
-# Redis, shared infra (multiple apps can use it, isolated by DB number).
+# Redis, highly available: 3 pods, each running Redis + Sentinel.
 #
-# Why a StatefulSet instead of a Deployment: Redis is a single stateful
-# process that owns a data file on disk. A Deployment's pods are
-# interchangeable and can be recreated with a fresh name/IP at any time —
-# fine for stateless apps, wrong here because Redis needs the *same* PVC
-# reattached to the *same* pod identity across restarts (StatefulSets give
-# each pod a stable name — "redis-0" — and a matching PVC that follows it).
-# We're only running one replica, but the same primitive is what you'd
-# scale out with real Redis Cluster/replica sets later.
+# How it fits together (see README.md for the walkthrough):
+#   - ONE pod is the primary (takes writes); the other two are replicas that
+#     copy everything it writes, live.
+#   - Sentinel is Redis' built-in watchdog. All 3 Sentinels watch the primary;
+#     if it stops answering for 5s and at least 2 Sentinels agree (quorum),
+#     they promote a replica and repoint the others at it.
+#   - Clients ask any Sentinel "who is the primary of mymaster?" (service
+#     redis-sentinel:26379) and connect there, so they follow failovers.
 #
-# Persistence: --appendonly yes turns on AOF (Append-Only File) — Redis logs
-# every write to disk as it happens, so a pod restart replays the log and
-# you don't lose data that was only in memory. The alternative (RDB
-# snapshots) is faster but can lose the last few minutes of writes; AOF is
-# the safer default for anything you'd be annoyed to lose.
+# Why a StatefulSet: each pod keeps a stable name (redis-0/1/2), a stable DNS
+# name (redis-N.redis.redis.svc.cluster.local) and its own PVC across restarts.
+# Everything announces those DNS names instead of pod IPs, so a pod coming
+# back with a new IP is still recognised (resolve/announce-hostnames).
 #
-# Auth: --requirepass reads from the mounted secret via a shell wrapper,
-# since Redis' command-line flags can't reference a Secret directly the way
-# an env var can — the container command has to read the file itself first.
+# One pod per node, enforced: the podAntiAffinity below is REQUIRED, so the
+# scheduler refuses to place two Redis pods on the same node (4 nodes, 3 pods:
+# losing any one node loses at most one Redis). The PodDisruptionBudget stops
+# voluntary disruptions (drains, upgrades) taking down more than one at a time.
+#
+# Persistence: AOF (appendonly, fsync every second) on every pod, so a restart
+# replays its log. Replication is asynchronous: a failover can lose the last
+# moment of writes. Fine for caches/queues (Harbor), not a ledger.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -27,7 +31,10 @@ metadata:
     app: redis
 spec:
   serviceName: redis
-  replicas: 1
+  replicas: 3
+  # Start/stop one at a time, in order: redis-0 bootstraps first on a cold
+  # start, the others join it.
+  podManagementPolicy: OrderedReady
   selector:
     matchLabels:
       app: redis
@@ -43,13 +50,95 @@ spec:
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
-      containers:
-        - name: redis
-          image: redis:8-alpine
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: redis
+      initContainers:
+        # Works out this pod's role and writes redis.conf + sentinel.conf.
+        # 1. Ask the OTHER pods' Sentinels who the current primary is.
+        # 2. Nobody answers (cold start): redis-0 becomes primary, the rest
+        #    replicate redis-0.
+        # 3. Somebody answers: replicate that primary (or stay primary if
+        #    the answer is this pod).
+        # Configs go in an emptyDir (Sentinel rewrites its file at runtime
+        # and the password must not land on the PVC).
+        - name: config
+          image: redis:8.10.2-alpine
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
           command:
             - sh
             - -c
-            - 'exec redis-server --requirepass "$REDIS_PASSWORD" --appendonly yes --appendfsync everysec'
+            - |
+              set -eu
+              SVC=redis.redis.svc.cluster.local
+              ME="$(hostname).$SVC"
+              ORD="${HOSTNAME##*-}"
+              MASTER=""
+              for i in 0 1 2; do
+                PEER="redis-$i.$SVC"
+                [ "$PEER" = "$ME" ] && continue
+                ANS=$(timeout 3 redis-cli -h "$PEER" -p 26379 sentinel get-master-addr-by-name mymaster 2>/dev/null | head -1 || true)
+                case "$ANS" in
+                  ""|*nil*|*ERR*|*Could*|*refused*) ;;
+                  *) MASTER="$ANS"; break ;;
+                esac
+              done
+              if [ -z "$MASTER" ]; then
+                if [ "$ORD" = "0" ]; then MASTER="$ME"; else MASTER="redis-0.$SVC"; fi
+                echo "no Sentinel answered: primary is $MASTER (cold start rule)"
+              else
+                echo "Sentinels report primary: $MASTER"
+              fi
+              cat > /etc/redis/redis.conf <<EOF
+              port 6379
+              dir /data
+              appendonly yes
+              appendfsync everysec
+              requirepass $REDIS_PASSWORD
+              masterauth $REDIS_PASSWORD
+              replica-announce-ip $ME
+              replica-announce-port 6379
+              EOF
+              if [ "$MASTER" != "$ME" ]; then
+                echo "replicaof $MASTER 6379" >> /etc/redis/redis.conf
+                echo "role: replica of $MASTER"
+              else
+                echo "role: primary"
+              fi
+              cat > /etc/redis/sentinel.conf <<EOF
+              port 26379
+              dir /tmp
+              sentinel resolve-hostnames yes
+              sentinel announce-hostnames yes
+              sentinel announce-ip $ME
+              sentinel announce-port 26379
+              sentinel monitor mymaster $MASTER 6379 2
+              sentinel auth-pass mymaster $REDIS_PASSWORD
+              sentinel down-after-milliseconds mymaster 5000
+              sentinel failover-timeout mymaster 60000
+              sentinel parallel-syncs mymaster 1
+              EOF
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/redis
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+      containers:
+        - name: redis
+          image: redis:8.10.2-alpine
+          command: ["redis-server", "/etc/redis/redis.conf"]
           env:
             - name: REDIS_PASSWORD
               valueFrom:
@@ -62,6 +151,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: conf
+              mountPath: /etc/redis
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: false
@@ -73,8 +164,8 @@ spec:
               memory: 64Mi
             limits:
               memory: 256Mi
-          # redis-cli reads REDISCLI_AUTH from the environment automatically,
-          # so the probe doesn't need to embed the password in the command.
+          # redis-cli reads REDISCLI_AUTH from the environment, so the probe
+          # doesn't put the password on the command line.
           readinessProbe:
             exec:
               command: ["sh", "-c", "REDISCLI_AUTH=$REDIS_PASSWORD redis-cli ping"]
@@ -85,12 +176,37 @@ spec:
               command: ["sh", "-c", "REDISCLI_AUTH=$REDIS_PASSWORD redis-cli ping"]
             initialDelaySeconds: 15
             periodSeconds: 20
-        # Redis has no built-in Prometheus endpoint — redis_exporter connects
-        # to Redis over the same protocol redis-cli uses and translates INFO/
-        # stats output into /metrics for Prometheus to scrape. Runs as a
-        # sidecar (same pod, talks to Redis over localhost) rather than a
-        # separate Deployment, since it only ever needs to monitor this one
-        # instance.
+        - name: sentinel
+          image: redis:8.10.2-alpine
+          command: ["redis-sentinel", "/etc/redis/sentinel.conf"]
+          ports:
+            - containerPort: 26379
+              name: sentinel
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/redis
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "-p", "26379", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "-p", "26379", "ping"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+        # redis_exporter translates this pod's Redis INFO into /metrics.
         - name: redis-exporter
           image: oliver006/redis_exporter:v1.93.0-alpine
           env:
@@ -115,6 +231,11 @@ spec:
               memory: 32Mi
             limits:
               memory: 64Mi
+      volumes:
+        - name: conf
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
   volumeClaimTemplates:
     - metadata:
         name: data
