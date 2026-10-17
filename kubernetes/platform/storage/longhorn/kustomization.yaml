@@ -6,6 +6,7 @@ kind: Kustomization
 resources:
   # Where backups go, and when
   - setting-backup-target.yaml
+  - setting-orphans-and-balance.yaml
   - recurringjob.yaml
   # Storage classes for the two disk pools, and the snapshot class
   - storageclass-ssd.yaml
