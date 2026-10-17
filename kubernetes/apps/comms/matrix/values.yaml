@@ -21,6 +21,12 @@ postgres:
   enabled: false
 
 synapse:
+  # The config-check hook runs as an Argo CD PreSync hook and needs the
+  # database password secret, which CloudNativePG only creates once the
+  # Cluster (a normal Sync-phase resource) exists: under Argo it deadlocks.
+  # Synapse validates its config on startup anyway.
+  checkConfigHook:
+    enabled: false
   ingress:
     host: matrix.jupitertech.net
   postgres:
