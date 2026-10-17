@@ -230,6 +230,28 @@ spec:
             - port: "8000"
               protocol: TCP
 ---
+# Egress to the Matrix homeserver (Synapse's HAProxy, kubernetes/apps/comms/
+# matrix) for the Matrix gateway. The matrix namespace admits this in
+# matrix-allow-hermes.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-matrix-egress
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: matrix
+            app.kubernetes.io/name: haproxy
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP
+---
 # Egress to the research-worker terminal sandbox (its own pod/namespace —
 # see kubernetes/apps/ai/research-worker/), port 22 for terminal.backend: ssh.
 apiVersion: cilium.io/v2

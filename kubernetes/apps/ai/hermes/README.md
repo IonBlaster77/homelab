@@ -37,6 +37,24 @@ hosted LLM APIs and uses the rest of `kubernetes/apps/ai/` as its tools:
 | `httproute.yaml`, `referencegrant.yaml` | `hermes.jupitertech.net` → the web UI |
 | `networkpolicy.yaml` | Default-deny; internet for LLM APIs; one egress rule per tool; Gateway, Homepage and Trusted-VLAN SSH in |
 
+## Matrix
+
+Hermes is on Matrix as `@hermes:matrix.jupitertech.net` (gateway platform
+`matrix`, settings `MATRIX_*` in `configmap.yaml`, token `MATRIX_ACCESS_TOKEN`
+in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
+
+- **#hermes** (in the Homelab space): answers every message; also its home
+  room for scheduled output.
+- **#alerts-critical / #alerts-warning:** answers only when @mentioned,
+  e.g. reply to an alert with "@hermes why did this fire?".
+- **Only `@kmoorthy` can trigger it.** Alerts posted by `@alertbot` do not
+  start agent turns, and the daily digest (an `m.notice`) is ignored.
+- Rooms are unencrypted (`MATRIX_E2EE_MODE=off`). Element X makes **direct
+  messages encrypted by default**, so DMs to `@hermes` won't be readable:
+  use the #hermes room.
+- The token is a MAS compatibility token for device `hermes-gateway`
+  (`mas-cli manage issue-compatibility-token hermes hermes-gateway`).
+
 ## Gotchas
 
 - **`configmap-mcp-servers.yaml` is merged at startup, not live.** An init

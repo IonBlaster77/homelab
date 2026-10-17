@@ -17,3 +17,19 @@ data:
   WANTED_GID: "1000"
   HERMES_UID: "1000"
   HERMES_GID: "1000"
+  # Matrix gateway (kubernetes/apps/comms/matrix). Hermes posts as @hermes;
+  # its token is MATRIX_ACCESS_TOKEN in hermes-secret. In-cluster homeserver
+  # (Synapse's HAProxy), never via the internet. Room IDs (not secret):
+  #   !vKPF... = #hermes (answers everything; home room for cron output)
+  #   !IHSC... = #alerts-critical, !0lyE... = #alerts-warning (@mention only)
+  # Only the owner may trigger it; alerts from @alertbot do NOT trigger turns,
+  # and the daily digest (m.notice) is ignored.
+  MATRIX_HOMESERVER: "http://matrix-synapse.matrix.svc.cluster.local:8008"
+  MATRIX_USER_ID: "@hermes:matrix.jupitertech.net"
+  MATRIX_ALLOWED_USERS: "@kmoorthy:matrix.jupitertech.net"
+  MATRIX_ALLOWED_ROOMS: "!vKPFxUmlFcYb5FohmI_ye33dd_P_5DWhfJtUdVwehdA,!IHSCVidCmFd2py1dGRxtgeUYgjkKuKI2XUxLb8JFd3E,!0lyEnSgrdxRHsROoG4CWcRCnb_ZAKqSloxs2_lghhww"
+  MATRIX_FREE_RESPONSE_ROOMS: "!vKPFxUmlFcYb5FohmI_ye33dd_P_5DWhfJtUdVwehdA"
+  MATRIX_HOME_ROOM: "!vKPFxUmlFcYb5FohmI_ye33dd_P_5DWhfJtUdVwehdA"
+  MATRIX_REQUIRE_MENTION: "true"
+  MATRIX_PROCESS_NOTICES: "false"
+  MATRIX_E2EE_MODE: "off"

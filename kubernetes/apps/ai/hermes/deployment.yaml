@@ -124,7 +124,17 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
+          # The MATRIX_* settings (hermes-config) and token (hermes-secret)
+          # are synced into .env too, for the same secret-scope reason.
+          envFrom:
+            - configMapRef:
+                name: hermes-config
           env:
+            - name: MATRIX_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: MATRIX_ACCESS_TOKEN
             - name: TERMINAL_SSH_HOST
               value: research-worker.research-worker.svc.cluster.local
             - name: TERMINAL_SSH_USER
@@ -153,7 +163,7 @@ spec:
             - -c
             - |
               set -e
-              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN"
+              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN MATRIX_HOMESERVER MATRIX_USER_ID MATRIX_ACCESS_TOKEN MATRIX_ALLOWED_USERS MATRIX_ALLOWED_ROOMS MATRIX_FREE_RESPONSE_ROOMS MATRIX_HOME_ROOM MATRIX_REQUIRE_MENTION MATRIX_PROCESS_NOTICES MATRIX_E2EE_MODE"
               F=/home/hermes/.hermes/.env
               touch "$F"
               TMP=$(mktemp /home/hermes/.hermes/.env.sync.XXXXXX)
@@ -265,6 +275,12 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: INFRA_MCP_AUTH_TOKEN
+            # Matrix gateway bot token (@hermes); other MATRIX_* come from hermes-config.
+            - name: MATRIX_ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: MATRIX_ACCESS_TOKEN
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes

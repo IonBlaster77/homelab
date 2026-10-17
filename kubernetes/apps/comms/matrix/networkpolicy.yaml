@@ -234,6 +234,27 @@ spec:
             - port: "12345"
               protocol: TCP
 ---
+# Hermes (kubernetes/apps/ai/hermes) uses the client API as @hermes for its
+# Matrix gateway: Synapse's HAProxy only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-hermes
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: haproxy
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP
+---
 # The daily log-digest CronJob (monitoring namespace) posts to #log-digest
 # through Synapse's HAProxy. Only pods with that exact label.
 apiVersion: cilium.io/v2
