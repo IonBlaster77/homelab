@@ -1,0 +1,17 @@
+# Lists every manifest Argo CD applies from this folder (the chart's own
+# objects come from the Helm source in app.yaml). app.yaml is deliberately NOT
+# listed: it is picked up by the root app. *.sops.yaml files are decrypted by
+# the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - secret-matrix-db-mas.sops.yaml
+  - secret-matrix-mas-upstream.sops.yaml
+  - cluster-matrix-db.yaml
+  - database-mas.yaml
+  - httproute-matrix.yaml
+  - httproute-account.yaml
+  - httproute-chat.yaml
+  - referencegrant.yaml
+  - networkpolicy.yaml

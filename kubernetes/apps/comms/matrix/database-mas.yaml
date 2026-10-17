@@ -1,0 +1,11 @@
+# The Matrix Authentication Service database, in the same cluster as Synapse's.
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: matrix-db-mas
+  namespace: matrix
+spec:
+  cluster:
+    name: matrix-db
+  name: mas
+  owner: mas
