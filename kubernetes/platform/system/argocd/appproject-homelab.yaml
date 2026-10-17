@@ -32,3 +32,4 @@ spec:
     - https://grafana.github.io/helm-charts
     - https://jameswynn.github.io/helm-charts
     - https://prometheus-community.github.io/helm-charts
+    - ghcr.io/element-hq/ess-helm

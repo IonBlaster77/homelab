@@ -1,0 +1,24 @@
+# ArgoCD Repository Secret: Element Server Suite (Matrix) Helm chart, OCI
+#
+# The ESS Community chart (matrix-stack) is published only as an OCI artifact
+# on ghcr.io, and Argo CD needs a repository entry with enableOCI to pull Helm
+# charts from an OCI registry. Used by kubernetes/apps/comms/matrix.
+#
+# Apply during bootstrap AFTER ArgoCD is running:
+#   kubectl apply -f bootstrap/argocd-ess-helm-repo.yaml
+#
+# A plain (non-sensitive) Secret: the registry is public and needs no
+# credentials, so no SOPS encryption.
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-repo-ess-helm
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  type: helm
+  name: ess-helm
+  url: ghcr.io/element-hq/ess-helm
+  enableOCI: "true"
