@@ -15,7 +15,7 @@ spec:
   sources:
     - repoURL: https://argoproj.github.io/argo-helm
       chart: argo-workflows
-      targetRevision: 2.0.0
+      targetRevision: 2.0.13
       helm:
         valueFiles:
           - $values/kubernetes/platform/system/argo-workflows/values.yaml
