@@ -16,7 +16,7 @@ helmCharts:
 resources:
   - namespace.yaml
   - secret-harbor.sops.yaml
-  - secret-harbor-token.sops.yaml
+  - secret-harbor-signing.sops.yaml
   - cluster-harbor-db.yaml
   - httproute.yaml
   - referencegrant.yaml

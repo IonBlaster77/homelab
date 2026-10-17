@@ -29,7 +29,7 @@ The homelab's container registry. Two jobs:
 | `values.yaml` | Chart values: exposure, secrets wiring, storage, external DB and Redis, scanning, metrics |
 | `values-secret.sops.yaml` | Secret chart values (the Redis password), every value encrypted |
 | `secret-harbor.sops.yaml` | `harbor-secrets`: fixed internal secrets, registry credentials, initial admin password |
-| `secret-harbor-token.sops.yaml` | `harbor-token`: core's token-signing certificate and key |
+| `secret-harbor-signing.sops.yaml` | `harbor-token`: core's token-signing certificate and key |
 | `namespace.yaml` | Namespace with Pod Security `restricted` |
 | `cluster-harbor-db.yaml` | CloudNativePG cluster `harbor-db` (password generated into `harbor-db-app`) |
 | `httproute.yaml`, `referencegrant.yaml` | `registry.jupitertech.net` → Harbor's nginx |
@@ -69,6 +69,11 @@ port 8001.
 - **The image store has one replica.** If its node is down, pushes and cache
   pulls fail until it returns; Talos nodes fall back to the real registries,
   but private images built here are unavailable meanwhile.
+- **No "token" in file names.** The repo's `.gitignore` has a `*token*`
+  safety rule, which silently kept `secret-harbor-token.sops.yaml` out of git
+  (Argo then failed: file not found). Hence `secret-harbor-signing.sops.yaml`
+  for the `harbor-token` Secret. Check `git check-ignore -v <file>` when a
+  new file seems missing.
 - **Initial admin login:** user `admin`, password `HARBOR_ADMIN_PASSWORD` in
   `secret-harbor.sops.yaml` (`sops -d` it yourself; it is never printed).
   Sign-in moves to Authentik once the OIDC app exists.
