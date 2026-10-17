@@ -61,6 +61,12 @@ nothing is missing:
   uninstall Job refuses to remove Longhorn. It is the only thing standing
   between an accidental Application deletion and every volume in the
   cluster. Never set it to `true` unless you really mean to uninstall.
+- **Orphans are deleted automatically** (`setting-orphans-and-balance.yaml`).
+  Before that, 30 leftover replica folders filled talos4's SSD to Longhorn's
+  90% disk-pressure line, and v1.7 then retried an impossible same-node
+  replica move every second (~830k error log lines a day). Disk-pressure
+  rebalancing is now off (`0`): each node has only one disk per tag, so it
+  can never succeed here.
 - **Backup crons are UTC.** The daily job's comment explains why 02:00
   Adelaide is `30 16 * * *`, and why it must never share a minute with the
   hourly job (a per-volume lock makes the second one fail).
