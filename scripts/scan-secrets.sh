@@ -24,6 +24,9 @@
 #   - template / env references   e.g.  {{VAR}}, ${VAR}, $VAR, $__env{VAR}, !env_var VAR
 #   - reference-style keys that name a secret rather than contain one:
 #     secretName, secretKeyRef, existingSecret, privateKeySecretRef, ...
+#   - a line explicitly marked `# scan-secrets: reference` whose value is a
+#     plain Kubernetes object name, for charts whose reference key is a bare
+#     `secret:` (e.g. Element's ESS chart: `password: {secret: x, secretKey: y}`)
 #   - vendored CRDs under kubernetes/platform/networking/gateway-api-crds/
 #
 set -euo pipefail
@@ -90,6 +93,12 @@ check_file() {
     # Skip keys that only point at a secret stored elsewhere.
     printf '%s' "$key" | grep -qiE "$SAFE_KEY_SUFFIX" && continue
     is_placeholder "$value" && continue
+    # Explicitly marked references, but only if the value is a plain
+    # Kubernetes object name (lowercase, digits, dashes, dots): the marker
+    # can't be used to wave a real credential through.
+    if printf '%s' "$value" | grep -qE '^[[:space:]]*"?[a-z0-9]([-a-z0-9.]*[a-z0-9])?"?[[:space:]]+#[[:space:]]*scan-secrets:[[:space:]]*reference[[:space:]]*$'; then
+      continue
+    fi
 
     printf '  %s:%s  %s\n' "$file" "$lineno" "$trimmed"
     bad=1

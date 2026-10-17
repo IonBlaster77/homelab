@@ -1,0 +1,29 @@
+# One Postgres cluster, two databases: "synapse" (created here, owned by the
+# synapse role; CloudNativePG generates its password into matrix-db-app) and
+# "mas" (database-mas.yaml, owned by the managed "mas" role below).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: matrix-db
+  namespace: matrix
+spec:
+  instances: 2
+  storage:
+    # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: synapse
+      owner: synapse
+      # Synapse refuses to start unless its database uses the C locale.
+      encoding: UTF8
+      localeCollate: C
+      localeCType: C
+  managed:
+    roles:
+      - name: mas
+        ensure: present
+        login: true
+        passwordSecret:
+          name: matrix-db-mas

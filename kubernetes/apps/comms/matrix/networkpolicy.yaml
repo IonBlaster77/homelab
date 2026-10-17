@@ -1,0 +1,205 @@
+---
+# Default deny all ingress and egress for every pod in the matrix namespace
+# (Synapse, MAS, Element Web, HAProxy, the database and the chart's jobs).
+# A list with one EMPTY RULE (- {}) is the canonical deny-all; an empty list
+# (ingress: []) is rejected by Cilium and silently leaves the namespace open.
+# See kubernetes/apps/ai/crawl4ai/networkpolicy.yaml for the full explanation.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-default-deny
+  namespace: matrix
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# The stack's own components talk to each other freely (HAProxy -> Synapse,
+# MAS <-> Synapse, everything -> the database, database replication).
+# An empty endpoint selector here means "any pod in THIS namespace".
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-intra-namespace
+  namespace: matrix
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# DNS resolution via kube-dns.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-dns
+  namespace: matrix
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Only the database pods and the chart's setup jobs (which generate the stack's
+# signing keys into a Secret) may reach the Kubernetes API. Synapse, MAS and
+# the web pods may not.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-apiserver
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - init-secrets
+          - deployment-markers-pre
+          - deployment-markers-post
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-db-allow-apiserver-and-operator
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: matrix-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+  ingress:
+    # The CloudNativePG operator checks instance status (8000) and manages
+    # the database (5432).
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+---
+# Gateway (browser/app traffic for matrix., account., chat.) to the three
+# front-door components. Ports are container ports (post-DNAT).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-gateway-ingress
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - haproxy
+          - matrix-authentication-service
+          - element-web
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP
+            - port: "8010"
+              protocol: TCP
+            - port: "8080"
+              protocol: TCP
+---
+# Reply traffic to cross-node Envoy (Gateway) connections, as in the hermes
+# and crawl4ai policies (native routing evaluates replies against egress
+# policy), EXCEPT the Kubernetes API VIP. This also covers MAS reaching
+# Authentik through the Gateway VIP (10.77.20.60): pods resolve
+# auth.jupitertech.net there via AdGuard.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-node-egress
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - haproxy
+          - matrix-authentication-service
+          - element-web
+  egress:
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
+---
+# Synapse sends push notifications (no message content) to Element's push
+# gateway on the internet. Public addresses on 443 only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-synapse-push
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: synapse-main
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Prometheus scrapes the chart's ServiceMonitors (Synapse, HAProxy, MAS).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-prometheus
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - synapse-main
+          - haproxy
+          - matrix-authentication-service
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9001"
+              protocol: TCP
+            - port: "8405"
+              protocol: TCP
+            - port: "8081"
+              protocol: TCP
