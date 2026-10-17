@@ -39,7 +39,7 @@ spec:
         kubernetes.io/hostname: talos4
       containers:
         - name: music-assistant
-          image: ghcr.io/music-assistant/server:2.9.13
+          image: ghcr.io/music-assistant/server:2.10.6
           # No `ports:` block — with hostNetwork these are informational only,
           # and MA opens a range of ephemeral stream ports that cannot be
           # meaningfully enumerated here. The web UI/API is on 8095.
