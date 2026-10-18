@@ -1,0 +1,147 @@
+# Warms Harbor's proxy-cache projects with every image the cluster is running.
+# Nodes already hold their images locally, so containerd never asks Harbor for
+# them; this pulls each one THROUGH Harbor from a pod that has no local copy.
+# Harbor only caches a layer when it is actually downloaded through it, so this
+# does a full pull (linux/amd64 only), not just a manifest fetch.
+#
+# Images are taken from pod status (imageID), i.e. the exact digest running,
+# not the tag. Registries without a Harbor project are reported and skipped.
+#
+# Run (no argo CLI here):
+#   kubectl -n argo-builds create -f - <<'EOF'
+#   apiVersion: argoproj.io/v1alpha1
+#   kind: Workflow
+#   metadata: {generateName: harbor-preload-}
+#   spec:
+#     workflowTemplateRef: {name: harbor-preload}
+#     arguments: {parameters: [{name: skip-registries, value: docker.io}]}
+#   EOF
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: harbor-preload
+  namespace: argo-builds
+spec:
+  serviceAccountName: harbor-preload
+  entrypoint: main
+  ttlStrategy:
+    secondsAfterCompletion: 86400
+  podGC:
+    strategy: OnWorkflowSuccess
+  arguments:
+    parameters:
+      # Space-separated upstream registries to leave out, e.g. docker.io while
+      # Harbor's Docker Hub endpoint has no token (anonymous rate limit).
+      - name: skip-registries
+        value: ""
+      # Images that never appear in pod status: the kubelet and the Talos
+      # installer run outside Kubernetes.
+      - name: extra-images
+        value: >-
+          ghcr.io/siderolabs/kubelet:v1.35.0
+          factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.6
+  templates:
+    - name: main
+      steps:
+        - - name: inventory
+            template: inventory
+        - - name: preload
+            template: preload
+            arguments:
+              parameters:
+                - name: images
+                  value: "{{steps.inventory.outputs.parameters.images}}"
+
+    - name: inventory
+      outputs:
+        parameters:
+          - name: images
+            valueFrom:
+              path: /work/images.txt
+      container:
+        image: registry.k8s.io/kubectl:v1.35.0
+        command: [/bin/sh, -c]
+        args:
+          - |
+            set -e
+            kubectl get pods -A -o jsonpath='{range .items[*]}{range .status.initContainerStatuses[*]}{.imageID}{"\n"}{end}{range .status.containerStatuses[*]}{.imageID}{"\n"}{end}{end}' \
+              | grep '@sha256:' | sort -u > /work/images.txt
+            echo "{{workflow.parameters.extra-images}}" | tr ' ' '\n' | grep . >> /work/images.txt
+            echo "$(wc -l < /work/images.txt) images"
+        securityContext: &restricted
+          runAsNonRoot: true
+          runAsUser: 65532
+          runAsGroup: 65532
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities: {drop: [ALL]}
+          seccompProfile: {type: RuntimeDefault}
+        resources:
+          requests: {cpu: 50m, memory: 64Mi}
+          limits: {memory: 256Mi}
+        volumeMounts:
+          - {name: work, mountPath: /work}
+      volumes:
+        - {name: work, emptyDir: {}}
+
+    - name: preload
+      inputs:
+        parameters:
+          - name: images
+      # Pods resolve the registry through AdGuard, whose fallback (the MikroTik)
+      # has no record for it; pin it so an AdGuard blip can't fail the run.
+      hostAliases:
+        - ip: 10.77.20.60
+          hostnames: [registry.jupitertech.net]
+      container:
+        image: gcr.io/go-containerregistry/crane/debug:v0.22.1
+        command: [/busybox/sh, -c]
+        args:
+          - |
+            H=registry.jupitertech.net
+            skip=" {{workflow.parameters.skip-registries}} "
+            ok=0; skipped=0; failed=0
+            echo "{{inputs.parameters.images}}" > /tmp/images.txt
+            while read -r ref; do
+              [ -n "$ref" ] || continue
+              reg=${ref%%/*}; rest=${ref#*/}
+              # Docker Hub short names never reach here: pod status reports
+              # fully qualified docker.io/... references.
+              case $reg in
+                docker.io) p=dockerhub ;;
+                ghcr.io) p=ghcr ;;
+                quay.io) p=quay ;;
+                registry.k8s.io) p=k8s ;;
+                lscr.io) p=lscr ;;
+                mcr.microsoft.com) p=mcr ;;
+                public.ecr.aws) p=ecr-public ;;
+                factory.talos.dev) p=talos-factory ;;
+                *) echo "NO PROJECT  $ref"; skipped=$((skipped+1)); continue ;;
+              esac
+              case "$skip" in *" $reg "*) echo "SKIP        $ref"; skipped=$((skipped+1)); continue ;; esac
+              rm -rf /work/img
+              if out=$(crane pull --platform linux/amd64 --format oci "$H/$p/$rest" /work/img 2>&1); then
+                echo "OK          $ref ($(du -sh /work/img | cut -f1))"; ok=$((ok+1))
+              else
+                echo "FAILED      $ref: $(echo "$out" | tail -1)"; failed=$((failed+1))
+              fi
+            done < /tmp/images.txt
+            rm -rf /work/img
+            echo "done: ok=$ok skipped=$skipped failed=$failed"
+            [ "$failed" = 0 ]
+        env:
+          # crane writes its config/cache under $HOME.
+          - {name: HOME, value: /tmp}
+        securityContext: *restricted
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {memory: 1Gi}
+        volumeMounts:
+          - {name: work, mountPath: /work}
+          - {name: tmp, mountPath: /tmp}
+      volumes:
+        # Holds one image at a time; the largest here are a few GiB.
+        - name: work
+          emptyDir: {sizeLimit: 20Gi}
+        - name: tmp
+          emptyDir: {}

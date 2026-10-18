@@ -147,3 +147,20 @@ spec:
         - ports:
             - port: "2746"
               protocol: TCP
+---
+# harbor-preload pulls images through Harbor at the Gateway VIP
+# (registry.jupitertech.net -> 10.77.20.60). Port 443 only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: argo-builds-allow-egress-harbor
+  namespace: argo-builds
+spec:
+  endpointSelector: {}
+  egress:
+    - toCIDR:
+        - 10.77.20.60/32
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
