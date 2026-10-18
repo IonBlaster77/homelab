@@ -36,9 +36,11 @@ singleBinary:
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 512Mi
+    # Was 1Gi: OOMKilled 2026-10-17 22:08 UTC at 1023Mi while Hermes'
+    # daily log review ran several full-day queries at once (idle ~230Mi).
     limits:
-      memory: 1Gi
+      memory: 2Gi
 
 read:
   replicas: 0
