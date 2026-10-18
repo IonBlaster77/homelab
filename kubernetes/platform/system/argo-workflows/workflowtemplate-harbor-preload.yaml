@@ -117,18 +117,21 @@ spec:
               case "$skip" in *" $reg "*) echo "SKIP        $ref"; skipped=$((skipped+1)); continue ;; esac
               # A large layer's first fetch through the proxy can drop mid-stream
               # ("unexpected EOF"); Harbor keeps what it got, so retry.
+              # The image is streamed to /dev/null: only Harbor needs to keep
+              # it. Writing it to an emptyDir put multi-GB bursts on the node's
+              # system disk, which also holds Longhorn's SSD replicas, and timed
+              # out a Prometheus replica mid-backup (2026-10-18).
               n=0
               while :; do
-                n=$((n+1)); rm -rf /work/img
-                if out=$(crane pull --platform linux/amd64 --format oci "$H/$p/$rest" /work/img 2>&1); then
-                  echo "OK          $ref ($(du -sh /work/img | cut -f1), attempt $n)"; ok=$((ok+1)); break
+                n=$((n+1))
+                if out=$(crane pull --platform linux/amd64 "$H/$p/$rest" /dev/null 2>&1); then
+                  echo "OK          $ref (attempt $n)"; ok=$((ok+1)); break
                 elif [ $n -ge 3 ]; then
                   echo "FAILED      $ref: $(echo "$out" | tail -1)"; failed=$((failed+1)); break
                 fi
                 sleep 10
               done
             done < /tmp/images.txt
-            rm -rf /work/img
             echo "done: ok=$ok skipped=$skipped failed=$failed"
             [ "$failed" = 0 ]
         env:
@@ -139,11 +142,8 @@ spec:
           requests: {cpu: 100m, memory: 128Mi}
           limits: {memory: 1Gi}
         volumeMounts:
-          - {name: work, mountPath: /work}
           - {name: tmp, mountPath: /tmp}
       volumes:
-        # Holds one image at a time; the largest here are a few GiB.
-        - name: work
-          emptyDir: {sizeLimit: 20Gi}
+        # Only crane's config and the image list; images go to /dev/null.
         - name: tmp
-          emptyDir: {}
+          emptyDir: {sizeLimit: 64Mi}
