@@ -50,24 +50,21 @@ spec:
             arguments:
               parameters:
                 - name: images
-                  value: "{{steps.inventory.outputs.parameters.images}}"
+                  value: "{{steps.inventory.outputs.result}}"
 
+    # The kubectl image is distroless (no shell), so this step only prints the
+    # raw imageID list; Argo captures stdout as outputs.result and the preload
+    # step filters and de-duplicates it.
     - name: inventory
-      outputs:
-        parameters:
-          - name: images
-            valueFrom:
-              path: /work/images.txt
       container:
         image: registry.k8s.io/kubectl:v1.35.0
-        command: [/bin/sh, -c]
+        command: [kubectl]
         args:
-          - |
-            set -e
-            kubectl get pods -A -o jsonpath='{range .items[*]}{range .status.initContainerStatuses[*]}{.imageID}{"\n"}{end}{range .status.containerStatuses[*]}{.imageID}{"\n"}{end}{end}' \
-              | grep '@sha256:' | sort -u > /work/images.txt
-            echo "{{workflow.parameters.extra-images}}" | tr ' ' '\n' | grep . >> /work/images.txt
-            echo "$(wc -l < /work/images.txt) images"
+          - get
+          - pods
+          - -A
+          - -o
+          - jsonpath={range .items[*]}{range .status.initContainerStatuses[*]}{.imageID}{"\n"}{end}{range .status.containerStatuses[*]}{.imageID}{"\n"}{end}{end}
         securityContext: &restricted
           runAsNonRoot: true
           runAsUser: 65532
@@ -79,10 +76,6 @@ spec:
         resources:
           requests: {cpu: 50m, memory: 64Mi}
           limits: {memory: 256Mi}
-        volumeMounts:
-          - {name: work, mountPath: /work}
-      volumes:
-        - {name: work, emptyDir: {}}
 
     - name: preload
       inputs:
@@ -101,7 +94,10 @@ spec:
             H=registry.jupitertech.net
             skip=" {{workflow.parameters.skip-registries}} "
             ok=0; skipped=0; failed=0
-            echo "{{inputs.parameters.images}}" > /tmp/images.txt
+            { echo "{{inputs.parameters.images}}" | grep '@sha256:' | sort -u
+              echo "{{workflow.parameters.extra-images}}" | tr ' ' '\n' | grep .
+            } > /tmp/images.txt
+            echo "$(wc -l < /tmp/images.txt) images"
             while read -r ref; do
               [ -n "$ref" ] || continue
               reg=${ref%%/*}; rest=${ref#*/}
