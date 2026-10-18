@@ -26,7 +26,13 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: longhorn-ssd
+          # NVMe, not SSD: at 50Gi x 3 replicas this was the biggest consumer
+          # of the SSD disks, and with talos1/talos3 SSD scheduling nearly full
+          # a failed replica couldn't be rebuilt for ~12h (2026-10-16/17).
+          # The existing volume was moved in place on 2026-10-18 (Longhorn
+          # disk selector ssd -> nvme, replicas replaced one at a time), so its
+          # PVC still names longhorn-ssd; the class only applies on recreate.
+          storageClassName: longhorn-nvme
           accessModes:
             - ReadWriteOnce
           resources:
