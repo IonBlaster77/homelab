@@ -115,12 +115,18 @@ spec:
                 *) echo "NO PROJECT  $ref"; skipped=$((skipped+1)); continue ;;
               esac
               case "$skip" in *" $reg "*) echo "SKIP        $ref"; skipped=$((skipped+1)); continue ;; esac
-              rm -rf /work/img
-              if out=$(crane pull --platform linux/amd64 --format oci "$H/$p/$rest" /work/img 2>&1); then
-                echo "OK          $ref ($(du -sh /work/img | cut -f1))"; ok=$((ok+1))
-              else
-                echo "FAILED      $ref: $(echo "$out" | tail -1)"; failed=$((failed+1))
-              fi
+              # A large layer's first fetch through the proxy can drop mid-stream
+              # ("unexpected EOF"); Harbor keeps what it got, so retry.
+              n=0
+              while :; do
+                n=$((n+1)); rm -rf /work/img
+                if out=$(crane pull --platform linux/amd64 --format oci "$H/$p/$rest" /work/img 2>&1); then
+                  echo "OK          $ref ($(du -sh /work/img | cut -f1), attempt $n)"; ok=$((ok+1)); break
+                elif [ $n -ge 3 ]; then
+                  echo "FAILED      $ref: $(echo "$out" | tail -1)"; failed=$((failed+1)); break
+                fi
+                sleep 10
+              done
             done < /tmp/images.txt
             rm -rf /work/img
             echo "done: ok=$ok skipped=$skipped failed=$failed"
