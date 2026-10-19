@@ -4,12 +4,14 @@ metadata:
   name: log-digest
   namespace: monitoring
 spec:
-  # Daily error-count summary per namespace (from Loki), posted to the Matrix
-  # room #log-digest as @alertbot over the in-cluster network (Synapse's
-  # HAProxy in the matrix namespace; a matrix CiliumNetworkPolicy allows
-  # exactly this pod label). Replaced the Buzz channel on 2026-10-17.
-  schedule: "0 7 * * *"
-  timeZone: "Australia/Adelaide"
+  # FALLBACK for Hermes' daily-health-review (Hermes cron, 22:00 UTC, posts to
+  # #log-digest). At 23:00 UTC this checks whether that report arrived; only if
+  # not does it post a per-namespace error-count summary from Loki, as
+  # @alertbot over the in-cluster network (Synapse's HAProxy in the matrix
+  # namespace; a matrix CiliumNetworkPolicy allows exactly this pod label).
+  # Was the primary 07:00 digest until 2026-10-19.
+  schedule: "0 23 * * *"
+  timeZone: "Etc/UTC"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -48,12 +50,31 @@ spec:
               args:
                 - |
                   set -e
+                  SYNAPSE="http://matrix-synapse.matrix.svc.cluster.local:8008"
+
+                  # Skip if Hermes' review landed in the last 3h. Hermes may split a
+                  # long report over several messages, so look at its newest message:
+                  # the report always ends with this exact line (job prompt and the
+                  # alert-triage skill both require it).
+                  LATEST=$(curl -sfG -H "Authorization: Bearer $MATRIX_TOKEN" \
+                    --data-urlencode 'dir=b' --data-urlencode 'limit=1' \
+                    --data-urlencode 'filter={"types":["m.room.message"],"senders":["@hermes:matrix.jupitertech.net"]}' \
+                    "$SYNAPSE/_matrix/client/v3/rooms/$MATRIX_ROOM/messages" || true)
+                  TS=$(echo "$LATEST" | grep -o '"origin_server_ts":[0-9]*' | head -1 | cut -d: -f2)
+                  AGE_MS=$(( $(date +%s) * 1000 - ${TS:-0} ))
+                  if [ -n "$TS" ] && [ "$AGE_MS" -lt 10800000 ] \
+                     && echo "$LATEST" | grep -q 'End of daily health review'; then
+                    echo "Hermes daily health review arrived $(( AGE_MS / 60000 )) min ago; fallback not needed."
+                    exit 0
+                  fi
+                  echo "No Hermes daily health review in the last 3h; posting the fallback digest."
+
                   NOW_NS=$(( $(date +%s) * 1000000000 ))
                   # Whole-word error/fatal/panic, minus lines explicitly logged at
                   # info/debug (logfmt, JSON, klog "I1019 ..."). A bare substring
                   # match counted errors=0 counters, Postgres "error_severity":"LOG"
                   # and Loki echoing its own queries: ~40% of the old total.
-                  # Keep in sync with the alert-triage skill (hermes app).
+                  # Keep in sync with ERROR_FILTER in apps/ai/infra-mcp/configmap.yaml.
                   RESP=$(curl -sG "http://loki.logging.svc.cluster.local:3100/loki/api/v1/query" \
                     --data-urlencode 'query=sum by (namespace) (count_over_time({namespace=~".+"} |~ `(?i)\b(error|fatal|panic)\b` !~ `(?i)(\blevel=\"?(info|debug)\b|"level": ?"(info|debug)"|^I\d{4} )` [24h]))' \
                     --data-urlencode "time=$NOW_NS")
@@ -62,10 +83,13 @@ spec:
                     | sed -E 's/"namespace":"([^"]*)"\},"value":\[[0-9.]*,"([0-9]*)"\]/\1: \2/' \
                     | sort -t: -k2 -rn)
 
+                  HEADER="⚠️ Hermes' daily health review didn't arrive by 23:00 UTC, so here is the fallback digest."
                   if [ -z "$PAIRS" ]; then
-                    DIGEST="✅ No errors logged in the last 24h across any namespace."
+                    DIGEST="$HEADER
+                  ✅ No error lines logged in the last 24h across any namespace."
                   else
-                    DIGEST="📋 Daily log digest — errors in the last 24h:
+                    DIGEST="$HEADER
+                  📋 Error lines in the last 24h (noise-filtered):
                   $PAIRS"
                   fi
 
@@ -76,4 +100,4 @@ spec:
                     -H "Authorization: Bearer $MATRIX_TOKEN" \
                     -H "Content-Type: application/json" \
                     -d "{\"msgtype\":\"m.notice\",\"body\":\"$DIGEST_ESCAPED\"}" \
-                    "http://matrix-synapse.matrix.svc.cluster.local:8008/_matrix/client/v3/rooms/$MATRIX_ROOM/send/m.room.message/digest-$(date +%s)"
+                    "$SYNAPSE/_matrix/client/v3/rooms/$MATRIX_ROOM/send/m.room.message/digest-$(date +%s)"

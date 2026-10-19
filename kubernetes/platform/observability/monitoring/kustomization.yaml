@@ -34,7 +34,7 @@ resources:
   - deployment-unifi-poller.yaml
   - service-unifi-poller.yaml
   - servicemonitor-unifi-poller.yaml
-  # Daily log digest (suspended until an alert channel exists)
+  # Fallback daily log digest (posts only if Hermes' daily review is missing)
   - secret-alertmanager-matrix.sops.yaml
   - secret-log-digest-matrix.sops.yaml
   - cronjob-log-digest.yaml

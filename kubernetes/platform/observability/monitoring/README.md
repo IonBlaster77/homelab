@@ -5,8 +5,9 @@ kube-prometheus-stack:
 
 - **Prometheus** scrapes metrics from everything (60 targets) and evaluates
   the alert rules.
-- **Alertmanager** routes alerts. Right now it routes to `"null"`: there is
-  **no alert channel** until one is chosen (see Gotchas).
+- **Alertmanager** routes critical and warning alerts to Matrix
+  (#alerts-critical, #alerts-warning) through the in-cluster
+  `matrix-alertmanager-receiver` bridge; everything else goes to `"null"`.
 - **Grafana** shows dashboards for metrics (Prometheus) and logs (Loki).
 - **node-exporter** (per node) and **kube-state-metrics** feed host and
   Kubernetes-object metrics; the **Prometheus operator** turns
@@ -35,14 +36,16 @@ kube-prometheus-stack:
 | `*-blackbox-exporter.yaml` | Active probes for things with no `/metrics`: AdGuard DNS, Kea API, NAS NFS, the Cilium Gateway |
 | `*-mikrotik-exporter*` | MikroTik router metrics |
 | `*-unifi-poller*` | UniFi network metrics |
-| `cronjob-log-digest.yaml`, `secret-log-digest-webhook.sops.yaml` | Daily log summary to a webhook (suspended) |
+| `cronjob-log-digest.yaml`, `secret-log-digest-matrix.sops.yaml` | Fallback daily error-count digest to Matrix #log-digest (see Gotchas) |
 
 ## Gotchas
 
-- **No alert channel.** Alertmanager routes to `"null"` and the log-digest
-  CronJob is `suspend: true`. To turn alerts on: add a receiver and routes
-  under `alertmanager.config` in `values.yaml`, point
-  `secret-log-digest-webhook.sops.yaml` at the channel, and unsuspend the CronJob.
+- **The log digest is only a fallback.** Hermes' `daily-health-review`
+  (22:00 UTC, see `apps/ai/hermes/README.md`) is the real daily report. At
+  23:00 UTC the CronJob checks #log-digest for Hermes' report (its closing
+  line "End of daily health review.") and posts its own counts only if that
+  is missing. Its noise filter must match `ERROR_FILTER` in
+  `apps/ai/infra-mcp/configmap.yaml`.
 - **Argo CD must never prune `cluster-grafana-db.yaml`.** The database
   volumes belong to that CNPG `Cluster`; deleting it deletes them.
 - **blackbox-exporter doesn't reload config.** After editing

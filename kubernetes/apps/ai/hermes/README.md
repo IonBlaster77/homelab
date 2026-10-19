@@ -50,17 +50,24 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   Findings / Likely cause / Follow-ups), per the **alert-triage** skill
   (`configmap-skill-alert-triage.yaml`, mounted into the skills tree).
   Read-only: it diagnoses and plans, never changes anything.
-- **#alerts-warning:** answers only when @mentioned. Warnings and the log
-  digest get a **daily review** instead (Hermes cron jobs, below).
+- **#alerts-warning:** answers only when @mentioned. Warnings are covered
+  by the **daily health review** instead (Hermes cron job, below).
 - **Who can trigger it:** `@kmoorthy`, and `@alertbot` (critical alerts).
   Invites are only accepted from those two. The digest (an `m.notice`) is
   ignored. `MATRIX_APPROVAL_REQUIRE_SENDER=false` lets the owner answer
   approval prompts raised during alert-triggered turns.
-- **Daily review cron jobs** live in Hermes' own state (`~/.hermes/cron`,
-  on the PVC), not in git: `daily-warning-review` (→ #alerts-warning) and
-  `daily-log-digest-review` (→ #log-digest), 22:00 UTC (08:30 Adelaide in
-  summer, 07:30 in winter; after the 07:00 digest). `hermes cron list` shows
-  them.
+- **Daily health review:** one cron job, `daily-health-review`
+  (→ #log-digest), 22:00 UTC (08:30 Adelaide in summer, 07:30 in winter):
+  warnings, restarts and error logs in one report. It lives in Hermes' own
+  state (`~/.hermes/cron`, on the PVC), not in git; `hermes cron list` shows
+  it. Settings that matter: continuity on (sees its previous report),
+  `enabled_toolsets` `[infra-mcp, skills, file, todo]` (cron always blocks
+  terminal/code execution, so don't offer them), report must end with
+  "End of daily health review." The old `daily-warning-review` job is
+  paused, not deleted.
+- **Fallback:** if that report hasn't arrived by 23:00 UTC, the
+  `log-digest` CronJob (monitoring namespace) posts plain error counts to
+  #log-digest instead.
 - Rooms are unencrypted (`MATRIX_E2EE_MODE=off`). Element X makes **direct
   messages encrypted by default**, so DMs to `@hermes` won't be readable:
   use the #hermes room.

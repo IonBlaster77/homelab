@@ -49,7 +49,7 @@ never federated.
 |---|---|
 | `#alerts-critical` | Alertmanager `severity=critical`, batched every 5m, repeated hourly while firing |
 | `#alerts-warning` | Alertmanager `severity=warning`, batched every 15m, repeated every 4h |
-| `#log-digest` | Daily 07:00 error-count summary from Loki |
+| `#log-digest` | Hermes' daily health review (22:00 UTC); a plain error-count digest at 23:00 UTC only if that review didn't arrive |
 
 Routing lives in `kubernetes/platform/observability/monitoring/values.yaml`
 (`alertmanager.config`). Rooms use room version 12: the creator must not be

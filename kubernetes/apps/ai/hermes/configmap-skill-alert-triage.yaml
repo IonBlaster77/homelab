@@ -11,7 +11,7 @@ data:
     ---
     name: alert-triage
     description: How to investigate and report on homelab alerts. Load this whenever a message comes from @alertbot (an Alertmanager alert in #alerts-critical), and for the daily review of warning alerts and the log digest. Covers what to check, the reply format, and what you must not do.
-    version: 1.1.0
+    version: 1.2.0
     metadata:
       hermes:
         tags: [alerts, alertmanager, prometheus, triage, homelab, matrix]
@@ -82,7 +82,14 @@ data:
       recently, reply in one line ("still firing, no change since the earlier
       analysis") unless something has materially changed; if so, say what.
 
-    ## Daily review (warnings and the log digest)
+    ## Daily review (the daily health review)
+
+    One cron job, `daily-health-review`, covers warnings, restarts and logs
+    and posts to #log-digest. A fallback digest posts there at 23:00 UTC if
+    your report did not arrive, so: **always post a report** (a few lines
+    when all is quiet, never `[SILENT]`), **start it with the heading "Daily
+    health review"** and **finish it with the exact line "End of daily
+    health review."** The fallback looks for that last line.
 
     When asked for the daily review, gather in this order, one Loki call at
     a time:
