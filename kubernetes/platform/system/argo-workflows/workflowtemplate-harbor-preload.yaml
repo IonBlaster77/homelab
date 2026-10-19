@@ -57,7 +57,7 @@ spec:
     # step filters and de-duplicates it.
     - name: inventory
       container:
-        image: registry.k8s.io/kubectl:v1.35.0
+        image: registry.k8s.io/kubectl:v1.37.1
         command: [kubectl]
         args:
           - get

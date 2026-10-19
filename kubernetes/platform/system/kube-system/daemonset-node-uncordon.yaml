@@ -18,7 +18,7 @@ spec:
         - operator: Exists
       initContainers:
         - name: uncordon
-          image: registry.k8s.io/kubectl:v1.35.0
+          image: registry.k8s.io/kubectl:v1.37.1
           command: ["kubectl", "uncordon"]
           args: ["$(NODE_NAME)"]
           env:
