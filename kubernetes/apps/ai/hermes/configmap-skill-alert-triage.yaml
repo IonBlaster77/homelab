@@ -11,7 +11,7 @@ data:
     ---
     name: alert-triage
     description: How to investigate and report on homelab alerts. Load this whenever a message comes from @alertbot (an Alertmanager alert in #alerts-critical), and for the daily review of warning alerts and the log digest. Covers what to check, the reply format, and what you must not do.
-    version: 1.0.0
+    version: 1.1.0
     metadata:
       hermes:
         tags: [alerts, alertmanager, prometheus, triage, homelab, matrix]
@@ -84,11 +84,57 @@ data:
 
     ## Daily review (warnings and the log digest)
 
-    When asked for the daily review: query warnings that fired in the last
-    24h (`prometheus_query` with `ALERTS{severity="warning"}` and
-    `max_over_time` over 24h), and the error-log counts per namespace
-    (`loki_query`, e.g. `sum by (namespace) (count_over_time({namespace=~".+"} |~ "(?i)error" [24h]))`).
-    Group the report **one section per alert or namespace**, each with a
-    one-line verdict and any follow-up. Skip noise you can explain in a
-    phrase. End with a short "Needs attention" list, or "Nothing needs
-    attention" if that is true.
+    When asked for the daily review, gather in this order, one Loki call at
+    a time:
+
+    1. **Warnings:** alerts that fired in the last 24h (`prometheus_query`
+       with `max_over_time(ALERTS{severity="warning"}[24h])`) and which are
+       still firing.
+    2. **Restarts:** what restarted in the last 24h and why:
+       `increase(kube_pod_container_status_restarts_total[24h]) > 0`, plus
+       `kube_pod_container_status_last_terminated_reason` for those pods.
+       Include database pods (CNPG) and node-level components. A restart
+       wave across namespaces is one event; find when it happened.
+    3. **Error counts:** `loki_error_summary` (24h, with the previous 24h).
+       Its counts are already noise-filtered; don't write your own count
+       query with a bare `error` match.
+    4. **What the errors are:** for namespaces that are high or rising,
+       `loki_patterns` on the namespace first (whole window, cheap), then
+       `loki_query` for exact lines from the hour that matters.
+
+    **Connect the dots before writing anything.** A restart wave, a log
+    storm and a new error in an app are usually one story (for example: the
+    database restarted, so an app that held connections across it started
+    failing). Report the cause once, with the symptoms under it.
+
+    ### Rules
+
+    - **A big spike is never "watch only".** If a namespace's count is more
+      than 5x its previous window, or over 50,000 lines either day, find out
+      what happened and when (patterns, then restarts and events around that
+      time). "It has cleared" is not an explanation.
+    - **Known noise gets one line, not a section** (unless its rate changed a
+      lot). Currently known:
+      - kube-system / cilium-operator: `Unable to translate resources ...
+        controller=gammaHTTPRoute ... model source can't be empty`, for
+        ordinary (non-GAMMA) HTTPRoutes. Upstream Cilium noise; routing works.
+      - logging / Loki querier: `error notifying scheduler about finished
+        query` (EOF) and `context canceled`; the side effect of queries
+        finishing or being cancelled.
+      - harbor / registry: `blob unknown to registry` on HEAD requests;
+        clients checking the proxy cache before pulling.
+      - longhorn-system: brief attach waits and cancelled backup monitors
+        around the hourly backup (on the hour).
+      If something on this list starts to matter, say so and suggest the
+      owner remove it from this list.
+    - **Continuity:** you see the previous run's report. Say what is new,
+      what is unchanged, and whether yesterday's follow-ups were done
+      ("authentik worker: still failing, day 2"). Don't repeat yesterday's
+      analysis of unchanged items; one line is enough.
+
+    ### Report
+
+    Group the report **one section per finding** (an alert, a namespace, or
+    one event that explains several), each with a one-line verdict and any
+    follow-up. Then a one-line list of known noise seen. End with a short
+    "Needs attention" list, or "Nothing needs attention" if that is true.

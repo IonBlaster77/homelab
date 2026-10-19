@@ -49,8 +49,13 @@ spec:
                 - |
                   set -e
                   NOW_NS=$(( $(date +%s) * 1000000000 ))
+                  # Whole-word error/fatal/panic, minus lines explicitly logged at
+                  # info/debug (logfmt, JSON, klog "I1019 ..."). A bare substring
+                  # match counted errors=0 counters, Postgres "error_severity":"LOG"
+                  # and Loki echoing its own queries: ~40% of the old total.
+                  # Keep in sync with the alert-triage skill (hermes app).
                   RESP=$(curl -sG "http://loki.logging.svc.cluster.local:3100/loki/api/v1/query" \
-                    --data-urlencode 'query=sum by (namespace) (count_over_time({namespace=~".+"} |~ "(?i)error" [24h]))' \
+                    --data-urlencode 'query=sum by (namespace) (count_over_time({namespace=~".+"} |~ `(?i)\b(error|fatal|panic)\b` !~ `(?i)(\blevel=\"?(info|debug)\b|"level": ?"(info|debug)"|^I\d{4} )` [24h]))' \
                     --data-urlencode "time=$NOW_NS")
 
                   PAIRS=$(echo "$RESP" | grep -o '"namespace":"[^"]*"},"value":\[[0-9.]*,"[0-9]*"\]' \

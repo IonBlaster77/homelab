@@ -1,0 +1,55 @@
+# Hermes skill "infra-mcp-readonly", mounted at
+# ~/.hermes/skills/devops/infra-mcp-readonly/SKILL.md (deployment.yaml). Changes
+# need a pod restart (subPath mounts don't update live). Update the tool list
+# here whenever kubernetes/apps/ai/infra-mcp/configmap.yaml gains or loses a tool.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-skill-infra-mcp-readonly
+  namespace: hermes
+data:
+  SKILL.md: |
+    ---
+    name: infra-mcp-readonly
+    description: Your read-only visibility into the homelab's own infrastructure — Kubernetes, Argo Workflows, Longhorn, CloudNativePG, Talos, Prometheus, Loki, Hubble today, more systems landing over time. Load this when a task needs to check infra/cluster state (is a pod healthy, is a backup current, is a deployment up, what's talking to what on the network) rather than act on it.
+    version: 2.1.0
+    metadata:
+      hermes:
+        tags: [kubernetes, infrastructure, read-only, observability, argocd, longhorn, cnpg, talos, prometheus, loki, hubble]
+    ---
+
+    # infra-mcp: read-only infrastructure visibility
+
+    A dedicated, isolated pod (`infra-mcp` namespace) holding a narrow Kubernetes ServiceAccount credential, exposed as specific named tools — not a shell, not raw `kubectl`. This is deliberately the opposite design from your terminal sandbox: no general-purpose fetch-and-run capability, no package installer, nothing that could be tricked into doing something unintended. The only thing that happens here is whichever specific, named, read-only query you call.
+
+    ## What's available right now
+
+    - `kubectl_get_pods`, `kubectl_get_deployments`, `kubectl_get_events`, `kubectl_get_pod_logs` — cluster-wide, any namespace (empty namespace = all namespaces).
+    - `kubectl_get_networkpolicies`, `kubectl_get_httproutes` — for diagnosing connectivity/routing issues.
+    - `argo_list_workflows` — Argo Workflows status.
+    - `argocd_application_status` — ArgoCD sync/health state, read directly from the Application objects (not the ArgoCD API itself yet — that's a separate, not-yet-built credential).
+    - `longhorn_volume_status`, `cnpg_cluster_status` — "is my data safe" questions: storage health, Postgres cluster/backup state.
+    - `talos_version`, `talos_service_status`, `talos_members` — the OS/node layer underneath Kubernetes, via a dedicated read-only (`os:reader`) Talos credential, separate from the Kubernetes one above.
+    - `prometheus_query` — run a PromQL query against the cluster's Prometheus. Use this for anything with *history* (trends, rates, "has this been happening for a while"), not just current-moment state.
+    - `loki_error_summary` — error-line counts per namespace for the last `hours` (default 24) and for the same window before it, using the repo's shared noise filter (whole-word error/fatal/panic, lines logged at info/debug excluded). Use this for "how noisy is each namespace, and is it getting worse" instead of writing the count query yourself.
+    - `loki_patterns` — the most frequent log-line *templates* for a stream selector (e.g. `{namespace="authentik"}`), with counts; variable parts show as `<_>`. Covers up to the last 24h. Far cheaper than pulling raw lines, and it shows the whole window rather than whatever one sample happened to catch, so reach for it before `loki_query` when asking "what is this namespace logging".
+    - `loki_query` — run a LogQL query against Loki. Takes `logql`, `limit`, and `minutes` (how far back to look, default 60). Loki only supports range queries for log selectors — this tool handles that for you, you just give it the window. Use it for exact lines once `loki_patterns` has told you what to look for.
+    - `hubble_observe` — recent Cilium network flows: what's actually talking to what, and what got dropped by which NetworkPolicy. Takes an optional `namespace` filter and a `limit`. Genuinely useful for "why can't X reach Y" questions, not just "is X running."
+
+    More systems (ArgoCD's own API, GitHub, Cloudflare, MikroTik, UniFi, Synology) are planned and will show up here as they land — this skill gets updated each time, so if a tool you'd expect isn't listed above, it genuinely isn't built yet, not missing by accident.
+
+    ## What's deliberately NOT here, and won't be added casually
+
+    **No secrets, ever.** The ServiceAccount backing this pod has no permission to read Secret objects at all — not redacted, not filtered, structurally absent from its RBAC grant. Don't expect to ever get one back from these tools.
+
+    **No write capability, no `kubectl exec`, no deletes, no Talos mutating commands (`reboot`, `apply-config`, `upgrade`).** Every tool here is read-only by construction — this isn't "trust me not to," it's that the underlying credentials literally cannot do anything else. If a task needs to change something (restart a pod, scale a deployment, sync an ArgoCD app, reboot a node), that's not this tool's job yet — say so plainly rather than attempting a workaround, and tell the user what you'd need to actually do it.
+
+    **The operator decided to start everything read-only on purpose**, adding write access later as trust builds — this isn't a temporary oversight to route around, it's the deliberate current state. Respect it the same way you'd respect any other explicit boundary.
+
+    ## How to use this well
+
+    These tools answer "what's the current state of X" (or "what was the state of X recently," for the Prometheus/Loki/Hubble history tools) — they're for diagnosis, not action. Good uses: "is this deployment actually running," "did this pod restart recently and why," "is the nightly backup still landing," "what does this NetworkPolicy actually allow," "has memory usage been climbing on this node," "what got dropped trying to reach that service." If a user's real question is "fix X," use these tools to understand the problem first, then tell them clearly what you found and what would need to change — don't pretend you can make the change yourself.
+
+    Go easy on Loki: it is one small pod. Run Loki tools one at a time, never in parallel, and prefer `loki_error_summary` and `loki_patterns` over wide raw-line queries.
+
+    This skill is managed in git (repo IonBlaster77/homelab, `kubernetes/apps/ai/hermes/configmap-skill-infra-mcp-readonly.yaml`) and mounted read-only; don't try to edit it in place. Suggest changes to the owner instead.

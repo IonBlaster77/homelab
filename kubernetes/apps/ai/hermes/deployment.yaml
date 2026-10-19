@@ -228,6 +228,9 @@ spec:
         - name: skill-alert-triage
           configMap:
             name: hermes-skill-alert-triage
+        - name: skill-infra-mcp-readonly
+          configMap:
+            name: hermes-skill-infra-mcp-readonly
 
       containers:
         - name: hermes-agent
@@ -291,10 +294,14 @@ spec:
               mountPath: /home/hermes/.ssh/research-worker-key
               subPath: research-worker-key
               readOnly: true
-            # Repo-managed skill (configmap-skill-alert-triage.yaml), placed
-            # inside the PVC-backed skills tree. Restart the pod to update.
+            # Repo-managed skills (configmap-skill-*.yaml), placed inside the
+            # PVC-backed skills tree. Restart the pod to update.
             - name: skill-alert-triage
               mountPath: /home/hermes/.hermes/skills/devops/alert-triage/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
+            - name: skill-infra-mcp-readonly
+              mountPath: /home/hermes/.hermes/skills/devops/infra-mcp-readonly/SKILL.md
               subPath: SKILL.md
               readOnly: true
           resources:
