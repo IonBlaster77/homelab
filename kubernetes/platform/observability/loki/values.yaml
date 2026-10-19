@@ -19,11 +19,21 @@ loki:
     reject_old_samples: true
     reject_old_samples_max_age: 168h
     volume_enabled: true
+    # Write detected patterns back as __pattern__ streams so the patterns
+    # API covers a full day, not just the in-memory retain_for window (3h).
+    pattern_persistence_enabled: true
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
+  # Log-line templating (Drain) for Hermes' daily log review: infra-mcp's
+  # loki_patterns tool returns a few hundred templates instead of raw lines.
+  # Sized for ~100 streams at ~15 lines/s; expect +30-150Mi. Watch loki-0
+  # memory after enabling (the 2Gi limit had ~1.6Gi headroom at 417Mi peak).
   pattern_ingester:
-    enabled: false
+    enabled: true
+    metric_aggregation:
+      # Persistence pushes back into Loki itself; single binary -> localhost.
+      loki_address: localhost:3100
   ruler:
     enable_api: false
 

@@ -287,6 +287,58 @@ data:
         url = f"{LOKI_URL}/loki/api/v1/query_range?{urllib.parse.urlencode(params)}"
         return _http_get_json("loki_query", {"logql": logql, "limit": limit, "minutes": minutes}, url)
 
+    # Whole-word error/fatal/panic, minus lines explicitly logged at info/debug
+    # (logfmt, JSON, klog "I1019 ..."). Same filter as the log-digest CronJob
+    # (platform/observability/monitoring/cronjob-log-digest.yaml): keep in sync.
+    ERROR_FILTER = (r'|~ `(?i)\b(error|fatal|panic)\b` '
+                    r'!~ `(?i)(\blevel=\"?(info|debug)\b|"level": ?"(info|debug)"|^I\d{4} )`')
+
+    def _loki_vector(query):
+        url = f"{LOKI_URL}/loki/api/v1/query?{urllib.parse.urlencode({'query': query})}"
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+        return {r["metric"].get("namespace", ""): int(float(r["value"][1]))
+                for r in data.get("data", {}).get("result", [])}
+
+    @mcp.tool()
+    def loki_error_summary(hours: int = 24) -> str:
+        """Error-line counts per namespace for the last `hours`, and for the `hours` before that.
+        Uses a noise-filtered match (whole-word error/fatal/panic, info/debug lines excluded)."""
+        hours = max(1, min(int(hours), 72))
+        def run():
+            sel = '{namespace=~".+"} ' + ERROR_FILTER
+            now = _loki_vector(f"sum by (namespace) (count_over_time({sel} [{hours}h]))")
+            prev = _loki_vector(f"sum by (namespace) (count_over_time({sel} [{hours}h] offset {hours}h))")
+            rows = [{"namespace": ns, "count": now.get(ns, 0), "previous": prev.get(ns, 0)}
+                    for ns in set(now) | set(prev)]
+            return sorted(rows, key=lambda r: -max(r["count"], r["previous"]))
+        return _api_call("loki_error_summary", {"hours": hours}, run)
+
+    @mcp.tool()
+    def loki_patterns(selector: str, minutes: int = 60, top: int = 25) -> str:
+        """Most frequent log-line templates (Loki pattern detection) for a stream selector such as
+        {namespace="authentik"} or {pod="radarr-abc"}, over the last `minutes` (max 1440).
+        Returns pattern text with total line counts, highest first. Variable parts show as <_>.
+        Much cheaper than sampling raw lines: use it first to see what a namespace is logging."""
+        minutes = max(5, min(int(minutes), 1440))
+        top = max(1, min(int(top), 100))
+        def run():
+            end = int(time.time())
+            params = {"query": selector, "start": end - minutes * 60, "end": end, "step": "5m"}
+            url = f"{LOKI_URL}/loki/api/v1/patterns?{urllib.parse.urlencode(params)}"
+            with urllib.request.urlopen(url, timeout=30) as resp:
+                data = json.loads(resp.read().decode())
+            rows = []
+            for p in data.get("data") or []:
+                total = sum(int(float(s[1])) for s in p.get("samples") or [])
+                row = {"pattern": p.get("pattern", "")[:400], "count": total}
+                if p.get("level"):
+                    row["level"] = p["level"]
+                rows.append(row)
+            rows.sort(key=lambda r: -r["count"])
+            return rows[:top]
+        return _api_call("loki_patterns", {"selector": selector, "minutes": minutes, "top": top}, run)
+
     HUBBLE_SERVER = "hubble-relay.kube-system.svc.cluster.local:80"
 
     def _hubble(tool_name, args, cmd_args):
