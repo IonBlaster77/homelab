@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: unpackerr
-          image: golift/unpackerr:0.15.2
+          image: golift/unpackerr:v0.16.1
           env:
             - name: TZ
               value: Australia/Adelaide
