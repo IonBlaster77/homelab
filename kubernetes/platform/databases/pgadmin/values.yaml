@@ -7,6 +7,12 @@ persistentVolume:
   storageClass: longhorn-ssd
   size: 2Gi
 
+# The data volume is RWO, so the chart's default RollingUpdate deadlocks on
+# every upgrade: the new pod waits on a volume the old pod still holds
+# (Multi-Attach error, hit with chart 1.70.4 on 2026-10-19). Stop first.
+strategy:
+  type: Recreate
+
 service:
   type: ClusterIP
   port: 80

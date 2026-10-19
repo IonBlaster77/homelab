@@ -36,6 +36,12 @@ spec:
                 secretKeyRef:
                   name: unpackerr-secret
                   key: UN_SONARR_0_API_KEY
+            # 0.16+ caps uncompressed extract size per item (defaults: Sonarr
+            # 20GB, Radarr 75GB) and fails anything bigger without retry.
+            # Season packs and 4K remuxes exceed those; raise rather than
+            # disable, so the archive-bomb guard stays.
+            - name: UN_SONARR_0_MAX_BYTES
+              value: "150GB"
             - name: UN_RADARR_0_URL
               value: http://radarr:7878
             - name: UN_RADARR_0_API_KEY
@@ -43,6 +49,8 @@ spec:
                 secretKeyRef:
                   name: unpackerr-secret
                   key: UN_RADARR_0_API_KEY
+            - name: UN_RADARR_0_MAX_BYTES
+              value: "150GB"
           volumeMounts:
             - name: media
               mountPath: /data
