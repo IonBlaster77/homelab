@@ -9,9 +9,15 @@ persistentVolume:
 
 # The data volume is RWO, so the chart's default RollingUpdate deadlocks on
 # every upgrade: the new pod waits on a volume the old pod still holds
-# (Multi-Attach error, hit with chart 1.70.4 on 2026-10-19). Stop first.
+# (Multi-Attach error, hit with chart 1.70.4 on 2026-10-19). Stop first:
+# maxSurge 0 removes the old pod before the new one starts. Not
+# type: Recreate: Argo's server-side apply keeps the live rollingUpdate block
+# and the API rejects Recreate with rollingUpdate set.
 strategy:
-  type: Recreate
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
 
 service:
   type: ClusterIP
