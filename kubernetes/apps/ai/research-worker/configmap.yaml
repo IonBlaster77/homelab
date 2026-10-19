@@ -21,7 +21,10 @@ data:
     ln -sfn /workspace/apk-cache /etc/apk/cache
 
     apk update
-    apk add bash openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool
+    # GNU tar, not BusyBox's: Hermes' SSH file sync pipes into
+    # `tar xf - --no-overwrite-dir`, which BusyBox tar rejects, so every
+    # sync died with SIGPIPE (rc=-13) and spilled tool output never arrived.
+    apk add bash openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool tar
 
     mkdir -p /workspace/ssh_host_keys /root/.ssh /var/empty/sshd
     chmod 700 /root/.ssh
