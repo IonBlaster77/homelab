@@ -31,8 +31,11 @@ loki:
   # memory after enabling (the 2Gi limit had ~1.6Gi headroom at 417Mi peak).
   pattern_ingester:
     enabled: true
-    metric_aggregation:
-      # Persistence pushes back into Loki itself; single binary -> localhost.
+    # Persistence pushes back into Loki itself; single binary -> localhost.
+    # It has its own address, separate from metric_aggregation's: with only
+    # that one set, every push went to "http:///loki/api/v1/push" and was
+    # dropped, so loki_patterns saw just the last 3h held in memory.
+    pattern_persistence:
       loki_address: localhost:3100
   ruler:
     enable_api: false
