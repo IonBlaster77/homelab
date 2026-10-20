@@ -79,6 +79,13 @@ alloy:
 
       loki.process "pod_logs" {
         stage.cri { }
+        // Redact API keys from request URLs and headers. Sonarr, Radarr and
+        // Prowlarr log the full indexer URL (apikey=...) whenever a request
+        // fails, which leaked Prowlarr's key into Loki twice (2026-10-20).
+        stage.replace {
+          expression = `(?i)(?:api_?key|x-api-key)["']?\s*[=:]\s*["']?([A-Za-z0-9_\-]{16,})`
+          replace    = "<redacted>"
+        }
         forward_to = [loki.write.default.receiver]
       }
 
