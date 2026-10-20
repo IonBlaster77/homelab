@@ -113,3 +113,21 @@ spec:
               del_rewrite "buzz.jupitertech.net"       "10.77.20.60"
               del_rewrite "minio.jupitertech.net"      "10.77.20.60"
               del_rewrite "relay.jupitertech.net"      "10.77.20.60"
+
+              # Fallback upstream, used only when Quad9 (the one upstream, set in
+              # the UI) fails a query. Quad9's DoH intermittently returns
+              # "unexpected EOF", which surfaced as Argo CD and Harbor failing to
+              # resolve github.com (2026-10-19). Cloudflare by IP, so it needs no
+              # bootstrap lookup, which also goes to Quad9. Only posted when
+              # missing: saving DNS settings restarts AdGuard's resolver.
+              # adguardhome-sync copies it to the replica.
+              FALLBACK="https://1.1.1.1/dns-query"
+              if curl -sf -u "$ADGUARD_USER:$ADGUARD_PASSWORD" "$API/control/dns_info" | grep -q "\"$FALLBACK\""; then
+                echo "fallback upstream already set, skipping"
+              else
+                curl -sf -u "$ADGUARD_USER:$ADGUARD_PASSWORD" \
+                  -H 'Content-Type: application/json' \
+                  -d "{\"fallback_dns\":[\"$FALLBACK\",\"https://1.0.0.1/dns-query\"]}" \
+                  "$API/control/dns_config"
+                echo "set fallback upstream $FALLBACK"
+              fi
