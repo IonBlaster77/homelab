@@ -32,6 +32,15 @@ spec:
             - name: media
               mountPath: /data
               readOnly: true
+            # Transcode segments in RAM, not the node's ephemeral disk. On talos4
+            # that is the BX500 SSD that also holds Longhorn "ssd" replicas: a
+            # 25x-speed transcode (10 GB in 7 min) saturated it on 2026-10-20,
+            # replicas timed out and three volumes (redis-1, redis-2,
+            # prowlarr-config) went read-only. Jellyfin's transcode throttling
+            # and segment deletion (Dashboard > Playback > Transcoding) keep
+            # roughly 1 GB per Blu-ray stream here.
+            - name: transcodes
+              mountPath: /cache/transcodes
           livenessProbe:
             tcpSocket:
               port: 8096
@@ -45,11 +54,12 @@ spec:
             periodSeconds: 10
             failureThreshold: 3
           resources:
+            # tmpfs pages count against the memory limit: +3Gi for transcodes.
             requests:
-              memory: 512Mi
+              memory: 1Gi
               cpu: 250m
             limits:
-              memory: 4Gi
+              memory: 6Gi
               cpu: 2000m
       volumes:
         - name: config
@@ -58,3 +68,7 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: media-nfs
+        - name: transcodes
+          emptyDir:
+            medium: Memory
+            sizeLimit: 3Gi
