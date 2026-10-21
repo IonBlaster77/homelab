@@ -311,12 +311,15 @@ spec:
               mountPath: /home/hermes/.hermes/skills/shopping/hardware-deals/SKILL.md
               subPath: SKILL.md
               readOnly: true
+          # Each cron run is its own ~250-300 MiB process on top of the
+          # ~430 MiB gateway. Three concurrent runs hit the old 1Gi limit and
+          # the cgroup OOM killer took out all of them (2026-10-21 02:34).
           resources:
             requests:
-              memory: "256Mi"
+              memory: "512Mi"
               cpu: "100m"
             limits:
-              memory: "1Gi"
+              memory: "2Gi"
               cpu: "500m"
 
         - name: hermes-webui
