@@ -12,7 +12,7 @@ data:
     ---
     name: hardware-deals
     description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals jobs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
-    version: 1.3.2
+    version: 1.4.0
     metadata:
       hermes:
         tags: [shopping, hardware, deals, homelab, gpu, ram, ssd, australia]
@@ -222,17 +222,17 @@ data:
 
     ## Report
 
-    You see your previous report. **Don't repeat a deal you already
-    reported** unless its price dropped further or it's about to end.
+    **Always post a daily digest, every day. Never reply `[SILENT]`.** The
+    owner wants to see prices even when nothing is a deal. Keep it short:
+    it's read on a phone.
 
-    - If there's nothing new worth buying, reply with exactly `[SILENT]`.
-      **Exception:** on Mondays (Adelaide time), always post a short weekly
-      summary for your category: the normal price of each item, the lowest
-      price seen this week, and the market trend. Never post `[SILENT]` on
-      a Monday.
-    - Otherwise start with the heading **Hardware deals: GPUs**, **Hardware
-      deals: RAM** or **Hardware deals: storage** (your category) and use
-      these sections, skipping any that are empty:
+    You see your previous report. **Don't repeat a deal you already
+    reported** unless its price dropped further or it's about to end; a
+    deal still running can stay as one line under Today's prices.
+
+    Start with the heading **Hardware deals: GPUs**, **Hardware deals:
+    RAM** or **Hardware deals: storage** (your category), then these
+    sections in order, skipping Jump on it and Good deals when empty:
 
     **Jump on it** — for each: item, **total price with delivery**, where,
     link, why it's good (versus the normal price, with numbers), anything to
@@ -240,7 +240,17 @@ data:
 
     **Good deals** — same, one or two lines each.
 
-    **Market notes** — one line each: big price moves, new products (any
-    24GB Super card), or a site you couldn't check.
+    **Today's prices** — one line per watchlist item you checked: the
+    lowest **in-stock** price with delivery, where, and the change versus
+    the previous run (↑/↓/=, from the price log). Mark items you couldn't
+    find in stock as "out of stock (lowest seen A$X)". If nothing in the
+    category is a deal, say "No deals today" above this list.
+
+    **Market notes** — one line each, only if there are any: big price
+    moves, new products (any 24GB Super card), or a site you couldn't check.
+
+    **On Mondays (Adelaide time)** add a **Week in review** section: the
+    normal price of each item, the lowest price seen this week, and the
+    trend.
 
     End with the line "End of hardware deals."
