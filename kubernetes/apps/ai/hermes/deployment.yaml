@@ -231,6 +231,9 @@ spec:
         - name: skill-infra-mcp-readonly
           configMap:
             name: hermes-skill-infra-mcp-readonly
+        - name: skill-hardware-deals
+          configMap:
+            name: hermes-skill-hardware-deals
 
       containers:
         - name: hermes-agent
@@ -302,6 +305,10 @@ spec:
               readOnly: true
             - name: skill-infra-mcp-readonly
               mountPath: /home/hermes/.hermes/skills/devops/infra-mcp-readonly/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
+            - name: skill-hardware-deals
+              mountPath: /home/hermes/.hermes/skills/shopping/hardware-deals/SKILL.md
               subPath: SKILL.md
               readOnly: true
           resources:
