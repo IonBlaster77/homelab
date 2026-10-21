@@ -13,6 +13,11 @@ metadata:
   namespace: hermes
 data:
   mcp-servers-fragment.yaml: |
+    # Tool-calling rounds per turn, for every chat and cron job alike (cron
+    # has no per-job override). Was the default 60: the first hardware-deals
+    # run (2026-10-21) used all 60 on research and ended with no report.
+    agent:
+      max_turns: 100
     # approvals.mode is GLOBAL — Hermes has no per-tool/per-backend approval
     # scoping (confirmed: NousResearch/hermes-agent#33905/#80993 are open,
     # unimplemented feature requests for exactly that). 'smart' (an auxiliary
