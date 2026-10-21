@@ -65,14 +65,16 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   terminal/code execution, so don't offer them), report must end with
   "End of daily health review." The old `daily-warning-review` job is
   paused, not deleted.
-- **Hardware deals:** cron job `hardware-deals` (→ #hermes), 21:30 UTC
-  (08:00 Adelaide in summer). Searches Australian prices for the watchlist in
+- **Hardware deals:** three cron jobs (→ #hermes), one per category, daily:
+  `hardware-deals-gpus` 21:00, `hardware-deals-ram` 21:20 and
+  `hardware-deals-storage` 21:40 UTC (07:30–08:10 Adelaide in summer),
+  continuity on. Each searches Australian prices for its part of the watchlist in
   the **hardware-deals** skill (`configmap-skill-hardware-deals.yaml`: RAM,
   DDR4/DDR5 SODIMM+UDIMM, SSD/NVMe incl. ServerPartDeals enterprise SSDs,
   GPUs, with target prices; edit it there) and reports deals worth
   acting on. `[SILENT]` on quiet days except Mondays (weekly price summary).
   `enabled_toolsets` `[searxng, crawl4ai, skills, file, todo]`; it keeps a
-  price log in `~/.hermes/hardware-deals/price-log.csv`. Look only: never
+  price log per category in `~/.hermes/hardware-deals/price-log-*.csv`. Look only: never
   buys, signs in or contacts sellers. Created by
   `restructure-tools/hermes-deals-cron-setup.sh`.
 - **Fallback:** if that report hasn't arrived by 23:00 UTC, the
