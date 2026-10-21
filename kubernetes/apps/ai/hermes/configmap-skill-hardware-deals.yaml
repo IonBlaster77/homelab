@@ -12,7 +12,7 @@ data:
     ---
     name: hardware-deals
     description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals jobs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
-    version: 1.4.0
+    version: 1.5.0
     metadata:
       hermes:
         tags: [shopping, hardware, deals, homelab, gpu, ram, ssd, australia]
@@ -153,6 +153,16 @@ data:
     plain keywords joined by `+`, e.g. `rtx+5070+ti`). Only use the searxng
     search tool when you don't know a page; it returns nothing for
     `site:`/`OR` operator queries, so give it plain keywords.
+
+    **Keep pages small; every page stays in your context for the rest of
+    the run.**
+    - Read pages **only with the crawl4ai `md` tool and its default filter**
+      (don't set `f`). Never use the `crawl` tool (one call returned 600k+
+      characters) and never `f=raw` (twice the size). Don't use `f=bm25`
+      either: it drops StaticICE's price table.
+    - Search and listing pages already show prices. **Open a product or
+      listing page only to confirm a likely deal** (stock, delivery, exact
+      model), not for every item.
 
     - **OzBargain** (best Australian deal source):
       `https://www.ozbargain.com.au/search/node/TERMS`. Note the votes and
