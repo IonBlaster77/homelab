@@ -11,8 +11,8 @@ data:
   SKILL.md: |
     ---
     name: hardware-deals
-    description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals job or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
-    version: 1.2.0
+    description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals jobs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
+    version: 1.3.0
     metadata:
       hermes:
         tags: [shopping, hardware, deals, homelab, gpu, ram, ssd, australia]
@@ -36,9 +36,9 @@ data:
       pages, search-result pages and RSS feeds over crawling store pages.
       If a site blocks you (Cloudflare challenge, captcha, login wall),
       skip it and say so in one line; never try to get around it.
-    - **You have about 60 tool calls in total for the whole run**, and the
+    - **You have about 100 tool calls in total for the whole run**, and the
       run fails with no report if you use them all. Follow the budget in
-      "Daily plan" below: stop researching after about 40 calls, then read
+      "Daily plan" below: stop researching after about 70 calls, then read
       nothing more and write the log and the report. A short report beats
       none.
     - **Don't invent prices.** Every price you report must come from a page
@@ -119,23 +119,27 @@ data:
 
     ## Daily plan (fits the tool budget)
 
-    Don't try to check the whole watchlist every day. Each run:
+    There are three daily jobs, one per category, and **the job's prompt
+    tells you which category is yours: GPUs, RAM or storage.** Check only
+    that part of the watchlist; the other jobs cover the rest. Each run:
 
-    1. **Read the price log once** (1 call).
-    2. **OzBargain computing deals, every day** (1–2 calls): the feed
+    1. **Read your category's price log once** (1 call; see Price log).
+    2. **OzBargain computing deals** (1–2 calls): the feed
        `https://www.ozbargain.com.au/cat/computing/deals/feed` (or
        `https://www.ozbargain.com.au/deals/feed` if that fails). Pick out
-       anything on the watchlist, whatever today's focus.
-    3. **Today's focus, by Adelaide weekday** (about 25–30 calls):
-       - **Mon, Thu, Sat: GPUs.** StaticICE for the new cards, eBay AU for
-         used 3090/4090, OzBargain search for each card.
-       - **Tue, Fri: RAM.** All four kinds; DDR4 SODIMM first.
-       - **Wed, Sun: storage.** SATA SSDs, NVMe, and ServerPartDeals
-         enterprise SATA SSDs.
+       anything in your category.
+    3. **Your category** (about 40–60 calls):
+       - **GPUs:** StaticICE for each new card, eBay AU for used 3090/4090,
+         OzBargain search for each card, and a check for any 24GB Super
+         launch.
+       - **RAM:** all four kinds (DDR4 SODIMM first, then DDR5 UDIMM, DDR4
+         UDIMM, DDR5 SODIMM), on StaticICE, eBay AU and OzBargain.
+       - **Storage:** SATA SSDs, NVMe, and ServerPartDeals enterprise SATA
+         SSDs, on StaticICE, ServerPartDeals, CamelCamelCamel and OzBargain.
        Typically one StaticICE page per item, one eBay search per used item,
        and only open a product or listing page when a price looks like a
        deal and you need to confirm it.
-    4. **Stop at about 40 calls in total.** Then append today's rows to the
+    4. **Stop at about 70 calls in total.** Then append today's rows to the
        price log in **one** write and write the report.
 
     **Don't waste calls:** you already know today's date and time (Adelaide
@@ -194,8 +198,11 @@ data:
 
     ## Price log
 
-    Keep a running log of the lowest price you saw per item per day in
-    `~/.hermes/hardware-deals/price-log.csv` (file toolset), columns
+    Keep a running log of the lowest price you saw per item per day, **one
+    file per category** so the three jobs never overwrite each other:
+    `~/.hermes/hardware-deals/price-log-gpus.csv`, `price-log-ram.csv` or
+    `price-log-storage.csv` (file toolset). Only touch your own category's
+    file. Columns
     `date,item,price_aud,condition,source,url`. Read it once at the start
     of each run to know the normal price and spot drops, and append today's
     rows once at the end, in a single write. Create it (with the header
@@ -209,10 +216,12 @@ data:
 
     - If there's nothing new worth buying, reply with exactly `[SILENT]`.
       **Exception:** on Mondays (Adelaide time), always post a short weekly
-      summary: the normal price of each watchlist item, the lowest price seen
-      this week, and the market trend. Never post `[SILENT]` on a Monday.
-    - Otherwise start with the heading **Hardware deals** and use these
-      sections, skipping any that are empty:
+      summary for your category: the normal price of each item, the lowest
+      price seen this week, and the market trend. Never post `[SILENT]` on
+      a Monday.
+    - Otherwise start with the heading **Hardware deals: GPUs**, **Hardware
+      deals: RAM** or **Hardware deals: storage** (your category) and use
+      these sections, skipping any that are empty:
 
     **Jump on it** — for each: item, **total price with delivery**, where,
     link, why it's good (versus the normal price, with numbers), anything to
