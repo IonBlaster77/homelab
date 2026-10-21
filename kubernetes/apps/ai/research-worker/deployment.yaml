@@ -58,6 +58,12 @@ spec:
           volumeMounts:
             - name: workspace
               mountPath: /workspace
+            # Hermes' file tools run here (over SSH), and only write under
+            # /opt/data (HERMES_WRITE_SAFE_ROOT). Persistent home for the
+            # hardware-deals price logs, inside that root.
+            - name: workspace
+              mountPath: /opt/data/hardware-deals
+              subPath: hardware-deals
             - name: authorized-keys
               mountPath: /run/secrets/authorized_keys
               subPath: authorized_keys
