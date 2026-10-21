@@ -14,6 +14,7 @@ resources:
   - configmap-mcp-servers.yaml
   - configmap-skill-alert-triage.yaml
   - configmap-skill-infra-mcp-readonly.yaml
+  - configmap-skill-hardware-deals.yaml
   - deployment.yaml
   - service-webui.yaml
   - service-ssh.yaml
