@@ -72,7 +72,7 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   the **hardware-deals** skill (`configmap-skill-hardware-deals.yaml`: RAM,
   DDR4/DDR5 SODIMM+UDIMM, SSD/NVMe incl. ServerPartDeals enterprise SSDs,
   GPUs, with target prices; edit it there) and reports deals worth
-  acting on. `[SILENT]` on quiet days except Mondays (weekly price summary).
+  acting on. Posts a daily digest every day (deals first, then today's prices; a week in review on Mondays).
   `enabled_toolsets` `[searxng, crawl4ai, skills, file, todo]`; it keeps a
   price log per category in `/opt/data/hardware-deals/price-log-*.csv` (the file tools run on research-worker over SSH and only write under /opt/data; that path is its workspace PVC subdirectory hardware-deals). Look only: never
   buys, signs in or contacts sellers. Created by
