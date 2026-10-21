@@ -68,7 +68,8 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
 - **Hardware deals:** cron job `hardware-deals` (→ #hermes), 21:30 UTC
   (08:00 Adelaide in summer). Searches Australian prices for the watchlist in
   the **hardware-deals** skill (`configmap-skill-hardware-deals.yaml`: RAM,
-  SSD/NVMe, GPUs, with target prices; edit it there) and reports deals worth
+  DDR4/DDR5 SODIMM+UDIMM, SSD/NVMe incl. ServerPartDeals enterprise SSDs,
+  GPUs, with target prices; edit it there) and reports deals worth
   acting on. `[SILENT]` on quiet days except Mondays (weekly price summary).
   `enabled_toolsets` `[searxng, crawl4ai, skills, file, todo]`; it keeps a
   price log in `~/.hermes/hardware-deals/price-log.csv`. Look only: never
