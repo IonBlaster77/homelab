@@ -12,7 +12,7 @@ data:
     ---
     name: hardware-deals
     description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals jobs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
-    version: 1.6.1
+    version: 1.6.2
     metadata:
       hermes:
         tags: [shopping, hardware, deals, homelab, gpu, ram, ssd, australia]
@@ -47,8 +47,12 @@ data:
     ## The owner and where they buy
 
     - Adelaide, South Australia (postcode 5000). Prices in **AUD including
-      GST**. Always give the **total with delivery to 5000**, or note "free
-      pickup in Adelaide" when that applies.
+      GST**. Give the **total with delivery to 5000** when the page shows
+      it, or note "free pickup in Adelaide" / "free delivery" when that
+      applies. Many retailers only show delivery after a postcode or cart
+      step, which you must not do: then give the **item price marked
+      "+ delivery"** and still include the item. A missing delivery cost is
+      never a reason to leave an item out.
     - Australian sellers only (eBay: item located in Australia), with two
       exceptions: **ServerPartDeals** (US, see Where to look) and **Amazon
       AU's global store** (sold by Amazon, shipped to Australia). Other
