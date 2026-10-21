@@ -12,7 +12,7 @@ data:
     ---
     name: hardware-deals
     description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals jobs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
-    version: 1.3.1
+    version: 1.3.2
     metadata:
       hermes:
         tags: [shopping, hardware, deals, homelab, gpu, ram, ssd, australia]
@@ -195,6 +195,14 @@ data:
       ECC/registered; SSD NAND type and DRAM cache; enterprise SSD thickness.
     - A deal only counts if it's in stock now or the sale has a clear end
       date you can report.
+    - **Sanity-check outliers before logging them.** If the lowest price for
+      an item is far from what you'd expect (e.g. an RTX 5090 at A$10,000+,
+      or anything under half the usual price), it's probably a bundle,
+      prebuilt PC, multi-pack, wrong model or typo. Open the listing and
+      log the bare item's real price, or leave it out and say so.
+    - In the price log, note out-of-stock lowest prices as condition
+      `new-oos` (as you have been), so they aren't mistaken for buyable
+      prices.
 
     ## Price log
 
