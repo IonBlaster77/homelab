@@ -293,6 +293,12 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
+            # The file tool only writes under HERMES_WRITE_SAFE_ROOT (/opt/data,
+            # the node's ephemeral disk). Persistent hardware-deals price logs:
+            # a PVC subdirectory mounted inside that root.
+            - name: hermes-data
+              mountPath: /opt/data/hardware-deals
+              subPath: hardware-deals
             - name: research-worker-key-staged
               mountPath: /home/hermes/.ssh/research-worker-key
               subPath: research-worker-key

@@ -74,7 +74,7 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   GPUs, with target prices; edit it there) and reports deals worth
   acting on. `[SILENT]` on quiet days except Mondays (weekly price summary).
   `enabled_toolsets` `[searxng, crawl4ai, skills, file, todo]`; it keeps a
-  price log per category in `~/.hermes/hardware-deals/price-log-*.csv`. Look only: never
+  price log per category in `/opt/data/hardware-deals/price-log-*.csv` (a PVC subdirectory; the file tool only writes under /opt/data). Look only: never
   buys, signs in or contacts sellers. Created by
   `restructure-tools/hermes-deals-cron-setup.sh`.
 - **Fallback:** if that report hasn't arrived by 23:00 UTC, the
