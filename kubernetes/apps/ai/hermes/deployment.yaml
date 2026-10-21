@@ -20,7 +20,7 @@ spec:
         # Bump when configmap-mcp-servers.yaml changes: the fragment is only
         # merged into config.yaml by an initContainer, so a ConfigMap edit
         # alone never reaches the running pod.
-        hermes/config-fragment-rev: "2026-10-14-drop-cognee"
+        hermes/config-fragment-rev: "2026-10-21-max-turns-100"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always
