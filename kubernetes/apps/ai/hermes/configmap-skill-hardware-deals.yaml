@@ -12,7 +12,7 @@ data:
     ---
     name: hardware-deals
     description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals jobs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
-    version: 1.5.0
+    version: 1.6.0
     metadata:
       hermes:
         tags: [shopping, hardware, deals, homelab, gpu, ram, ssd, australia]
@@ -249,6 +249,18 @@ data:
     check before buying, and when it ends if known.
 
     **Good deals** — same, one or two lines each.
+
+    **Top 3 best value today** — always include this, even on a day with no
+    deals. The three best-value buys in your category that are **in stock
+    now and match the watchlist** (right type, size and spec; nothing on the
+    not-wanted lists), ranked best first. One line each: item, **total price
+    with delivery**, the value measure, where, and a **direct link to the
+    product or listing page** (not a search page). Value measure:
+    - **GPUs:** price versus that card's normal price (% below), and A$ per
+      GB of VRAM to compare across cards.
+    - **RAM and storage:** A$ per GB (per TB for drives).
+    If fewer than three items qualify, list what does and say so. Only
+    include items you confirmed in stock in this run.
 
     **Today's prices** — one line per watchlist item you checked: the
     lowest **in-stock** price with delivery, where, and the change versus
