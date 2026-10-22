@@ -67,7 +67,7 @@ metrics:
     additionalLabels:
       release: monitoring
 # The NAS backupstore, as Longhorn's "default" BackupTarget (Longhorn 1.8+).
-# Replaces the backup-target Setting in setting-backup-target.yaml, which is
-# deprecated in 1.8 and removed in 1.11; that file goes before the 1.11 hop.
+# Replaces the old backup-target Setting: the 1.8 upgrade deletes that
+# Setting and its webhook then rejects recreating it ("not supported").
 defaultBackupStore:
   backupTarget: nfs://10.77.20.20:/volume1/longhorn-backups

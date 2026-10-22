@@ -19,9 +19,8 @@ schedule, and serves the Kubernetes snapshot API.
 | File | What it is |
 |---|---|
 | `app.yaml` | Argo CD Application with two sources: the chart, and this folder. Not Server-Side Apply; has `ignoreDifferences` |
-| `values.yaml` | 3 replicas, control-plane tolerations, node-down pod deletion, disk pools from node labels, UI LoadBalancer IP, metrics |
+| `values.yaml` | 3 replicas, control-plane tolerations, node-down pod deletion, disk pools from node labels, automatic engine upgrades, the NAS backup target (`defaultBackupStore`, no credentials for NFS), UI LoadBalancer IP, metrics |
 | `kustomization.yaml` | Lists this folder's own manifests |
-| `setting-backup-target.yaml` | Longhorn `Setting`s: the NAS backup target (no credentials for NFS) |
 | `recurringjob.yaml` | `hourly-backup` and `daily-backup`, both for the `default` group |
 | `storageclass-ssd.yaml` | `longhorn-ssd`, the **cluster default** class (SSD pool) |
 | `storageclass-nvme.yaml` | `longhorn-nvme`, opt-in fast class (NVMe pool) for databases |
