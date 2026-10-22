@@ -65,6 +65,14 @@ service:
       lbipam.cilium.io/ips: "10.77.20.51"
 ingress:
   enabled: false
+# Chart 1.12 renders ingress NetworkPolicies for Longhorn's own pods by
+# default (restrictInternalTraffic: true, even with enabled: false). The
+# longhorn-manager one only admits Longhorn pods, which would block
+# Prometheus scraping manager metrics (:9500) from the monitoring namespace.
+# Longhorn has always run without policies here; keep that until it gets
+# its own policy set with a monitoring allowance.
+networkPolicies:
+  restrictInternalTraffic: false
 preUpgradeChecker:
   jobEnabled: false
 metrics:
