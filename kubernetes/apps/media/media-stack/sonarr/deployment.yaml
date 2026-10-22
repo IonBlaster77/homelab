@@ -52,7 +52,9 @@ spec:
               memory: 256Mi
               cpu: 100m
             limits:
-              memory: 1Gi
+              # .NET caps its heap at ~75% of this. At 1Gi, large release
+              # batches threw OutOfMemoryException and failed searches.
+              memory: 2Gi
               cpu: 500m
       volumes:
         - name: config
