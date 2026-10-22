@@ -47,7 +47,7 @@ spec:
               mountPath: /schema
       containers:
         - name: kea-dhcp4
-          image: jonasal/kea-dhcp4:2.6.3
+          image: jonasal/kea-dhcp4:2.7.9
           command: ["/bin/sh", "-c"]
           args:
             - |
