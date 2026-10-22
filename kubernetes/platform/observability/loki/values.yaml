@@ -1,5 +1,11 @@
 deploymentMode: SingleBinary
 loki:
+  # The chart hardcodes its own image tag and lags its appVersion (7.5.0
+  # still ships 3.6.11), so chart bumps never move Loki. Pinned here so
+  # Renovate raises image PRs (its helm-values manager needs repository+tag).
+  image:
+    repository: grafana/loki
+    tag: 3.6.19
   auth_enabled: false
   commonConfig:
     replication_factor: 1
