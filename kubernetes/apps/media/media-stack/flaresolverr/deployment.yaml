@@ -37,10 +37,12 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 3
+          # Each solve runs a headless Chromium; peaks sat near the old 512Mi
+          # limit and it was OOMKilled on 2026-10-20 (~190Mi when idle).
           resources:
             requests:
-              memory: 128Mi
+              memory: 256Mi
               cpu: 50m
             limits:
-              memory: 512Mi
+              memory: 1Gi
               cpu: 500m
