@@ -49,5 +49,11 @@ Everything is denied unless allowed:
 - **The bridge token is duplicated in Hermes.** `SEARXNG_MCP_AUTH_TOKEN` here
   must match the same key in Hermes' secret. A SOPS secret can't be shared
   across namespaces, so rotate both together.
+- **The token only counts in hardened mode.** mcp-searxng ignores
+  `MCP_HTTP_AUTH_TOKEN` unless `MCP_HTTP_HARDEN=true` (until 2026-10-22 any
+  request got in, token or not). Hardened mode also checks the `Host` header
+  against `MCP_HTTP_ALLOWED_HOSTS`, so if the Service name or port changes,
+  update that value in `configmap-mcp.yaml` or Hermes gets 403 "Invalid Host
+  header". `/health` is not Host-checked.
 - **Result trimming is in the bridge** (`SEARXNG_MAX_RESULTS`,
   `SEARXNG_MAX_RESULT_CHARS`), not in SearXNG, to keep the agent's token use down.

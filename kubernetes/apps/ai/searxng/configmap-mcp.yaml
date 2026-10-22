@@ -13,3 +13,14 @@ data:
   # URLs is a bigger token win than any page-level filter (addendum §2).
   SEARXNG_MAX_RESULTS: "3"
   SEARXNG_MAX_RESULT_CHARS: "1500"
+  # Hardened mode. Without MCP_HTTP_HARDEN the bridge ignores
+  # MCP_HTTP_AUTH_TOKEN entirely: until 2026-10-22 requests with no token or a
+  # wrong one got 200, and only the Cilium policy (Hermes-only ingress) kept
+  # it closed. Hardened static mode needs the token (deployment env), an
+  # explicit origin list and, for DNS-rebinding protection, the exact Host
+  # header Hermes sends (service name + port). /health is not Host-checked,
+  # so kubelet probes keep working.
+  MCP_HTTP_HARDEN: "true"
+  MCP_HTTP_ALLOWED_HOSTS: "searxng-mcp.searxng.svc.cluster.local:3000"
+  # Hermes sends no Origin header (absent is allowed); this only bounds browsers.
+  MCP_HTTP_ALLOWED_ORIGINS: "http://searxng-mcp.searxng.svc.cluster.local:3000"
