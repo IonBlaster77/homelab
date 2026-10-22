@@ -46,10 +46,13 @@ spec:
       - CreateNamespace=true
       - RespectIgnoreDifferences=true
   ignoreDifferences:
+    # No conversion.webhook caBundle entry: Longhorn 1.10 dropped the v1beta1
+    # API and its conversion webhook, and with RespectIgnoreDifferences that
+    # entry made Argo keep the live caBundle in its CRD patch, leaving a
+    # conversion block without a strategy, which the API server rejects.
     - group: apiextensions.k8s.io
       kind: CustomResourceDefinition
       jqPathExpressions:
-        - .spec.conversion.webhook.clientConfig.caBundle
         - .spec.preserveUnknownFields
         - .status
     - group: ""
