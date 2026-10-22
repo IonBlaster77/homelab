@@ -49,7 +49,7 @@ spec:
           - name: tag
           - name: push
       container:
-        image: moby/buildkit:v0.34.0-rootless
+        image: moby/buildkit:v0.34.1-rootless
         command: [buildctl-daemonless.sh]
         args:
           - build
