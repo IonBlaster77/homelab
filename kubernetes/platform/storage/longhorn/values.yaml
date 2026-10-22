@@ -17,6 +17,12 @@ defaultSettings:
   #   ssd  → /var/lib/longhorn        (sda4 EPHEMERAL, ~200 GB usable)
   #   nvme → /var/lib/longhorn-nvme   (nvme0n1p1, ~246 GB usable)
   createDefaultDiskLabeledNodes: true
+  # After each Longhorn upgrade, live-upgrade volume engines to the new
+  # engine image automatically, at most one volume per node at a time.
+  # Was 0 (never), which left every volume on the old engine after an
+  # upgrade; one-minor-at-a-time upgrades need engines current before
+  # the next hop.
+  concurrentAutomaticEngineUpgradePerNodeLimit: 1
 longhornManager:
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
