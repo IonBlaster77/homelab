@@ -11,7 +11,7 @@ data:
     ---
     name: alert-triage
     description: How to investigate and report on homelab alerts. Load this whenever a message comes from @alertbot (an Alertmanager alert in #alerts-critical), and for the daily review of warning alerts and the log digest. Covers what to check, the reply format, and what you must not do.
-    version: 1.2.0
+    version: 1.2.1
     metadata:
       hermes:
         tags: [alerts, alertmanager, prometheus, triage, homelab, matrix]
@@ -132,6 +132,17 @@ data:
         clients checking the proxy cache before pulling.
       - longhorn-system: brief attach waits and cancelled backup monitors
         around the hourly backup (on the hour).
+      - longhorn-system / longhorn-manager: `Error get size ... strconv.ParseFloat:
+        parsing "": invalid syntax` (backup_collector), in the first few
+        minutes of each hour. The metrics collector reading a backup that is
+        still in progress and has no size yet; not a broken backup. It only
+        matters if it appears outside :00-:05, or a Backup stays non-Completed.
+      - adguard: Quad9 DoH `unexpected EOF` (`dns10.quad9.net`), a few per
+        hour per replica. AdGuard already has a fallback upstream
+        (Cloudflare 1.1.1.1, set by `job-dns-rewrites.yaml`) that answers those
+        queries, so don't recommend adding one. It matters only if clients
+        actually fail to resolve (e.g. Argo CD or Harbor can't reach
+        github.com), or the rate jumps well past ~5 per hour.
       If something on this list starts to matter, say so and suggest the
       owner remove it from this list.
     - **Continuity:** you see the previous run's report. Say what is new,
