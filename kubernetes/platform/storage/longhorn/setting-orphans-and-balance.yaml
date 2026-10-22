@@ -1,19 +1,12 @@
-# Delete orphaned replica data automatically. With this off, leftover replica
-# folders (from deleted volumes and moved replicas) piled up: 30 of them, ~68 GB
-# on talos4's SSD alone, cleaned up by hand on 2026-10-17. Orphans are, by
-# definition, not used by any replica.
-apiVersion: longhorn.io/v1beta2
-kind: Setting
-metadata:
-  name: orphan-auto-deletion
-  namespace: longhorn-system
-value: "true"
----
 # 0 disables moving replicas between disks of the SAME node under disk pressure.
 # Every node here has exactly one disk per tag (one "ssd", one "nvme"), so such
 # a move can never succeed: Longhorn v1.7 retried it every second (~830,000
 # error log lines a day for the Prometheus replica on talos4) instead of giving
 # up. Cross-node auto-balance (replica-auto-balance) is unaffected.
+#
+# (Orphaned replica data cleanup used to live here as the orphan-auto-deletion
+# Setting; Longhorn 1.9 replaced it with orphanResourceAutoDeletion, now in
+# values.yaml.)
 apiVersion: longhorn.io/v1beta2
 kind: Setting
 metadata:

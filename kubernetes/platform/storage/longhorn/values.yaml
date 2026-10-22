@@ -23,6 +23,12 @@ defaultSettings:
   # upgrade; one-minor-at-a-time upgrades need engines current before
   # the next hop.
   concurrentAutomaticEngineUpgradePerNodeLimit: 1
+  # Delete orphaned replica data automatically. With this off, leftover
+  # replica folders (from deleted volumes and moved replicas) piled up: 30 of
+  # them, ~68 GB on talos4's SSD alone, cleaned up by hand on 2026-10-17.
+  # Orphans are, by definition, not used by any replica. Was the
+  # orphan-auto-deletion Setting ("true") before Longhorn 1.9.
+  orphanResourceAutoDeletion: replica-data
 longhornManager:
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
