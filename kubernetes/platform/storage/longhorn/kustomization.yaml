@@ -5,7 +5,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   # Where backups go, and when
-  - setting-backup-target.yaml
   - setting-orphans-and-balance.yaml
   - recurringjob.yaml
   # Storage classes for the two disk pools, and the snapshot class
