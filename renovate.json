@@ -36,6 +36,16 @@
       "groupName": "kea"
     },
     {
+      "description": "kubectl is only supported within one minor version of the API server. The cluster runs Kubernetes 1.35 (Talos), so allow 1.35.x and 1.36.x. Widen this when Talos/Kubernetes is upgraded (task #33).",
+      "matchPackageNames": ["registry.k8s.io/kubectl", "rancher/kubectl"],
+      "allowedVersions": "/^v?1\\.3[56]\\./"
+    },
+    {
+      "description": "hermes-webui publishes several releases a day, and each update restarts Hermes for ~3 minutes. Only create/update its PR overnight (Adelaide), so there is at most one bump a day.",
+      "matchPackageNames": ["ghcr.io/nesquena/hermes-webui"],
+      "schedule": ["* 0-5 * * *"]
+    },
+    {
       "description": "cilium and argocd are manual-sync: merging does nothing until someone syncs them, and a full sync is the risky part.",
       "matchFileNames": [
         "kubernetes/platform/networking/cilium/**",
