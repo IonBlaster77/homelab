@@ -9,7 +9,7 @@ Every tool call is written to stdout as a JSON audit line.
 | | |
 |---|---|
 | **URL** | None. Hermes uses `infra-mcp.infra-mcp.svc:8000` in-cluster (bearer token); deliberately not on the Gateway |
-| **Image** | `python:3.12-slim`; `server.py` comes from the ConfigMap, and `talosctl` and `hubble` are downloaded at pinned versions at start |
+| **Image** | `python:3.14-slim`; `server.py` comes from the ConfigMap, and `talosctl` and `hubble` are downloaded at pinned versions at start |
 | **Namespace** | `infra-mcp` (PSA `restricted`) |
 | **Storage** | None (emptyDir home) |
 | **Depends on** | Kubernetes API, Talos API, Prometheus, Loki, Hubble relay, PyPI/GitHub at pod start, the sops-kustomize plugin. Used by Hermes |
