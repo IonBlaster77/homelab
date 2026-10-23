@@ -26,6 +26,13 @@ concurrency:
   group: manifest-checks-${{ github.ref }}
   cancel-in-progress: true
 
+# An explicit shell runs steps with -eo pipefail; the implicit default is
+# bash -e only, so `script | tee` reported tee's exit code and a failed
+# kubeconform showed as success.
+defaults:
+  run:
+    shell: bash
+
 env:
   ENFORCE: "false"
   KUBE_VERSION: "1.35.0"
