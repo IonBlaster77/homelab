@@ -40,7 +40,7 @@ spec:
 
       initContainers:
         - name: fix-perms
-          image: busybox:latest
+          image: busybox:1.38
           command: ["sh", "-c", "chown -R 1000:1000 /home/hermes/.hermes"]
           volumeMounts:
             - name: hermes-data
@@ -55,7 +55,7 @@ spec:
         # owned and permission-fixed for the UID that actually needs to read
         # it. Same root-then-fix-ownership shape as fix-perms above.
         - name: stage-research-worker-key
-          image: busybox:latest
+          image: busybox:1.38
           command:
             - sh
             - -c
@@ -390,7 +390,7 @@ spec:
         # namespace is labeled pod-security: baseline to permit this.
         # ------------------------------------------------------------------
         - name: hermes-ssh
-          image: lscr.io/linuxserver/openssh-server:latest
+          image: lscr.io/linuxserver/openssh-server:10.3_p1-r1-ls239
           imagePullPolicy: Always
           env:
             - name: PUID
