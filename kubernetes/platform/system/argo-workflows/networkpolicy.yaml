@@ -48,9 +48,9 @@ spec:
     - toEntities:
         - kube-apiserver
 ---
-# Outbound HTTPS for builds: cloning source from github.com, pulling base
-# images, and pushing the result to ghcr.io. Scoped to 443 rather than a CIDR
-# because all three are CDN-fronted with no stable address range.
+# Outbound HTTPS for builds: cloning source from github.com and pulling base
+# images. Scoped to 443 rather than a CIDR because both are CDN-fronted with
+# no stable address range. Pushes go to Harbor (argo-builds-allow-egress-harbor).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:

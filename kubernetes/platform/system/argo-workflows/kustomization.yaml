@@ -8,5 +8,6 @@ resources:
   - namespace-argo-builds.yaml
   - networkpolicy.yaml
   - workflowtemplate-build-image.yaml
+  - secret-registry-push.sops.yaml
   - workflowtemplate-harbor-preload.yaml
   - rbac-harbor-preload.yaml
