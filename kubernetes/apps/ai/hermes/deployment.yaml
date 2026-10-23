@@ -21,6 +21,9 @@ spec:
         # merged into config.yaml by an initContainer, so a ConfigMap edit
         # alone never reaches the running pod.
         hermes/config-fragment-rev: "2026-10-21-max-turns-100"
+        # Bump when a configmap-skill-*.yaml changes: skills are subPath
+        # mounts, which never update in a running pod.
+        hermes/skills-rev: "2026-10-23-alert-triage-1.3.0"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always
