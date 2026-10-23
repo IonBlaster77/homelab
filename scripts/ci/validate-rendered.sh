@@ -31,8 +31,10 @@ kubeconform -strict -kubernetes-version "$KUBE_VERSION" \
   -ignore-missing-schemas -skip CustomResourceDefinition \
   -output json -summary -verbose -n 8 "${files[@]}" > "$REPORT"
 
+# Schema URLs are dropped from messages: they are long and pushed the useful
+# part ("additional properties 'replica' not allowed") past the length cap.
 jq -r '.resources[]? | select(.status == "statusInvalid" or .status == "statusError")
-       | "::warning title=kubeconform \(.filename | split("/") | last)::\(.kind)/\(.name): \(.msg | gsub("\n"; " ") | .[0:400])"' "$REPORT"
+       | "::warning title=kubeconform \(.filename | split("/") | last)::\(.kind)/\(.name): \(.msg | gsub("\n"; " ") | gsub(" ?(with )?https?://[^ ]+"; "") | .[0:600])"' "$REPORT"
 
 echo
 printf '%-28s %6s %6s %6s %6s\n' app valid invalid error skipped
