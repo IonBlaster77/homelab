@@ -38,7 +38,7 @@ warnings=0
 
 warn() { # check file line message
   local loc=""
-  [ -n "$2" ] && loc=" file=$2${3:+,line=$3}"
+  [ -n "$2" ] && loc=",file=$2${3:+,line=$3}"
   echo "::warning title=$1${loc}::$4"
   echo "- ⚠️ **$1**: $4${2:+ (\`$2${3:+:$3}\`)}" >> "$REPORT.items"
   warnings=$((warnings + 1))
@@ -99,7 +99,7 @@ warnings=$((warnings + $(grep -c '^::warning' "$DIR/_rwo.out")))
 
 # Subshell loops above can't append to the report; rebuild items from output.
 for o in "$DIR/_images.out" "$DIR/_rwo.out"; do
-  sed -n 's/^::warning title=\([^ :]*\)\( file=\([^,:]*\)\(,line=\([0-9]*\)\)\{0,1\}\)\{0,1\}::\(.*\)$/- ⚠️ **\1**: \6 (`\3:\5`)/p' "$o" | sed 's/ (`:`)$//' >> "$REPORT.items"
+  sed -n 's/^::warning title=\([^,:]*\)\(,file=\([^,:]*\)\(,line=\([0-9]*\)\)\{0,1\}\)\{0,1\}::\(.*\)$/- ⚠️ **\1**: \6 (`\3:\5`)/p' "$o" | sed 's/ (`:`)$//' >> "$REPORT.items"
 done
 
 # --- sops-name ------------------------------------------------------------

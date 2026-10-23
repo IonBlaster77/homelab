@@ -154,8 +154,7 @@ jobs:
         continue-on-error: true
         run: |
           curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" | tar xz -C "$RUNNER_TEMP" actionlint
-          "$RUNNER_TEMP/actionlint" -format '{{range $err := .}}::warning file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Message}}{{"\n"}}{{end}}'
-          "$RUNNER_TEMP/actionlint" >/dev/null
+          "$RUNNER_TEMP/actionlint"
 
       - name: Renovate config
         id: renovate
