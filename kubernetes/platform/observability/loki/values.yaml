@@ -37,6 +37,14 @@ loki:
   # memory after enabling (the 2Gi limit had ~1.6Gi headroom at 417Mi peak).
   pattern_ingester:
     enabled: true
+    # Hermes' loki_patterns asks for up to 24h. The patterns API reads the
+    # ingester's memory for the last retain_for and persisted patterns only
+    # beyond that, and as of 3.6.19 queries never return the persisted
+    # __pattern__ streams (index/volume list them; selects find 0 chunks).
+    # So keep a day in memory. Sampling at 1m (default 10s) keeps memory per
+    # pattern about where 3h at 10s was; loki_patterns uses a 5m step anyway.
+    retain_for: 25h
+    pattern_sample_interval: 1m
     # Persistence pushes back into Loki itself; single binary -> localhost.
     # It has its own address, separate from metric_aggregation's: with only
     # that one set, every push went to "http:///loki/api/v1/push" and was
