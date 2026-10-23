@@ -1,3 +1,4 @@
+# CI NEGATIVE TEST: comment-only edit, should trigger the app-of-apps notice
 # Homepage: the home.jupitertech.net dashboard (service tiles, status and
 # widgets). The upstream chart plus this folder (custom CSS, widget API
 # secrets) in one app. See README.md.
