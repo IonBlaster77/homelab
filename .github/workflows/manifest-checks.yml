@@ -1,0 +1,182 @@
+name: manifest-checks
+
+# Task #30: what will Argo CD actually apply, and is it sane?
+#
+#   render    every Application rendered as Argo CD would (scripts/ci/render-apps.sh)
+#   validate  kubeconform -strict on the rendered objects, CRDs included
+#   repo      repo-specific checks from past incidents (scripts/ci/repo-lint.sh)
+#   diff      PRs only: rendered before/after, posted as one PR comment that
+#             is updated in place
+#   lint      yamllint (syntax), actionlint, renovate config validator
+#
+# ADVISORY for now: failing steps show as warnings and in the PR comment, and
+# the check stays green. Set ENFORCE to "true" to make failures fail the
+# check (then name the jobs in a ruleset to block merges; task #11).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: manifest-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ENFORCE: "false"
+  KUBE_VERSION: "1.35.0"
+  HELM_VERSION: "v3.22.1"
+  KUBECONFORM_VERSION: "v0.6.7"
+  KUSTOMIZE_VERSION: "v5.7.1"
+  YQ_VERSION: "v4.44.3"
+  ACTIONLINT_VERSION: "1.7.7"
+  YAMLLINT_VERSION: "1.38.0"
+  RENOVATE_VERSION: "44.178.5"
+
+jobs:
+  manifests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          B="$RUNNER_TEMP/bin"; mkdir -p "$B"; cd "$RUNNER_TEMP"
+          curl -sSfL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" | tar xz --strip-components=1 -C "$B" linux-amd64/helm
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz -C "$B" kubeconform
+          curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" | tar xz -C "$B" kustomize
+          curl -sSfL -o "$B/yq" "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+          chmod +x "$B"/*
+          echo "$B" >> "$GITHUB_PATH"
+
+      - name: Render applications
+        id: render
+        continue-on-error: true
+        run: |
+          bash scripts/ci/render-apps.sh "$RUNNER_TEMP/rendered" .
+          if [ -s "$RUNNER_TEMP/rendered/_errors.txt" ]; then
+            while IFS= read -r e; do echo "::warning title=render::$e"; done < "$RUNNER_TEMP/rendered/_errors.txt"
+            exit 1
+          fi
+
+      - name: Validate rendered manifests (kubeconform)
+        id: validate
+        continue-on-error: true
+        run: bash scripts/ci/validate-rendered.sh "$RUNNER_TEMP/rendered" | tee "$RUNNER_TEMP/validate.txt"
+
+      - name: Repo checks
+        id: repo
+        continue-on-error: true
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
+        run: bash scripts/ci/repo-lint.sh "$RUNNER_TEMP/rendered" "$RUNNER_TEMP/repo.md" $BASE
+
+      - name: Rendered diff vs base
+        id: diff
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          HEAD_RENDERED: ${{ runner.temp }}/rendered
+        run: bash scripts/ci/render-diff.sh "${{ github.event.pull_request.base.sha }}" "$RUNNER_TEMP/diff.md" "$RUNNER_TEMP/diff-full.md"
+
+      - name: Report
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IS_PR: ${{ github.event_name == 'pull_request' }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -uo pipefail
+          r="$RUNNER_TEMP/report.md"
+          icon() { [ "$1" = success ] && echo "✅" || { [ "$1" = skipped ] && echo "➖" || echo "⚠️"; }; }
+          {
+            if [ -s "$RUNNER_TEMP/diff.md" ]; then cat "$RUNNER_TEMP/diff.md"; else echo "<!-- render-diff -->"; echo "## Manifest checks"; echo; fi
+            echo
+            echo "### Checks (advisory)"
+            echo
+            echo "| check | result |"
+            echo "|---|---|"
+            echo "| render all apps | $(icon "${{ steps.render.outcome }}") ${{ steps.render.outcome }} |"
+            echo "| kubeconform -strict | $(icon "${{ steps.validate.outcome }}") $(tail -1 "$RUNNER_TEMP/validate.txt" 2>/dev/null || echo "${{ steps.validate.outcome }}") |"
+            echo "| repo checks | $(icon "${{ steps.repo.outcome }}") ${{ steps.repo.outcome }} |"
+            echo
+            [ -s "$RUNNER_TEMP/repo.md" ] && cat "$RUNNER_TEMP/repo.md"
+          } > "$r"
+          { cat "$r"; [ -s "$RUNNER_TEMP/diff-full.md" ] && { echo; echo "## Full rendered diff"; sed -n '/^<details>/,$p' "$RUNNER_TEMP/diff-full.md"; }; } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$IS_PR" = "true" ]; then
+            id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+                   --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- render-diff -->")))][0].id // empty')
+            body=$(jq -Rs '{body: .}' < "$r")
+            if [ -n "$id" ]; then
+              gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" --input - <<< "$body" >/dev/null
+            else
+              gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --input - <<< "$body" >/dev/null
+            fi
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'pull_request'
+        with:
+          name: rendered-diff
+          path: ${{ runner.temp }}/diff-full.md
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Enforce
+        if: env.ENFORCE == 'true'
+        run: |
+          for o in "${{ steps.render.outcome }}" "${{ steps.validate.outcome }}" "${{ steps.repo.outcome }}"; do
+            [ "$o" = success ] || [ "$o" = skipped ] || exit 1
+          done
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: yamllint (syntax)
+        id: yamllint
+        continue-on-error: true
+        run: pipx run "yamllint==${YAMLLINT_VERSION}" -f github .
+
+      - name: actionlint
+        id: actionlint
+        continue-on-error: true
+        run: |
+          curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" | tar xz -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -format '{{range $err := .}}::warning file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Message}}{{"\n"}}{{end}}'
+          "$RUNNER_TEMP/actionlint" >/dev/null
+
+      - name: Renovate config
+        id: renovate
+        continue-on-error: true
+        run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator --strict renovate.json
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Lint (advisory)"
+            echo "| check | result |"
+            echo "|---|---|"
+            echo "| yamllint | ${{ steps.yamllint.outcome }} |"
+            echo "| actionlint | ${{ steps.actionlint.outcome }} |"
+            echo "| renovate config | ${{ steps.renovate.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Enforce
+        if: env.ENFORCE == 'true'
+        run: |
+          for o in "${{ steps.yamllint.outcome }}" "${{ steps.actionlint.outcome }}" "${{ steps.renovate.outcome }}"; do
+            [ "$o" = success ] || exit 1
+          done

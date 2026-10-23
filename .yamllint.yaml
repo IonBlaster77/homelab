@@ -1,0 +1,25 @@
+# yamllint for CI (.github/workflows/manifest-checks.yml). Syntax and
+# structure only: style rules are off so the check flags broken YAML
+# (duplicate keys, bad indentation that changes meaning, tabs), not taste.
+extends: relaxed
+
+ignore: |
+  kubernetes/platform/networking/gateway-api-crds/
+  *.sops.yaml
+
+rules:
+  line-length: disable
+  truthy: disable
+  comments: disable
+  comments-indentation: disable
+  document-start: disable
+  empty-lines: disable
+  trailing-spaces: disable
+  indentation: disable
+  braces: disable
+  brackets: disable
+  commas: disable
+  colons: disable
+  hyphens: disable
+  new-line-at-end-of-file: disable
+  key-duplicates: enable
