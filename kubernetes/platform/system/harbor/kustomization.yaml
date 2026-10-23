@@ -22,3 +22,24 @@ resources:
   - referencegrant.yaml
   - servicemonitor.yaml
   - networkpolicy.yaml
+# harbor-registry and harbor-jobservice mount ReadWriteOnce PVCs, so the
+# default 25% surge would start the new pod while the old one still holds the
+# volume and the rollout would hang. The chart's only knob is a chart-wide
+# updateStrategy.type, and switching a live Deployment to Recreate under Argo
+# SSA is rejected (the live rollingUpdate block is kept). maxSurge 0 stops the
+# old pod first.
+patches:
+  - target:
+      kind: Deployment
+      name: harbor-registry|harbor-jobservice
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: ignored
+      spec:
+        strategy:
+          type: RollingUpdate
+          rollingUpdate:
+            maxSurge: 0
+            maxUnavailable: 1

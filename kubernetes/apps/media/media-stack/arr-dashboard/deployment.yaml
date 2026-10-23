@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: arr-dashboard
-          image: khak1s/arr-dashboard:latest
+          image: khak1s/arr-dashboard:2.24.1
           ports:
             - name: web
               containerPort: 3000
