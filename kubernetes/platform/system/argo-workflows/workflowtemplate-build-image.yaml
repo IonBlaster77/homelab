@@ -8,6 +8,13 @@
 # between builds. If builds get slow, add registry-backed caching
 # (--export-cache type=registry,ref=...:buildcache) rather than a PVC, since
 # that survives pod rescheduling.
+#
+# Pushes to Harbor (registry.jupitertech.net/homelab/*, LAN-only, public read
+# so nodes pull without imagePullSecrets) with the robot in
+# secret-registry-push.sops.yaml (restructure-tools/harbor-build-robot.sh).
+# Harbor runs in this cluster: fine for dev/preview images; anything prod-
+# critical should also be replicated off-cluster (e.g. to ghcr) before
+# depending on it, or a cluster rebuild can't pull it until Harbor is back.
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
@@ -28,7 +35,7 @@ spec:
       - name: context
         value: services/example
       - name: image
-        value: ghcr.io/ionblaster77/example
+        value: registry.jupitertech.net/homelab/example
       # Immutable git-SHA tags only - never :latest. hermes-agent:latest turned
       # out to be tracking the unstable :main branch rather than releases, which
       # is exactly the class of surprise pinning avoids.
@@ -100,7 +107,7 @@ spec:
             mountPath: /home/user/.local/share/buildkit
           - name: buildkit-tmp
             mountPath: /home/user/.local/tmp
-          - name: ghcr-push
+          - name: registry-push
             mountPath: /home/user/.docker
             readOnly: true
       volumes:
@@ -108,9 +115,9 @@ spec:
           emptyDir: {}
         - name: buildkit-tmp
           emptyDir: {}
-        - name: ghcr-push
+        - name: registry-push
           secret:
-            secretName: ghcr-push
+            secretName: registry-push
             # optional so a push=false build still runs before the credential
             # exists. A push=true build without it fails at the push step with
             # an auth error, which is the correct and obvious failure.
