@@ -16,7 +16,7 @@ spec:
     # OCI chart: needs the repository entry in bootstrap/argocd-ess-helm-repo.yaml.
     - repoURL: ghcr.io/element-hq/ess-helm
       chart: matrix-stack
-      targetRevision: 26.10.2
+      targetRevision: 26.10.3
       helm:
         releaseName: matrix
         valueFiles:
