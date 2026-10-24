@@ -34,6 +34,8 @@ resources:
   - secret-redis-langfuse.sops.yaml
   # The app's own secrets (salt, encryption key, NextAuth, first admin, API keys)
   - secret-langfuse-app.sops.yaml
+  # Nightly deletion of traces older than 30 days (retention is Enterprise-only)
+  - cronjob-trace-retention.yaml
   # LAN access through the Gateway (Cloudflare Access + Authentik come later)
   - httproute.yaml
   - referencegrant.yaml
