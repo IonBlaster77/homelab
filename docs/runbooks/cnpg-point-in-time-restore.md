@@ -157,3 +157,51 @@ This path is documented but **not yet rehearsed**.
 - Target T1 = 10:06:47.93Z, when Grafana's `server_lock.dashboard-cleanup` = `1792836379` (10:06:19). It runs every minute, so the live value had moved on to 10:20:49 by restore time.
 - Restored value: **`1792836379`**. All 5 lock rows were identical to T1, 86/86 tables, users matched, timeline 8 (source 7). Restore took ~1 min.
 - Gotcha hit: the first restore attempt had to wait for the WAL segment containing T1 to be archived (up to 5 min).
+
+**2026-10-24, authentik-db**, the highest-stakes database:
+
+- Snapshot taken as **one SQL statement**, so every value is from the same instant, with that statement's `now()` used as the target: T1 = 11:27:09.338515Z. Counts and timestamps only, never row contents.
+- Waited for the WAL segment holding T1 (`…D30000006B`) to be archived (~5 min).
+- Restored in **~2 min** into a **default-deny** `pitr-test` namespace (DNS, API server, RustFS:9000 out; CNPG operator in), since the copy holds Authentik's credentials.
+- All 11 values matched T1. Worker heartbeat 11:27:01.564934 (live 11:35:31), newest task log 11:24:13.92159, 299,938 task-log rows (live 300,076), 6 users, 15 flows, 3 WebAuthn devices, 230 tables. Timeline 9 (source 8).
+- Unplanned extra proof: an Authentik application created *after* T1 (live had 5, T1 had 4) was correctly absent from the restore.
+- Cleanup verified the restore's PV and Longhorn volume were gone, and that **no Longhorn NAS backup of it was ever taken** (it lived 11:33–11:38, between hourly runs).
+
+For a database holding credentials, always lock the scratch namespace down like this:
+
+```yaml
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: pitr-allow-restore-only
+  namespace: pitr-test
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - {port: "53", protocol: UDP}
+            - {port: "53", protocol: TCP}
+    - toEntities: [kube-apiserver]
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - {port: "9000", protocol: TCP}
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - {port: "8000", protocol: TCP}
+            - {port: "5432", protocol: TCP}
+```
+
+(plus a `pitr-default-deny` policy with one empty ingress and egress rule, as in the other namespaces). If a scratch restore will live past the top of the hour, remember Longhorn's hourly job backs up *every* volume, including this one, to the NAS.
