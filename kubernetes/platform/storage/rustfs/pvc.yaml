@@ -1,0 +1,18 @@
+# The object data. longhorn-ssd keeps Longhorn's 3 replicas: RustFS is a
+# single pod with no replication of its own and holds every CNPG cluster's
+# WAL archive, so it must NEVER move to a single-copy class (longhorn-local,
+# longhorn-nvme-single). Its Longhorn volume is in the `default` recurring-job
+# group, so it is backed up to the NAS hourly (keep 24) and daily (keep 30).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rustfs-data
+  namespace: rustfs
+  labels:
+    app: rustfs
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: longhorn-ssd
+  resources:
+    requests:
+      storage: 50Gi

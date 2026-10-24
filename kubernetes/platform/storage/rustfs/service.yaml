@@ -1,0 +1,19 @@
+# In-cluster only, no HTTPRoute. Clients use the S3 API at
+# http://rustfs.rustfs.svc.cluster.local:9000 (path-style addressing).
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustfs
+  namespace: rustfs
+  labels:
+    app: rustfs
+spec:
+  selector:
+    app: rustfs
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: s3
+    - port: 9001
+      targetPort: 9001
+      name: console
