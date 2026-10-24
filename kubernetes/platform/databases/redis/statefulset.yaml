@@ -231,7 +231,7 @@ spec:
             periodSeconds: 20
         # redis_exporter translates this pod's Redis INFO into /metrics.
         - name: redis-exporter
-          image: oliver006/redis_exporter:v1.95.0-alpine
+          image: oliver006/redis_exporter:v1.96.0-alpine
           env:
             - name: REDIS_PASSWORD
               valueFrom:
