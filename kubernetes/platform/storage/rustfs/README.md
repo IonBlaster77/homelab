@@ -47,6 +47,15 @@ from the hard-NFS hang (see the NAS runbook). Both settled 2026-10-24.
 | `service.yaml` | `rustfs`: 9000 (S3) and 9001 (console) |
 | `networkpolicy.yaml` | Default-deny; DNS only. Clients are admitted one policy each |
 
+## Bucket lifecycle rules
+
+Lifecycle rules are bucket state, not in git. Re-apply them after rebuilding a
+bucket (`PUT /<bucket>?lifecycle` with the root key and a `Content-MD5` header).
+
+| Bucket | Rule | Why |
+|---|---|---|
+| `langfuse` | `expire-raw-events`: `events/` after 7 days | Raw ingestion blobs; traces live in ClickHouse, pruned after 30 days by `langfuse/trace-retention` |
+
 ## Adding a client
 
 1. Create a bucket and a **dedicated access key** with a policy limited to that
