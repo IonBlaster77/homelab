@@ -1,0 +1,21 @@
+# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
+# NOT listed: it is picked up by the root app, not by this folder's own app.
+# *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - networkpolicy.yaml
+  # ClickHouse: traces and observations
+  - secret-clickhouse.sops.yaml
+  - configmap-clickhouse.yaml
+  - statefulset-clickhouse.yaml
+  - service-clickhouse.yaml
+  # Postgres (CloudNativePG) with point-in-time recovery to RustFS
+  - cluster-langfuse-db.yaml
+  - podmonitor-langfuse-db.yaml
+  - secret-langfuse-db-backup.sops.yaml
+  - objectstore-langfuse-db.yaml
+  - scheduledbackup-langfuse-db.yaml
+  # Langfuse's own RustFS key (s3://langfuse/), used by the app later
+  - secret-langfuse-s3.sops.yaml

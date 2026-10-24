@@ -1,0 +1,108 @@
+# ClickHouse, single node, for Langfuse's traces and observations. Hand-built
+# rather than the chart's bundled ClickHouse, which since chart v2 needs the
+# ClickHouse operator cluster-wide plus a 3-node Keeper ensemble: about three
+# times the CPU and disk for no benefit on one node. Langfuse documents this
+# single-container mode (CLICKHOUSE_CLUSTER_ENABLED=false).
+#
+# Durability is Longhorn's: 3 replicas, plus the default recurring-job group
+# backs the volume up to the NAS hourly and daily. Traces are useful but not
+# critical; losing the last hour is acceptable.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  namespace: langfuse
+  labels:
+    app: clickhouse
+spec:
+  serviceName: clickhouse
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      # The image's clickhouse user. Running as it directly (not as root)
+      # makes the entrypoint skip its chown/su step; fsGroup makes the volume
+      # writable.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: clickhouse
+          image: docker.io/clickhouse/clickhouse-server:26.4.5.143@sha256:10c8dfc39d3fa015f3fbf44d77efa8f794a004e0ae1e509fbd1d4dfac88bb006
+          env:
+            - name: CLICKHOUSE_DO_NOT_CHOWN
+              value: "1"
+          ports:
+            - containerPort: 8123
+              name: http
+            - containerPort: 9000
+              name: native
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clickhouse
+            - name: config
+              mountPath: /etc/clickhouse-server/config.d/langfuse.xml
+              subPath: langfuse.xml
+            - name: users
+              mountPath: /etc/clickhouse-server/users.d/langfuse-users.xml
+              subPath: users.xml
+            - name: logs
+              mountPath: /var/log/clickhouse-server
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 300m
+              memory: 1536Mi
+            limits:
+              memory: 3Gi
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+      volumes:
+        - name: config
+          configMap:
+            name: clickhouse-config
+        - name: users
+          secret:
+            secretName: clickhouse-users
+        - name: logs
+          emptyDir:
+            sizeLimit: 512Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 2Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-ssd
+        resources:
+          requests:
+            storage: 20Gi

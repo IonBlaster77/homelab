@@ -1,0 +1,95 @@
+---
+# Default deny all ingress and egress for the langfuse namespace. (One empty
+# rule = deny-all; an empty list is rejected by Cilium. See
+# kubernetes/apps/ai/crawl4ai/networkpolicy.yaml.)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-default-deny
+  namespace: langfuse
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# Langfuse's components talk to each other freely: web/worker to ClickHouse
+# and Postgres, Postgres replication.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-allow-intra-namespace
+  namespace: langfuse
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-allow-dns
+  namespace: langfuse
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# langfuse-db: the CloudNativePG operator manages it; its instance manager
+# talks to the Kubernetes API; the Barman Cloud sidecar uploads to RustFS;
+# Prometheus scrapes CNPG metrics.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-db-allow-cnpg
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: langfuse-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
+#
+# Langfuse web/worker policies (Gateway ingress, Redis, RustFS, ingestion from
+# Hermes and the desktop) come with the Langfuse deployment itself.

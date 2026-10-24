@@ -1,0 +1,27 @@
+# Langfuse's Postgres (users, projects, API keys, prompts, settings; traces
+# live in ClickHouse). CloudNativePG generates the app credentials into
+# langfuse-db-app (username, password, uri), which Langfuse reads.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: langfuse-db
+  namespace: langfuse
+spec:
+  instances: 2
+  storage:
+    # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: langfuse
+      owner: langfuse
+  # Point-in-time recovery from day one: the Barman Cloud plugin archives every
+  # WAL segment and stores base backups in RustFS (s3://cnpg/langfuse-db/, see
+  # objectstore-langfuse-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: langfuse-db-backup
+        serverName: langfuse-db

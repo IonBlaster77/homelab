@@ -1,0 +1,19 @@
+# Daily base backup of langfuse-db to RustFS via the Barman Cloud plugin.
+# 15:50 UTC = 02:20 Adelaide, after the other clusters (15:00-15:40). CNPG
+# cron has a seconds field. No `immediate`: created in the same sync as the
+# Cluster's plugin entry, it fires before the pods restart with the sidecar
+# and fails ("requested plugin is not available"). Take the first base backup
+# by hand once the pods are back (see the cnpg-barman-cloud README).
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: langfuse-db-daily
+  namespace: langfuse
+spec:
+  schedule: "0 50 15 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: langfuse-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io
