@@ -5,8 +5,14 @@ Claude Code (Stop hook), Codex and Pi. Plan and decisions:
 [`docs/projects/agent-observability.md`](../../../../docs/projects/agent-observability.md)
 (task #50, phase 2).
 
-**Status: data stores only.** The Langfuse app (chart 2.1.6 / Langfuse 4.63)
-is the next step.
+**Status: running, LAN-only** at https://langfuse.jupitertech.net (chart
+2.1.6 / Langfuse 4.63.0). Sign-in is the seeded admin (email and password in
+`langfuse-secrets`, keys `init-user-email` / `init-user-password`); sign-up is
+disabled. Authentik sign-in and Cloudflare Access come next.
+
+The `agents` project's API keys (`init-project-public-key` /
+`init-project-secret-key`) are what Hermes and the Claude Code hook report
+with.
 
 | | |
 |---|---|
@@ -14,7 +20,8 @@ is the next step.
 | **ClickHouse** | `clickhouse` StatefulSet, 26.4.5.143 by digest, single node, 20Gi `longhorn-ssd`. User `langfuse` (password in `clickhouse-users`); the built-in `default` user only from localhost |
 | **Postgres** | `langfuse-db` (CNPG, 2 × 5Gi `longhorn-nvme`), point-in-time recovery to `s3://cnpg/langfuse-db/`, daily base backup 15:50 UTC |
 | **Object storage** | RustFS bucket `langfuse`, key `app-langfuse` (`langfuse-s3`), full access to that bucket only |
-| **Redis** | The shared Sentinel HA Redis (later, with its own ACL user) |
+| **Redis** | The shared Sentinel HA Redis, as ACL user `langfuse` (keys `langfuse:*` only; `REDIS_KEY_PREFIX` covers the cache and the BullMQ queues) |
+| **App** | `langfuse-web` + `langfuse-worker`, Docker Hub images by digest (through Harbor), UID 1001, no service-account token. Telemetry off. Batch export and media upload off (they'd hand browsers presigned URLs to the in-cluster S3 endpoint) |
 
 ## Why a hand-built ClickHouse
 

@@ -1,8 +1,20 @@
-# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
-# NOT listed: it is picked up by the root app, not by this folder's own app.
+# Renders the Langfuse chart (helmCharts, needs the plugin's --enable-helm)
+# plus this folder's own manifests: its data stores and network policies.
+# app.yaml is deliberately NOT listed: it is picked up by the root app.
 # *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+#
+# helmCharts rather than a second Application source: the chart repo then
+# needs no AppProject sourceRepos entry (the AppProject lives in the
+# manual-sync argocd app), same approach as Harbor.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+helmCharts:
+  - name: langfuse
+    repo: https://langfuse.github.io/langfuse-k8s
+    version: 2.1.6
+    releaseName: langfuse
+    namespace: langfuse
+    valuesFile: values.yaml
 resources:
   - namespace.yaml
   - networkpolicy.yaml
@@ -17,7 +29,24 @@ resources:
   - secret-langfuse-db-backup.sops.yaml
   - objectstore-langfuse-db.yaml
   - scheduledbackup-langfuse-db.yaml
-  # Langfuse's own RustFS key (s3://langfuse/), used by the app later
+  # Langfuse's RustFS key (s3://langfuse/) and Redis ACL user's password
   - secret-langfuse-s3.sops.yaml
-  # Its Redis ACL user's password (user defined in the redis app)
   - secret-redis-langfuse.sops.yaml
+  # The app's own secrets (salt, encryption key, NextAuth, first admin, API keys)
+  - secret-langfuse-app.sops.yaml
+  # LAN access through the Gateway (Cloudflare Access + Authentik come later)
+  - httproute.yaml
+  - referencegrant.yaml
+patches:
+  # The chart always renders a "langfuse-app" Secret for values it would
+  # generate. Every one is pinned in langfuse-secrets, so it renders empty;
+  # drop it rather than keep a stray empty Secret.
+  - target:
+      kind: Secret
+      name: langfuse-app
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: langfuse-app

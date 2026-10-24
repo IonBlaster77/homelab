@@ -71,5 +71,26 @@ spec:
         - ports:
             - port: "9000"
               protocol: TCP
+---
+# Langfuse web and worker: event uploads to s3://langfuse/ with their own
+# bucket-scoped key (kubernetes/apps/ai/langfuse).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rustfs-allow-ingress-from-langfuse
+  namespace: rustfs
+spec:
+  endpointSelector:
+    matchLabels:
+      app: rustfs
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: langfuse
+            app.kubernetes.io/name: langfuse
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
 #
 # Each further client gets its own entry or policy here (see README.md).
