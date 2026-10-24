@@ -15,6 +15,13 @@ langfuse:
         memory: 512Mi
       limits:
         memory: 1536Mi
+    # Web runs the Postgres and ClickHouse migrations before it answers health
+    # checks. The first start took ~100 s, so the chart's 20 s liveness delay
+    # killed it once (exit 143) mid-migration. The chart has no startupProbe;
+    # give liveness 3 min. Readiness stays at 20 s, so traffic still starts as
+    # soon as it's ready.
+    livenessProbe:
+      initialDelaySeconds: 180
     pod:
       # Headless initialization on first start: org, project + API key, admin.
       additionalEnv:
