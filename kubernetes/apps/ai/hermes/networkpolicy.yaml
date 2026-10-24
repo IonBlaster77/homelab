@@ -67,6 +67,31 @@ spec:
             - port: "80"
               protocol: TCP
 ---
+# Langfuse (kubernetes/apps/ai/langfuse): the Langfuse plugin exports traces
+# over OTLP to the web component's API. In-cluster only, never via the
+# Gateway; the internet rule above doesn't cover cluster pods. Container port
+# (post-DNAT). The langfuse namespace admits this side in
+# langfuse-web-allow-hermes.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: hermes-allow-langfuse
+  namespace: hermes
+spec:
+  endpointSelector:
+    matchLabels:
+      app: hermes
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: langfuse
+            app.kubernetes.io/name: langfuse
+            app.kubernetes.io/component: web
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
 # Ingress to web UI (port 8787) from the Cilium Gateway.
 # Cilium tags Gateway API traffic with reserved:ingress identity (source IP is a
 # Cilium-internal address, e.g. 10.0.11.x on talos1), not remote-node or CIDR.
