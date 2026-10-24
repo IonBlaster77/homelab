@@ -40,9 +40,15 @@ without an account.
   on the Nextcloud pod's node.
 - **Config from git**: `values.yaml` `nextcloud.configs` becomes
   `config/homelab.config.php` (proxies, https links, maintenance window).
-  The chart's hooks set the rest: `post-installation` (once) switches to
-  cron and installs user_oidc, files_external and twofactor_totp;
-  `before-starting` (every start) re-applies the share-link defaults.
+  The chart's `before-starting` hook (every start, idempotent) sets the
+  rest: cron mode, user_oidc / files_external / twofactor_totp installed
+  and enabled, and the share-link defaults. Not `post-installation`: that
+  only runs if the install step finishes cleanly, and the first install
+  here didn't (the data-directory check below).
+- **Data directory permissions check is off**
+  (`check_data_directory_permissions`): Nextcloud wants 0770, but kubelet
+  creates the `data` subPath as root with the fsGroup mode 2775, which uid
+  82 can't change, and the failed check makes every request return 503.
 - **Real client IPs**: Nextcloud trusts the pod range (10.244.0.0/16, where
   the Gateway's Envoy connects from) and reads `X-Forwarded-For`. The
   brute-force protection depends on it. **Check after first deploy**: Admin
