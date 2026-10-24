@@ -67,6 +67,14 @@ grafana:
       name: grafana
       user: grafana
       password: $__env{GF_DATABASE_PASSWORD}
+    # Grafana 13 moved core datasources (Prometheus, Loki, Tempo, ...) out of
+    # core and "preinstalls" newer copies at startup: it unregisters each
+    # bundled plugin, then replaces its files. Since chart 13.x (kps 89) the
+    # root filesystem is read-only, the replace fails, and the plugin stays
+    # unregistered: every dashboard query returned "Plugin not registered".
+    # Keep the versions bundled in the (pinned) image instead.
+    plugins:
+      preinstall_disabled: true
   service:
     type: ClusterIP
   # Community dashboards, auto-downloaded from grafana.com at pod start
