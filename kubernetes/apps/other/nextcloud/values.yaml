@@ -115,6 +115,13 @@ nextcloud:
         // the check makes every request and occ call fail. The only other
         // users who could list it are other processes in this pod.
         'check_data_directory_permissions' => false,
+        // Nextcloud refuses outgoing requests to private addresses (SSRF
+        // protection), and auth.jupitertech.net resolves to the Gateway VIP
+        // 10.77.20.60, so sign-in failed with "Could not reach the OpenID
+        // Connect provider" (LocalServerException). The pod's egress policy
+        // still limits what "local" it can reach: 10.77.20.0/24 minus the
+        // API VIP, plus its own namespace.
+        'allow_local_remote_servers' => true,
         // TLS ends at the Gateway; generate https links regardless.
         'overwriteprotocol' => 'https',
         'overwrite.cli.url' => 'https://cloud.jupitertech.net',
@@ -170,6 +177,13 @@ nextcloud:
         for app in user_oidc twofactor_totp files_external; do
           occ app:enable "$app" || echo "WARN: could not enable $app"
         done
+        # Authentik is the only sign-in (the login page goes straight to it;
+        # the break-glass admin uses /login?direct=1). Only once a provider
+        # is registered, so a fresh install can't hide the login form
+        # before Authentik is set up (README.md).
+        if occ user_oidc:provider --output=json | grep -q '"identifier"'; then
+          occ config:app:set --value=0 user_oidc allow_multiple_user_backends
+        fi
         # Share links get a 30-day expiry by default (changeable per link).
         occ config:app:set core shareapi_default_expire_date --value=yes
         occ config:app:set core shareapi_expire_after_n_days --value=30

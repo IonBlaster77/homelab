@@ -70,22 +70,27 @@ and API access.
 1. **Sign in as the break-glass admin** (user `admin`, password
    `nextcloud-password` in `secret-nextcloud-admin.sops.yaml`; `sops -d` it
    yourself) and turn on TOTP for it (Personal settings → Security).
-2. **Authentik**: create an OAuth2/OpenID provider + application for
-   Nextcloud (redirect URI `https://cloud.jupitertech.net/apps/user_oidc/code`,
-   scopes `openid profile email`). Then register it:
+2. **Authentik** (done 2026-10-24): application slug **`next-cloud`**,
+   OAuth2/OpenID provider, confidential, strict redirect URI
+   `https://cloud.jupitertech.net/apps/user_oidc/code`, signing key set
+   (RS256), subject = username, access bound to a group. Registered in
+   Nextcloud as provider `authentik`:
    `occ user_oidc:provider authentik --clientid=... --clientsecret=...
-   --discoveryuri=https://auth.jupitertech.net/application/o/nextcloud/.well-known/openid-configuration
-   --unique-uid=0 --mapping-uid=preferred_username`
+   --discoveryuri=https://auth.jupitertech.net/application/o/next-cloud/.well-known/openid-configuration
+   --scope="openid email profile" --unique-uid=0 --mapping-uid=preferred_username
+   --mapping-display-name=name --mapping-email=email`
    (run in the pod: `kubectl exec -n nextcloud deploy/nextcloud -c nextcloud -- php occ ...`).
-   The client secret ends up in Nextcloud's database, not git.
-3. **Make Authentik the only sign-in** once step 2 works:
-   `occ config:app:set --value=0 user_oidc allow_multiple_user_backends`.
-   The login page then goes straight to Authentik. The local admin can
-   still sign in at `/login?direct=1` (password + TOTP).
+   The client secret lives in Nextcloud's database, not git: on a rebuild,
+   run this again with the secret from Authentik.
+3. **Authentik is the only sign-in**: `allow_multiple_user_backends=0`,
+   set by the `before-starting` hook whenever a provider is registered.
+   The login page goes straight to Authentik; the local admin signs in at
+   `/login?direct=1` (password + TOTP).
 
 ## Going public
 
-Only after "Make Authentik the only sign-in" above:
+Only while "Authentik is the only sign-in" above holds (it does since
+2026-10-24):
 
 1. Cloudflare DNS: `cloud` CNAME to the tunnel (the tunnel's wildcard rule
    already sends `*.jupitertech.net` to the Gateway).
