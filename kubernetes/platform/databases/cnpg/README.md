@@ -44,9 +44,12 @@ of Postgres pods with volumes, failover, connection Services
   (`kubectl get deploy -A -l app.kubernetes.io/name=cloudnative-pg`).
 - **The operator injects the webhook `caBundle` itself.** With Server-Side
   Apply, Argo CD doesn't own that field, so it never resets it.
-- **No database-native backups yet.** The databases are covered only by
-  Longhorn's NAS backups of their volumes. CNPG can also back up via volume
-  snapshots (see the `volumesnapshot-*` apps); the NAS has no S3, so the
-  barman/object-store method isn't an option.
+- **Two backup layers.** Longhorn backs up every database volume to the NAS
+  (hourly and daily). On top of that, the
+  [Barman Cloud plugin](../cnpg-barman-cloud/README.md) archives WAL and takes
+  daily base backups to in-cluster RustFS, for point-in-time recovery. The
+  NAS has no S3, so the object store runs in the cluster and is itself
+  covered by the Longhorn NAS backups. Clusters are being moved onto it one
+  at a time (task #50).
 - **Upgrade the operator before the database images,** and read the CNPG
   release notes: some versions require a rolling restart of every cluster.

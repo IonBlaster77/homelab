@@ -1,0 +1,39 @@
+# CNPG Barman Cloud plugin: WAL archiving and base backups to S3 (RustFS)
+# for the CNPG clusters, giving point-in-time recovery. Upstream chart; values
+# in values.yaml. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cnpg-barman-cloud
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: homelab
+  sources:
+    - repoURL: https://cloudnative-pg.github.io/charts
+      chart: plugin-barman-cloud
+      # Chart 0.8.1 = plugin v0.15.1 (needs CNPG >= 1.26 and cert-manager).
+      targetRevision: 0.8.1
+      helm:
+        releaseName: barman-cloud
+        valueFiles:
+          - $values/kubernetes/platform/databases/cnpg-barman-cloud/values.yaml
+    # This repo, only to supply values.yaml to the chart above ($values).
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    # Must be the CNPG operator's namespace.
+    namespace: cnpg-system
+  syncPolicy:
+    automated:
+      # The chart ships the ObjectStore CRD. Deleting it would delete every
+      # ObjectStore (and so every cluster's backup config), so never prune,
+      # same as the cnpg app.
+      prune: false
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
