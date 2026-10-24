@@ -161,12 +161,26 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: INFRA_MCP_AUTH_TOKEN
+            # Langfuse plugin (install-langfuse-plugin below): the "agents"
+            # project's keys and the in-cluster endpoint.
+            - name: HERMES_LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: HERMES_LANGFUSE_PUBLIC_KEY
+            - name: HERMES_LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: HERMES_LANGFUSE_SECRET_KEY
+            - name: HERMES_LANGFUSE_BASE_URL
+              value: http://langfuse-web.langfuse.svc.cluster.local:3000
           command:
             - sh
             - -c
             - |
               set -e
-              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN MATRIX_HOMESERVER MATRIX_USER_ID MATRIX_ACCESS_TOKEN MATRIX_ALLOWED_USERS MATRIX_ALLOWED_ROOMS MATRIX_FREE_RESPONSE_ROOMS MATRIX_HOME_ROOM MATRIX_REQUIRE_MENTION MATRIX_PROCESS_NOTICES MATRIX_E2EE_MODE MATRIX_APPROVAL_REQUIRE_SENDER"
+              KEYS="TERMINAL_SSH_HOST TERMINAL_SSH_USER TERMINAL_SSH_PORT TERMINAL_SSH_KEY CRAWL4AI_AUTH_TOKEN SEARXNG_MCP_AUTH_TOKEN INFRA_MCP_AUTH_TOKEN MATRIX_HOMESERVER MATRIX_USER_ID MATRIX_ACCESS_TOKEN MATRIX_ALLOWED_USERS MATRIX_ALLOWED_ROOMS MATRIX_FREE_RESPONSE_ROOMS MATRIX_HOME_ROOM MATRIX_REQUIRE_MENTION MATRIX_PROCESS_NOTICES MATRIX_E2EE_MODE MATRIX_APPROVAL_REQUIRE_SENDER HERMES_LANGFUSE_PUBLIC_KEY HERMES_LANGFUSE_SECRET_KEY HERMES_LANGFUSE_BASE_URL"
               F=/home/hermes/.hermes/.env
               touch "$F"
               TMP=$(mktemp /home/hermes/.hermes/.env.sync.XXXXXX)
@@ -179,6 +193,73 @@ spec:
               chmod 600 "$TMP"
               mv "$TMP" "$F"
               echo "synced: $KEYS"
+          volumeMounts:
+            - name: hermes-data
+              mountPath: /home/hermes/.hermes
+
+        # Langfuse plugin (hermes-official-plugins/langfuse 2.0.0), traces to
+        # kubernetes/apps/ai/langfuse. Two parts, both on the PVC, both
+        # idempotent:
+        # 1. Its only Python dependency, langfuse==4.15.2 (the plugin's exact
+        #    pin), installed with `uv pip install --target` into ~/.hermes/pylib.
+        #    The agent's venv is part of the image, so anything installed there
+        #    vanishes on restart; the agent container gets PYTHONPATH instead.
+        #    Constrained to the venv's own package versions, so shared deps
+        #    (httpx, pydantic, opentelemetry, ...) land at exactly the versions
+        #    Hermes already runs and PYTHONPATH can't shadow them.
+        # 2. The plugin source: `hermes plugins install langfuse --no-deps`.
+        # Never fatal: on any failure Hermes still starts and the plugin
+        # simply no-ops (it fails open without its SDK or keys).
+        # Bump LANGFUSE_SDK with the plugin's pyproject pin.
+        - name: install-langfuse-plugin
+          image: nousresearch/hermes-agent:v0.22.5@sha256:9c5561579f3ffdf333401797094ac3a743738d6c25d40f4331c7bf77b694238d
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          env:
+            - name: HOME
+              value: /home/hermes
+            - name: LANGFUSE_SDK
+              value: "4.15.2"
+            - name: UV_CACHE_DIR
+              value: /tmp/uv-cache
+          command:
+            - sh
+            - -c
+            - |
+              set -u
+              LIB=/home/hermes/.hermes/pylib/langfuse-$LANGFUSE_SDK
+              # The image ships uv off PATH, at a versioned path
+              # (/opt/hermes/tools/uv-<version>-linux-x64/uv in v0.22.5).
+              UV=$(command -v uv || ls /opt/hermes/tools/uv-*/uv 2>/dev/null | head -1)
+              if [ -f "$LIB/.installed" ]; then
+                echo "langfuse SDK $LANGFUSE_SDK already in $LIB"
+              elif [ -z "$UV" ]; then
+                echo "WARN: no uv in the image; Hermes starts without Langfuse tracing"
+              else
+                rm -rf "$LIB.tmp"
+                "$UV" pip freeze --python /opt/hermes/.venv/bin/python > /tmp/venv-constraints.txt
+                if "$UV" pip install --python /opt/hermes/.venv/bin/python --target "$LIB.tmp" \
+                     -c /tmp/venv-constraints.txt "langfuse==$LANGFUSE_SDK"; then
+                  touch "$LIB.tmp/.installed"
+                  rm -rf "$LIB" && mv "$LIB.tmp" "$LIB"
+                  echo "installed langfuse SDK $LANGFUSE_SDK into $LIB"
+                else
+                  rm -rf "$LIB.tmp"
+                  echo "WARN: langfuse SDK install failed; Hermes starts without Langfuse tracing"
+                fi
+              fi
+              # Drop SDK dirs from older pins.
+              for d in /home/hermes/.hermes/pylib/langfuse-*; do
+                [ "$d" = "$LIB" ] || rm -rf "$d"
+              done
+              if hermes plugins list 2>/dev/null | grep -q -w langfuse; then
+                echo "langfuse plugin already installed"
+              else
+                hermes plugins install langfuse --no-deps --enable \
+                  || echo "WARN: langfuse plugin install failed; Hermes starts without it"
+              fi
+              exit 0
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
@@ -296,6 +377,27 @@ spec:
                 secretKeyRef:
                   name: hermes-secret
                   key: MATRIX_ACCESS_TOKEN
+            # Langfuse plugin: traces to the in-cluster Langfuse (also synced
+            # into .env by sync-env-secrets, for the profile secret scope).
+            # Content capture stays at the plugin's default, "sanitized":
+            # secret patterns redacted, then truncated.
+            - name: HERMES_LANGFUSE_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: HERMES_LANGFUSE_PUBLIC_KEY
+            - name: HERMES_LANGFUSE_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secret
+                  key: HERMES_LANGFUSE_SECRET_KEY
+            - name: HERMES_LANGFUSE_BASE_URL
+              value: http://langfuse-web.langfuse.svc.cluster.local:3000
+            # The plugin's langfuse SDK, installed onto the PVC by
+            # install-langfuse-plugin (the image's venv isn't persistent).
+            # Keep the version in step with that initContainer's LANGFUSE_SDK.
+            - name: PYTHONPATH
+              value: /home/hermes/.hermes/pylib/langfuse-4.15.2
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes

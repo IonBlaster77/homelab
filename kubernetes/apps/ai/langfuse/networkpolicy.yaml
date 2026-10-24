@@ -162,6 +162,26 @@ spec:
         - cidr: 10.77.20.0/24
           except:
             - 10.77.20.10/32
-#
-# Hermes' in-cluster ingestion (its Langfuse plugin) gets its own ingress rule
-# when Hermes is wired up.
+---
+# Hermes (kubernetes/apps/ai/hermes): its Langfuse plugin exports traces over
+# OTLP straight to web's API, in-cluster. The hermes namespace allows this
+# side in hermes-allow-langfuse.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-web-allow-hermes
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
