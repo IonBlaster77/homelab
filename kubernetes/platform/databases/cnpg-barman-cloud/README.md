@@ -42,3 +42,37 @@ idempotent, and it writes the cluster's SOPS secret into the repo.
   fails with `x-amz-content-sha256` errors.
 - **`backups.postgresql.cnpg.io` collides with `backups.longhorn.io`.**
   Always use the full name with kubectl.
+- **Don't set `immediate: true` on a new cluster's ScheduledBackup.** It's
+  created in the same sync as the `plugins:` entry and fires before the pods
+  restart with the sidecar, failing with "requested plugin is not available"
+  (grafana-db, 2026-10-24). Once the pods are back, take the first base backup
+  by hand, which opens the recovery window:
+
+  ```yaml
+  apiVersion: postgresql.cnpg.io/v1
+  kind: Backup
+  metadata:
+    name: <cluster>-first
+    namespace: <namespace>
+  spec:
+    cluster:
+      name: <cluster>
+    method: plugin
+    pluginConfiguration:
+      name: barman-cloud.cloudnative-pg.io
+  ```
+
+## Restoring
+
+[`docs/runbooks/cnpg-point-in-time-restore.md`](../../../../docs/runbooks/cnpg-point-in-time-restore.md):
+tested end to end on grafana-db, 2026-10-24.
+
+## Rollout
+
+| Cluster | Archiving | First base backup | Restore tested |
+|---|---|---|---|
+| grafana-db | 2026-10-24 (#288) | 2026-10-24 | 2026-10-24 |
+| matrix-db | not yet (also needs a PodMonitor) | | |
+| harbor-db | not yet (also needs a PodMonitor) | | |
+| authentik-db | not yet (last: highest stakes) | | |
+| kea-db | skipped: Kea is unused | | |
