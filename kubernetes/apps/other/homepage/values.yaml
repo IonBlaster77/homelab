@@ -2,7 +2,7 @@
 # defaults to an old appVersion. Bump this tag to upgrade Homepage itself.
 image:
   repository: ghcr.io/gethomepage/homepage
-  tag: v2.6.0
+  tag: v2.7.0
 
 enableRbac: true
 serviceAccount:
