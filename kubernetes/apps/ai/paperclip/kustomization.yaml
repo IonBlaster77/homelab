@@ -1,0 +1,22 @@
+# Lists every manifest Argo CD applies for this app. app.yaml is deliberately
+# NOT listed: it is picked up by the root app, not by this folder's own app.
+# *.sops.yaml files are decrypted by the sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - networkpolicy.yaml
+  # Postgres (CloudNativePG) with point-in-time recovery to RustFS
+  - cluster-paperclip-db.yaml
+  - podmonitor-paperclip-db.yaml
+  - secret-paperclip-db-backup.sops.yaml
+  - objectstore-paperclip-db.yaml
+  - scheduledbackup-paperclip-db.yaml
+  # The server: auth/JWT/secrets keys, data volume (workspaces, Pi), the pod
+  - secret.sops.yaml
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  # LAN access through the Gateway (Cloudflare Access + Authentik come later)
+  - httproute.yaml
+  - referencegrant.yaml

@@ -102,6 +102,9 @@ spec:
               # Langfuse (kubernetes/apps/ai/langfuse): agent traces. LAN-only
               # until Cloudflare Access + Authentik sign-in; ingestion stays LAN-only.
               add_rewrite "langfuse.jupitertech.net" "10.77.20.60"
+              # Paperclip (kubernetes/apps/ai/paperclip): agent control plane. LAN-only
+              # until Cloudflare Access + Authentik sign-in.
+              add_rewrite "paperclip.jupitertech.net" "10.77.20.60"
               # Whole-home audio hub (ZONED-AUDIO.md). Both go via the Gateway
               # like everything else. Note Home Assistant ALSO has a direct LAN
               # address on 10.77.20.65 for device callbacks that should not

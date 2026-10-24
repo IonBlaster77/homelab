@@ -1,0 +1,156 @@
+# Paperclip server. Its adapters launch agent CLIs (Pi; the image also bundles
+# claude, codex, opencode, gemini) as child processes INSIDE this pod, so the
+# pod is the sandbox: non-root, no service-account token, default-deny network
+# with internet egress only (networkpolicy.yaml), no cluster credentials.
+#
+# authenticated/private mode: login required, first admin claimed from the
+# browser ("Claim this instance"). Once claimed, set PAPERCLIP_AUTH_DISABLE_SIGN_UP
+# to "true" below so nobody else on the LAN can register.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paperclip
+  namespace: paperclip
+spec:
+  replicas: 1
+  # One RWO volume: never two pods at once.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: paperclip
+  template:
+    metadata:
+      labels:
+        app: paperclip
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Pi isn't in the image. Install a pinned version onto the data
+        # volume, once per version (npm from the registry; egress allows it).
+        # Bump PI_VERSION by hand: Renovate doesn't see versions in scripts.
+        - name: install-pi
+          image: ghcr.io/paperclipai/paperclip:2026.1023.0@sha256:40f46940c4612ead131aebe6079cd4651f8cd1434af49f7c621887f4a452a62e
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: PI_VERSION
+              value: "1.4.0"
+            - name: HOME
+              value: /paperclip
+            - name: npm_config_cache
+              value: /tmp/npm-cache
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              D=/paperclip/tools/pi
+              if [ "$(cat "$D/.version" 2>/dev/null)" = "$PI_VERSION" ]; then
+                echo "pi $PI_VERSION already installed"; exit 0
+              fi
+              rm -rf "$D.new"
+              npm install --prefix "$D.new" --no-audit --no-fund --omit=dev \
+                "@earendil-works/pi-coding-agent@$PI_VERSION"
+              echo "$PI_VERSION" > "$D.new/.version"
+              rm -rf "$D" && mv "$D.new" "$D"
+              "$D/node_modules/.bin/pi" --version
+          resources:
+            requests: {cpu: 50m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          volumeMounts:
+            - name: data
+              mountPath: /paperclip
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: paperclip
+          image: ghcr.io/paperclipai/paperclip:2026.1023.0@sha256:40f46940c4612ead131aebe6079cd4651f8cd1434af49f7c621887f4a452a62e
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 3100
+          env:
+            - name: PAPERCLIP_DEPLOYMENT_MODE
+              value: authenticated
+            - name: PAPERCLIP_DEPLOYMENT_EXPOSURE
+              value: private
+            - name: PAPERCLIP_PUBLIC_URL
+              value: https://paperclip.jupitertech.net
+            - name: PAPERCLIP_AUTH_DISABLE_SIGN_UP
+              value: "false"
+            # The Gateway's Envoy connects from the pod range.
+            - name: TRUST_PROXY
+              value: 10.0.0.0/16
+            - name: PAPERCLIP_MIGRATION_AUTO_APPLY
+              value: "true"
+            - name: PAPERCLIP_TELEMETRY_DISABLED
+              value: "1"
+            - name: DO_NOT_TRACK
+              value: "1"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: {name: paperclip-db-app, key: uri}
+            # Pi from the initContainer first, then the image's own PATH.
+            - name: PATH
+              value: /paperclip/tools/pi/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          envFrom:
+            # BETTER_AUTH_SECRET, PAPERCLIP_AGENT_JWT_SECRET,
+            # PAPERCLIP_SECRETS_MASTER_KEY, PAPERCLIP_TOOL_ACTION_SIGNING_SECRET
+            - secretRef:
+                name: paperclip-secrets
+          # Host-validated in authenticated mode, so the probe sends the real
+          # hostname rather than the pod IP.
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: paperclip.jupitertech.net
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+              httpHeaders:
+                - name: Host
+                  value: paperclip.jupitertech.net
+            periodSeconds: 15
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 30
+            failureThreshold: 4
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            # Headroom for agent CLI runs alongside the server.
+            limits: {memory: 3Gi}
+          volumeMounts:
+            - name: data
+              mountPath: /paperclip
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: paperclip-data
+        - name: tmp
+          emptyDir:
+            sizeLimit: 2Gi
