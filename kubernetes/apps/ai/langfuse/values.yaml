@@ -43,7 +43,7 @@ langfuse:
   worker:
     image:
       repository: docker.io/langfuse/langfuse-worker
-      tag: "4.63.0@sha256:6dd03a353f4b140155573bb642a85a6d13829fe92248a2b670df9033a234edc5"
+      tag: "4.69.0@sha256:c33c904e254633a0b5e3cc6214b6c9ed9d6eeae6fcfb6d45b003e1d78e27f48e"
     resources:
       requests:
         cpu: 150m
