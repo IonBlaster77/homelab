@@ -101,6 +101,15 @@ nextcloud:
         // would throttle everyone at once.
         'trusted_proxies' => array('10.244.0.0/16'),
         'forwarded_for_headers' => array('HTTP_X_FORWARDED_FOR'),
+        // Also set here, not just at install (NEXTCLOUD_TRUSTED_DOMAINS),
+        // so git stays the source of truth.
+        'trusted_domains' => array('cloud.jupitertech.net'),
+        // Nextcloud insists on mode 0770 for its data directory. kubelet
+        // creates the volume's "data" subPath with the volume root's mode
+        // (2775, from fsGroup) and owner root, so uid 82 can't chmod it, and
+        // the check makes every request and occ call fail. The only other
+        // users who could list it are other processes in this pod.
+        'check_data_directory_permissions' => false,
         // TLS ends at the Gateway; generate https links regardless.
         'overwriteprotocol' => 'https',
         'overwrite.cli.url' => 'https://cloud.jupitertech.net',
@@ -132,25 +141,30 @@ nextcloud:
       pm.max_spare_servers = 6
 
   hooks:
-    # Runs once, after the first install.
-    post-installation: |-
-      #!/bin/sh
-      set -eu
-      occ() { php /var/www/html/occ "$@"; }
-      # Background jobs come from the CronJob below, not from page loads.
-      occ background:cron
-      # Sign-in via Authentik (configured by hand once the Authentik app
-      # exists, README.md), the NAS "Dump" folder, and TOTP for the
-      # break-glass admin.
-      occ app:install user_oidc || occ app:enable user_oidc
-      occ app:enable files_external
-      occ app:install twofactor_totp || occ app:enable twofactor_totp
-    # Runs on every start, so these settings can't drift from git.
+    # Runs on every start, after install/upgrade, so these can't drift from
+    # git, and a first install that stopped part-way still gets them. (A
+    # post-installation hook runs only if the install step finished cleanly;
+    # the first install here didn't, so that hook never ran.) Every step is
+    # idempotent.
     before-starting: |-
       #!/bin/sh
       set -eu
       occ() { php /var/www/html/occ "$@"; }
       if occ status --output=json | grep -q '"installed":true'; then
+        # Background jobs come from the CronJob below, not from page loads.
+        occ background:cron
+        # Sign-in via Authentik (configured by hand once the Authentik app
+        # exists, README.md), the NAS "Dump" folder, and TOTP for the
+        # break-glass admin. Installed from the app store only if missing,
+        # and never fatal: an unreachable app store mustn't stop Nextcloud
+        # starting (a failing hook aborts the entrypoint).
+        apps=$(occ app:list --output=json)
+        for app in user_oidc twofactor_totp; do
+          echo "$apps" | grep -q "\"$app\"" || occ app:install "$app" || echo "WARN: could not install $app"
+        done
+        for app in user_oidc twofactor_totp files_external; do
+          occ app:enable "$app" || echo "WARN: could not enable $app"
+        done
         # Share links get a 30-day expiry by default (changeable per link).
         occ config:app:set core shareapi_default_expire_date --value=yes
         occ config:app:set core shareapi_expire_after_n_days --value=30
