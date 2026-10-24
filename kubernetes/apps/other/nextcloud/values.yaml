@@ -96,10 +96,15 @@ nextcloud:
         // Every request arrives from the Gateway's Envoy, which has a pod
         // address. Trusting the pod range makes Nextcloud take the client
         // IP from X-Forwarded-For instead (Envoy appends the address it saw;
-        // through the tunnel that is Cloudflare's view of the client). The
-        // brute-force protection needs the real IP, or one bad password
-        // would throttle everyone at once.
-        'trusted_proxies' => array('10.244.0.0/16'),
+        // through the tunnel, cloudflared's pod address is trusted too and
+        // skipped). The brute-force protection needs the real IP, or one
+        // bad password would throttle everyone at once.
+        // Pod addresses come from Cilium's default cluster pool (a /24 per
+        // node out of 10.0.0.0/8: talos1-4 have 10.0.8-11.0/24), NOT the
+        // 10.244.0.0/16 in the Talos config, which Cilium ignores. /16, not
+        // /8: the /8 would include the LAN (10.77.x), letting LAN clients
+        // forge X-Forwarded-For.
+        'trusted_proxies' => array('10.0.0.0/16'),
         'forwarded_for_headers' => array('HTTP_X_FORWARDED_FOR'),
         // Also set here, not just at install (NEXTCLOUD_TRUSTED_DOMAINS),
         // so git stays the source of truth.

@@ -49,11 +49,13 @@ without an account.
   (`check_data_directory_permissions`): Nextcloud wants 0770, but kubelet
   creates the `data` subPath as root with the fsGroup mode 2775, which uid
   82 can't change, and the failed check makes every request return 503.
-- **Real client IPs**: Nextcloud trusts the pod range (10.244.0.0/16, where
-  the Gateway's Envoy connects from) and reads `X-Forwarded-For`. The
-  brute-force protection depends on it. **Check after first deploy**: Admin
-  settings → Logging, or a failed login's IP in `nextcloud.log`, should
-  show the client's address, not a 10.244 one.
+- **Real client IPs**: Nextcloud trusts the pod range and reads
+  `X-Forwarded-For`; the brute-force protection depends on it. The pod
+  range is Cilium's default cluster pool (`10.0.N.0/24` per node, see
+  `kubectl get ciliumnodes`), **not** the `10.244.0.0/16` in the Talos
+  config. Trusted: `10.0.0.0/16`, never the whole `10.0.0.0/8`, which
+  contains the LAN. To check: the nginx container's access log shows the
+  Envoy address first and the client's address last (in quotes).
 
 ## Network policy
 
