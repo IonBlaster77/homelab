@@ -63,6 +63,7 @@ The root Application (`bootstrap/bootstrap-apps.yaml`) picks up every
 - [NAS and switch maintenance](docs/runbooks/nas-and-switch-maintenance.md)
 - [Moving the rack onto the UPS (rolling)](docs/runbooks/ups-rack-migration.md)
 - [Whole-home zoned audio](docs/projects/zoned-audio.md)
+- [Agent observability, object storage and lightweight agents](docs/projects/agent-observability.md)
 
 ## Licence
 
