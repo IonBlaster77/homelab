@@ -1,0 +1,24 @@
+# Puts the Langfuse SDK (installed onto the PVC by install-langfuse-plugin)
+# on the agent's import path. Mounted as a .pth file into the venv's
+# site-packages.
+#
+# Why not PYTHONPATH: the image's entry point (/opt/hermes/.venv/bin/hermes)
+# runs `unset PYTHONPATH PYTHONHOME` and then site.addsitedir(<venv
+# site-packages>), so env vars never reach the gateway; and its s6-supervised
+# gateways are separate processes anyway. addsitedir does read .pth files,
+# and it APPENDS their paths after the venv's own packages, so Hermes' pinned
+# versions always win: the PVC copy can add langfuse but never shadow httpx,
+# pydantic, opentelemetry, ...
+#
+# Keep the version in step with install-langfuse-plugin's LANGFUSE_SDK, and
+# the mount path's python3.X with the image's Python (3.14 in v0.22.5). If
+# either drifts, the plugin just logs "langfuse SDK is unavailable" and Hermes
+# carries on without tracing.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-langfuse-pth
+  namespace: hermes
+data:
+  zz-hermes-langfuse.pth: |
+    /home/hermes/.hermes/pylib/langfuse-4.15.2

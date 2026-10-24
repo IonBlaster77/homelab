@@ -203,11 +203,13 @@ spec:
         # 1. Its only Python dependency, langfuse==4.15.2 (the plugin's exact
         #    pin), installed with `uv pip install --target` into ~/.hermes/pylib.
         #    The agent's venv is part of the image, so anything installed there
-        #    vanishes on restart; the agent container gets PYTHONPATH instead.
+        #    vanishes on restart; a .pth file mounted into the venv
+        #    (configmap-langfuse-pth.yaml) puts the PVC copy on the path.
         #    Constrained to the venv's own package versions, so shared deps
         #    (httpx, pydantic, opentelemetry, ...) land at exactly the versions
         #    Hermes already runs and PYTHONPATH can't shadow them.
-        # 2. The plugin source: `hermes plugins install langfuse --no-deps`.
+        # 2. The plugin source: `hermes plugins install langfuse --no-deps`,
+        #    then `hermes plugins enable langfuse`.
         # Never fatal: on any failure Hermes still starts and the plugin
         # simply no-ops (it fails open without its SDK or keys).
         # Bump LANGFUSE_SDK with the plugin's pyproject pin.
@@ -262,9 +264,17 @@ spec:
               if hermes plugins list 2>/dev/null | grep -q -w langfuse; then
                 echo "langfuse plugin already installed"
               else
-                hermes plugins install langfuse --no-deps --enable \
+                hermes plugins install langfuse --no-deps \
                   || echo "WARN: langfuse plugin install failed; Hermes starts without it"
               fi
+              # --no-deps leaves the plugin disabled even with --enable
+              # ("skipping dependency consent; the plugin stays disabled"), so
+              # enable it explicitly. The state persists in config.yaml.
+              if hermes plugins list 2>/dev/null | grep -w langfuse | grep -q 'not enabled'; then
+                hermes plugins enable langfuse \
+                  || echo "WARN: could not enable the langfuse plugin"
+              fi
+              hermes plugins list 2>/dev/null | grep -w langfuse || true
               exit 0
           volumeMounts:
             - name: hermes-data
@@ -292,6 +302,9 @@ spec:
             claimName: hermes-data
         - name: agent-share
           emptyDir: {}
+        - name: langfuse-pth
+          configMap:
+            name: hermes-langfuse-pth
         - name: webui-uv-overrides
           configMap:
             name: hermes-webui-uv-overrides
@@ -399,14 +412,17 @@ spec:
                   key: HERMES_LANGFUSE_SECRET_KEY
             - name: HERMES_LANGFUSE_BASE_URL
               value: http://langfuse-web.langfuse.svc.cluster.local:3000
-            # The plugin's langfuse SDK, installed onto the PVC by
-            # install-langfuse-plugin (the image's venv isn't persistent).
-            # Keep the version in step with that initContainer's LANGFUSE_SDK.
-            - name: PYTHONPATH
-              value: /home/hermes/.hermes/pylib/langfuse-4.15.2
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
+            # The plugin's langfuse SDK (on the PVC, from
+            # install-langfuse-plugin) onto the import path. A .pth file, not
+            # PYTHONPATH, which the image's entry point unsets. See
+            # configmap-langfuse-pth.yaml.
+            - name: langfuse-pth
+              mountPath: /opt/hermes/.venv/lib/python3.14/site-packages/zz-hermes-langfuse.pth
+              subPath: zz-hermes-langfuse.pth
+              readOnly: true
             - name: research-worker-key-staged
               mountPath: /home/hermes/.ssh/research-worker-key
               subPath: research-worker-key
