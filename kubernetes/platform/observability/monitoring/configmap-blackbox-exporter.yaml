@@ -46,4 +46,11 @@ data:
             insecure_skip_verify: true
           headers:
             Host: hermes.jupitertech.net
-          valid_status_codes: [200, 301, 302, 401, 403]
+          # Any HTTP response proves the gateway (Envoy) is up and routing,
+          # including 502/503/504, which Envoy itself returns while the
+          # canary backend (Hermes) restarts. Without them every Hermes
+          # restart fired a CRIT CiliumGatewayProbeFailed (3x on
+          # 2026-10-24). The failure this probe exists for (Envoy proxy-port
+          # drift, 2026-08-09) shows as connection/TLS errors or timeouts,
+          # which still fail it.
+          valid_status_codes: [200, 301, 302, 401, 403, 502, 503, 504]

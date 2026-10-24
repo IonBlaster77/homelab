@@ -14,6 +14,11 @@ spec:
     metadata:
       labels:
         app: blackbox-exporter
+      annotations:
+        # blackbox-exporter reads config.yml only at start (no reload is
+        # wired up), so bump this whenever configmap-blackbox-exporter.yaml
+        # changes; the new value rolls the pod.
+        monitoring/blackbox-config-rev: "2026-10-24-gateway-accepts-5xx"
     spec:
       containers:
         - name: blackbox-exporter

@@ -66,7 +66,11 @@ spec:
 # stayed healthy during the 2026-08-09 outage even though every hostname
 # behind the gateway was unreachable (cilium-agent/cilium-envoy proxy-port
 # drift after a partial restart). hermes.jupitertech.net is just the canary
-# Host header; a failure here means the whole gateway is down, not just Hermes.
+# Host header. The gateway_https module accepts any HTTP response, including
+# the 502/503/504 Envoy returns while Hermes restarts, so a failure here means
+# the gateway itself didn't answer (connection, TLS or timeout), not that
+# Hermes is down. Before 2026-10-24 it rejected 5xx, so every Hermes restart
+# fired this as CRIT.
 apiVersion: monitoring.coreos.com/v1
 kind: Probe
 metadata:
