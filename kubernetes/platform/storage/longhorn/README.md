@@ -25,6 +25,7 @@ schedule, and serves the Kubernetes snapshot API.
 | `storageclass-ssd.yaml` | `longhorn-ssd`, the **cluster default** class (SSD pool) |
 | `storageclass-nvme.yaml` | `longhorn-nvme`, opt-in fast class (NVMe pool) for databases |
 | `storageclass-nvme-single.yaml` | `longhorn-nvme-single`: NVMe pool, **one replica**, for big re-creatable data (Harbor's image store). No failover if its node is down |
+| `storageclass-nvme-double.yaml` | `longhorn-nvme-double`: NVMe pool, **two replicas**, for data that matters but doesn't need three copies (Nextcloud's documents). Survives one node or disk failure |
 | `volumesnapshotclass.yaml` | `longhorn-backup-vsc`: CSI snapshots that become NAS backups (`type: bak`) |
 | `*-volume-labeler.yaml`, `job-enable-recurring-jobs.yaml` | PostSync hook that labels **every** volume into the `default` backup group |
 | `httproute.yaml`, `referencegrant.yaml` | `longhorn.jupitertech.net` → the UI (route lives in the `networking` namespace) |

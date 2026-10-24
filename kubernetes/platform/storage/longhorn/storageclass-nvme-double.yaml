@@ -1,0 +1,37 @@
+# StorageClass: longhorn-nvme-double
+#
+# NVMe disk pool, TWO replicas. For data that matters but doesn't need the
+# databases' three copies, where 3 replicas would cost a third more disk:
+#   - Nextcloud's main data volume (important documents)
+#
+# Trade-off vs longhorn-nvme: survives one node or disk failure with no
+# downtime or data loss, but not two at once. Vs longhorn-nvme-single: no
+# outage when the node holding a replica reboots (Talos upgrades). Volumes
+# still get the nightly/hourly NAS backups like any other Longhorn volume
+# (the labeler adds every volume to the "default" group).
+#
+# NVMe rather than SSD for the same reason as longhorn-nvme-single: the SSD
+# pool shares its disk with Talos' own /var, so a growing volume there can
+# squeeze the node itself.
+#
+# dataLocality best-effort keeps one replica on the node running the pod
+# when it can, so reads stay local.
+#
+# Usage in a PVC:
+#   storageClassName: longhorn-nvme-double
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-nvme-double
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "2"
+  staleReplicaTimeout: "30"
+  diskSelector: "nvme"
+  dataLocality: "best-effort"
