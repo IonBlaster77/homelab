@@ -80,6 +80,12 @@ nextcloud:
       value: 512M
     - name: PHP_UPLOAD_LIMIT
       value: 16G
+    # Read by homelab.config.php (see "Database and cache" below).
+    - name: NEXTCLOUD_REDIS_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: nextcloud-redis
+          key: redis-password
 
   # Merged into config.php. Settings that live in the database (sharing
   # defaults, background-job mode, apps) are set by the hooks below.
@@ -103,6 +109,15 @@ nextcloud:
         // 17:00 UTC = 03:30 ACDT / 02:30 ACST, after the 16:30 UTC Longhorn
         // daily backup has started.
         'maintenance_window_start' => 17,
+        // Cache and file locking in the in-namespace Redis. Set here, not
+        // via the chart's externalRedis (see "Database and cache" below).
+        'memcache.distributed' => '\OC\Memcache\Redis',
+        'memcache.locking' => '\OC\Memcache\Redis',
+        'redis' => array(
+          'host' => 'nextcloud-redis',
+          'port' => 6379,
+          'password' => (string) getenv('NEXTCLOUD_REDIS_PASSWORD'),
+        ),
       );
 
   # PHP-FPM worker pool (the image's default of 5 workers is too few once
@@ -158,15 +173,15 @@ externalDatabase:
     hostKey: host
     databaseKey: dbname
 
-# The in-namespace Redis (deployment-redis.yaml), not the shared Sentinel one.
+# The in-namespace Redis (deployment-redis.yaml), not the shared Sentinel one,
+# is configured in homelab.config.php above, NOT here. externalRedis sets
+# REDIS_HOST, and when REDIS_HOST is set the image's entrypoint writes PHP's
+# Redis session handler into /usr/local/etc/php/conf.d, which only root can
+# write: as uid 82 the container exits ("can't create .../redis-session.ini").
+# The cost: PHP sessions stay in files in the pod, so a restart signs browser
+# users out (desktop/phone clients use app passwords and don't notice).
 externalRedis:
-  enabled: true
-  host: nextcloud-redis
-  port: "6379"
-  existingSecret:
-    enabled: true
-    secretName: nextcloud-redis
-    passwordKey: redis-password
+  enabled: false
 
 # --- Storage ---------------------------------------------------------------
 # Both volumes are two-replica NVMe: the app volume holds config.php, whose
