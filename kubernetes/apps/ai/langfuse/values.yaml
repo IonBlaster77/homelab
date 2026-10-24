@@ -1,0 +1,158 @@
+# Langfuse chart values (chart 2.1.6 = Langfuse 4.63.0, rendered by
+# kustomization.yaml's helmCharts). Every bundled data store is off: this
+# folder runs ClickHouse, CNPG runs Postgres, the shared Redis and RustFS do
+# the rest. All secrets are pinned in SOPS secrets (none chart-generated).
+langfuse:
+  # Docker Hub copies of the images (pulled through Harbor's dockerhub cache),
+  # not docker.langfuse.com, which isn't mirrored. Pinned by digest.
+  web:
+    image:
+      repository: docker.io/langfuse/langfuse
+      tag: "4.63.0@sha256:2a968062bd445f891a0c2494682535dc914d0df46350c99aece44bca4489572f"
+    resources:
+      requests:
+        cpu: 150m
+        memory: 512Mi
+      limits:
+        memory: 1536Mi
+    pod:
+      # Headless initialization on first start: org, project + API key, admin.
+      additionalEnv:
+        - name: LANGFUSE_INIT_ORG_ID
+          value: homelab
+        - name: LANGFUSE_INIT_ORG_NAME
+          value: Homelab
+        - name: LANGFUSE_INIT_PROJECT_ID
+          value: agents
+        - name: LANGFUSE_INIT_PROJECT_NAME
+          value: agents
+        - name: LANGFUSE_INIT_USER_NAME
+          value: Krishna
+        - name: LANGFUSE_INIT_USER_EMAIL
+          valueFrom:
+            secretKeyRef: {name: langfuse-secrets, key: init-user-email}
+        - name: LANGFUSE_INIT_USER_PASSWORD
+          valueFrom:
+            secretKeyRef: {name: langfuse-secrets, key: init-user-password}
+        - name: LANGFUSE_INIT_PROJECT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef: {name: langfuse-secrets, key: init-project-public-key}
+        - name: LANGFUSE_INIT_PROJECT_SECRET_KEY
+          valueFrom:
+            secretKeyRef: {name: langfuse-secrets, key: init-project-secret-key}
+  worker:
+    image:
+      repository: docker.io/langfuse/langfuse-worker
+      tag: "4.63.0@sha256:6dd03a353f4b140155573bb642a85a6d13829fe92248a2b670df9033a234edc5"
+    resources:
+      requests:
+        cpu: 150m
+        memory: 512Mi
+      limits:
+        memory: 1536Mi
+  image:
+    pullPolicy: IfNotPresent
+
+  # Pinned secrets (secret-langfuse-app.sops.yaml).
+  salt:
+    secretKeyRef: {name: langfuse-secrets, key: salt}
+  encryptionKey:
+    secretKeyRef: {name: langfuse-secrets, key: encryption-key}
+  nextauth:
+    url: https://langfuse.jupitertech.net
+    secret:
+      secretKeyRef: {name: langfuse-secrets, key: nextauth-secret}
+
+  features:
+    signUpDisabled: true
+    telemetryEnabled: false
+
+  # PSA restricted. The images run as the non-root nextjs/expressjs user,
+  # UID 1001 (a numeric runAsUser is needed for kubelet to verify non-root).
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+
+  serviceAccount:
+    # Langfuse never talks to the Kubernetes API.
+    automountServiceAccountToken: false
+
+  additionalEnv:
+    # The shared Redis: Langfuse's own ACL user, which can only touch
+    # langfuse:* keys. REDIS_KEY_PREFIX covers both its cache and its BullMQ
+    # queues. Langfuse reads REDIS_USERNAME / REDIS_AUTH for the data
+    # connection (set explicitly; Sentinel itself has no password).
+    - name: REDIS_KEY_PREFIX
+      value: "langfuse:"
+    - name: REDIS_USERNAME
+      value: langfuse
+    - name: REDIS_AUTH
+      valueFrom:
+        secretKeyRef: {name: redis-langfuse, key: password}
+
+postgresql:
+  deploy: false
+  host: langfuse-db-rw.langfuse.svc.cluster.local
+  port: 5432
+  auth:
+    username: langfuse
+    database: langfuse
+    # CloudNativePG generates this for the app owner.
+    existingSecret: langfuse-db-app
+    secretKeys:
+      userPasswordKey: password
+
+clickhouse:
+  deploy: false
+  host: clickhouse.langfuse.svc.cluster.local
+  httpPort: 8123
+  nativePort: 9000
+  database: default
+  # Single-node mode: no ON CLUSTER DDL, no Keeper.
+  cluster:
+    enabled: false
+  keeper:
+    enabled: false
+  auth:
+    username: langfuse
+    existingSecret: clickhouse-users
+    existingSecretKey: password
+
+redis:
+  deploy: false
+  sentinel:
+    enabled: true
+    masterName: mymaster
+    nodes: "redis-0.redis.redis.svc.cluster.local:26379,redis-1.redis.redis.svc.cluster.local:26379,redis-2.redis.redis.svc.cluster.local:26379"
+  auth:
+    username: langfuse
+    existingSecret: redis-langfuse
+    existingSecretPasswordKey: password
+
+s3:
+  deploy: false
+  bucket: langfuse
+  region: us-east-1
+  endpoint: http://rustfs.rustfs.svc.cluster.local:9000
+  forcePathStyle: true
+  accessKeyId:
+    secretKeyRef: {name: langfuse-s3, key: ACCESS_KEY_ID}
+  secretAccessKey:
+    secretKeyRef: {name: langfuse-s3, key: ACCESS_SECRET_KEY}
+  eventUpload:
+    prefix: "events/"
+  # Both hand the browser a presigned URL to the S3 endpoint, which is
+  # cluster-internal here, so they'd fail. Off until RustFS is reachable
+  # from browsers (or not needed).
+  batchExport:
+    enabled: false
+  mediaUpload:
+    enabled: false

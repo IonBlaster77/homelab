@@ -90,6 +90,78 @@ spec:
         - ports:
             - port: "9187"
               protocol: TCP
+---
+# Langfuse web and worker: the shared Redis (Sentinel 26379 to find the
+# primary, then 6379 as ACL user `langfuse`) and RustFS (event uploads). The
+# redis and rustfs namespaces admit these pods on their side.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-app-allow-redis-rustfs
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: redis
+            app: redis
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "26379"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# The Gateway (browsers and the desktop's Claude Code hook, both via the
+# langfuse.jupitertech.net HTTPRoute) reaches the web UI/API. Container port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-web-allow-gateway-ingress
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Reply traffic to cross-node Envoy (Gateway) connections, as in the other
+# apps (native routing evaluates replies against egress policy), EXCEPT the
+# Kubernetes API VIP. Also how web will reach Authentik for OIDC
+# (auth.jupitertech.net resolves to the Gateway VIP).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-web-allow-node-egress
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  egress:
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
 #
-# Langfuse web/worker policies (Gateway ingress, Redis, RustFS, ingestion from
-# Hermes and the desktop) come with the Langfuse deployment itself.
+# Hermes' in-cluster ingestion (its Langfuse plugin) gets its own ingress rule
+# when Hermes is wired up.
