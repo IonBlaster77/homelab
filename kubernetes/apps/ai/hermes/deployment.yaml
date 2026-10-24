@@ -188,7 +188,7 @@ spec:
         # venv — different Python version/ABI than the webui image, would
         # break compiled deps) out of the agent image into a shared volume.
         - name: share-agent-src
-          image: nousresearch/hermes-agent:v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7
+          image: nousresearch/hermes-agent:v0.22.5@sha256:9c5561579f3ffdf333401797094ac3a743738d6c25d40f4331c7bf77b694238d
           command:
             - sh
             - -c
@@ -240,7 +240,7 @@ spec:
 
       containers:
         - name: hermes-agent
-          image: nousresearch/hermes-agent:v2026.9.24@sha256:fca358f12efd65bfaaca05884166f15c0e2788375ca30d77061ac1ebc96452b7
+          image: nousresearch/hermes-agent:v0.22.5@sha256:9c5561579f3ffdf333401797094ac3a743738d6c25d40f4331c7bf77b694238d
           imagePullPolicy: IfNotPresent
           args: ["gateway", "run"]
           envFrom:
@@ -326,7 +326,7 @@ spec:
               cpu: "500m"
 
         - name: hermes-webui
-          image: ghcr.io/nesquena/hermes-webui:0.52.548@sha256:8e6b4a34c8a793d7ca58efb7d236bca8a4d6d65f44d8489d96174ed21b9a176c
+          image: ghcr.io/nesquena/hermes-webui:0.52.555@sha256:d0bbb1c5371b1f4b0a28e4cffa5f403780eb81601b66a6d6843f6fc338f08523
           imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
