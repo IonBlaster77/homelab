@@ -108,10 +108,7 @@ spec:
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
-            - name: webui-uv-overrides
-          configMap:
-            name: hermes-webui-uv-overrides
-        - name: mcp-servers-fragment
+            - name: mcp-servers-fragment
               mountPath: /mcp-fragment
               readOnly: true
 
@@ -208,6 +205,9 @@ spec:
             claimName: hermes-data
         - name: agent-share
           emptyDir: {}
+        - name: webui-uv-overrides
+          configMap:
+            name: hermes-webui-uv-overrides
         - name: mcp-servers-fragment
           configMap:
             name: hermes-mcp-servers
