@@ -90,6 +90,30 @@ spec:
             - port: "26379"
               protocol: TCP
 ---
+# Langfuse web and worker (kubernetes/apps/ai/langfuse): Sentinel (26379) to
+# find the primary, then Redis (6379) as the ACL user `langfuse`, which can
+# only touch langfuse:* keys.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: redis-allow-ingress-from-langfuse
+  namespace: redis
+spec:
+  endpointSelector:
+    matchLabels:
+      app: redis
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: langfuse
+            app.kubernetes.io/name: langfuse
+      toPorts:
+        - ports:
+            - port: "6379"
+              protocol: TCP
+            - port: "26379"
+              protocol: TCP
+---
 # Prometheus scraping the redis_exporter sidecar.
 #
 # No client app is admitted on 6379 right now. README.md ("Adding a client")

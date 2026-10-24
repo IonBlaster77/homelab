@@ -3,8 +3,8 @@
 Highly available Redis: **3 pods, each running Redis + Sentinel, each on a
 different node.** One pod is the primary (takes writes), two are live replicas,
 and Sentinel promotes a replica automatically if the primary dies. Shared
-infrastructure for apps that need a cache, job queue or session store
-(Harbor first).
+infrastructure for apps that need a cache, job queue or session store:
+Harbor (default user) and Langfuse (its own ACL user).
 
 | | |
 |---|---|
@@ -94,10 +94,23 @@ spec:
               protocol: TCP
 ```
 
-The client also needs the password: give it its own copy of the secret in its
-namespace (Secrets can't be read across namespaces). Give each app its own
-logical database number or key prefix so they don't collide. Sentinel itself
-has no password; only the network policy decides who can reach it.
+**Give a new client its own ACL user, not the default password** (Langfuse is
+the example). Add a key to `secret.sops.yaml`, an env var for it in the
+`config` init container, and a `user <name> on >$PW ~<prefix>:* &* +@all -flushall
+-flushdb ...` line in the generated `redis.conf` (`statefulset.yaml`). Then give
+the app a copy of the password in its own namespace (Secrets can't be read
+across namespaces) and set its key prefix to match. The user can then only
+touch its own keys, and can't wipe or reconfigure the server. ACL users aren't
+replicated, which is why every pod's config defines them. Adding one
+rolling-restarts all three pods (one at a time, with a failover for the
+primary).
+
+Harbor predates this and uses the default user. Sentinel itself has no
+password; only the network policy decides who can reach it.
+
+| ACL user | App | Keys | Secret key |
+|---|---|---|---|
+| `langfuse` | Langfuse | `langfuse:*` | `langfuse-password` |
 
 ## Gotchas
 

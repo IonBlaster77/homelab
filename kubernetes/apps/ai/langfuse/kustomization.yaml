@@ -19,3 +19,5 @@ resources:
   - scheduledbackup-langfuse-db.yaml
   # Langfuse's own RustFS key (s3://langfuse/), used by the app later
   - secret-langfuse-s3.sops.yaml
+  # Its Redis ACL user's password (user defined in the redis app)
+  - secret-redis-langfuse.sops.yaml
