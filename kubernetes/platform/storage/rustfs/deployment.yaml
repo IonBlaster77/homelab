@@ -73,6 +73,10 @@ spec:
               mountPath: /data
             - name: tmp
               mountPath: /tmp
+            # RustFS creates its log directory at startup and exits with
+            # "Read-only file system" if it can't write there.
+            - name: logs
+              mountPath: /logs
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -102,5 +106,8 @@ spec:
           persistentVolumeClaim:
             claimName: rustfs-data
         - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: logs
           emptyDir:
             sizeLimit: 1Gi
