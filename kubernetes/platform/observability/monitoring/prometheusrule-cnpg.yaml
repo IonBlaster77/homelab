@@ -57,6 +57,20 @@ spec:
           for: 1m
           labels:
             severity: warning
+        # Not upstream: WAL segments finished but not yet uploaded to RustFS
+        # (.ready files in pg_wal). Normally 0-1; it only climbs while archiving
+        # is failing or stuck, and Postgres keeps every one of them, so pg_wal
+        # grows on the database volume until it fills. Deliberately not "time
+        # since last archival": an idle database (kea-db) archives nothing for
+        # days and would fire.
+        - alert: WALArchiveBacklog
+          annotations:
+            description: "{{ $labels.pod }} has {{ $value }} WAL segments (16 MiB each) waiting to be archived."
+            summary: "WAL archiving to RustFS is falling behind; pg_wal is growing."
+          expr: cnpg_collector_pg_wal_archive_status{value="ready"} > 10
+          for: 15m
+          labels:
+            severity: warning
         - alert: ReplicaFailingReplication
           annotations:
             description: "Replica {{ $labels.pod }} is failing to replicate."
