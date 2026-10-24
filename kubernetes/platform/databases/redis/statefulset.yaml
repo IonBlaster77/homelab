@@ -74,6 +74,11 @@ spec:
                 secretKeyRef:
                   name: redis-credentials
                   key: password
+            - name: LANGFUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: langfuse-password
           command:
             - sh
             - -c
@@ -118,6 +123,13 @@ spec:
               masterauth $REDIS_PASSWORD
               replica-announce-ip $ME
               replica-announce-port 6379
+              # ACL user for Langfuse (kubernetes/apps/ai/langfuse): only keys
+              # under langfuse:* (its REDIS_KEY_PREFIX, which covers both its
+              # cache and its BullMQ queues), any Pub/Sub channel, all
+              # commands except the ones that wipe or reconfigure the server.
+              # Harbor keeps using the default user (requirepass). ACL users
+              # are per server, so every pod defines it.
+              user langfuse on >$LANGFUSE_PASSWORD ~langfuse:* &* +@all -flushall -flushdb -swapdb -config -shutdown -debug -replicaof -slaveof -failover -acl -save -bgsave -bgrewriteaof -monitor -module -migrate -restore
               EOF
               if [ "$MASTER" != "$ME" ]; then
                 echo "replicaof $MASTER 6379" >> /etc/redis/redis.conf
