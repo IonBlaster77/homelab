@@ -7,8 +7,11 @@ data:
   kea-dhcp4.conf.tmpl: |
     {
       "Dhcp4": {
+        // eth0 only: "*" also tries the pod's unused tunnel interfaces
+        // (tunl0, sit0, ip6tnl0), which are down, and Kea 3.x logs that as
+        // DHCP4_OPEN_SOCKETS_FAILED at ERROR. Relayed requests arrive on eth0.
         "interfaces-config": {
-          "interfaces": ["*"],
+          "interfaces": ["eth0"],
           "dhcp-socket-type": "udp"
         },
         // The management API, served by kea-dhcp4 itself on :8000 (the
