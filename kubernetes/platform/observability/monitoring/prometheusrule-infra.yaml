@@ -83,8 +83,8 @@ spec:
           labels:
             severity: warning
           annotations:
-            summary: "Kea DHCP control-agent API is not responding"
-            description: "The control-agent (lease/config API) is down. This doesn't necessarily mean DHCP itself (UDP/67) has stopped — kube-prometheus-stack's default pod-health rules cover the kea-dhcp4 pod separately."
+            summary: "Kea DHCP management API is not responding"
+            description: "kea-dhcp4's management API (lease/config commands, :8000 behind the kea-ctrl-agent Service; Kea 3.x serves it from kea-dhcp4 itself) is down. This doesn't necessarily mean DHCP itself (UDP/67) has stopped — kube-prometheus-stack's default pod-health rules cover the kea-dhcp4 pod separately."
         - alert: NASNFSUnreachable
           expr: probe_success{target="nas-nfs"} == 0
           for: 5m

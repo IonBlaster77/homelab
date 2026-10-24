@@ -11,10 +11,23 @@ data:
           "interfaces": ["*"],
           "dhcp-socket-type": "udp"
         },
-        "control-socket": {
-          "socket-type": "unix",
-          "socket-name": "/kea/sockets/kea4-ctrl-socket"
-        },
+        // The management API, served by kea-dhcp4 itself on :8000 (the
+        // Service is still called kea-ctrl-agent). Kea 3.x removed the
+        // separate Control Agent. An authentication block is mandatory;
+        // an empty clients list means no credentials are required, the
+        // same as the old Control Agent here.
+        "control-sockets": [
+          {
+            "socket-type": "http",
+            "socket-address": "0.0.0.0",
+            "socket-port": 8000,
+            "authentication": {
+              "type": "basic",
+              "realm": "kea-dhcp4",
+              "clients": []
+            }
+          }
+        ],
         "lease-database": {
           "type": "postgresql",
           "host": "kea-db-rw.kea.svc.cluster.local",
@@ -22,9 +35,13 @@ data:
           "user": "kea",
           "password": "__DB_PASSWORD__"
         },
+        // Bare names: Kea 3.x only loads hooks from its own hooks directory.
+        // libdhcp_pgsql.so is required for the PostgreSQL lease database
+        // since Kea 2.7.4 (it used to be built in).
         "hooks-libraries": [
-          {"library": "/usr/local/lib/kea/hooks/libdhcp_lease_cmds.so"},
-          {"library": "/usr/local/lib/kea/hooks/libdhcp_stat_cmds.so"}
+          {"library": "libdhcp_pgsql.so"},
+          {"library": "libdhcp_lease_cmds.so"},
+          {"library": "libdhcp_stat_cmds.so"}
         ],
         "host-reservation-identifiers": ["hw-address", "client-id"],
         "reservations-global": false,
@@ -104,27 +121,6 @@ data:
             "output_options": [{"output": "stdout"}],
             "severity": "INFO",
             "debuglevel": 0
-          }
-        ]
-      }
-    }
-
-  kea-ctrl-agent.conf: |
-    {
-      "Control-agent": {
-        "http-host": "0.0.0.0",
-        "http-port": 8000,
-        "control-sockets": {
-          "dhcp4": {
-            "socket-type": "unix",
-            "socket-name": "/kea/sockets/kea4-ctrl-socket"
-          }
-        },
-        "loggers": [
-          {
-            "name": "kea-ctrl-agent",
-            "output_options": [{"output": "stdout"}],
-            "severity": "INFO"
           }
         ]
       }
