@@ -9,6 +9,10 @@ resources:
   - secret-db-grafana.sops.yaml
   - database.yaml
   - monitoring.yaml
+  # kea-db's point-in-time-recovery backups to RustFS (Barman Cloud plugin)
+  - secret-kea-db-backup.sops.yaml
+  - objectstore-kea-db.yaml
+  - scheduledbackup-kea-db.yaml
   - configmap.yaml
   - configmap-db-schema.yaml
   - deployment.yaml

@@ -1,0 +1,36 @@
+# Where kea-db's WAL archive and base backups go: RustFS, under
+# s3://cnpg/kea-db/ (Barman appends the serverName set on the Cluster).
+# The key in kea-db-backup-s3 can only touch that prefix and cannot delete
+# object versions; the bucket is versioned, so nothing here can destroy the
+# backup history. See kubernetes/platform/databases/cnpg-barman-cloud/README.md.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: kea-db-backup
+  namespace: kea
+spec:
+  # Recovery window: base backups (and the WAL needed to replay them) older
+  # than this are deleted. The Longhorn NAS dailies keep 30 days on top.
+  retentionPolicy: "14d"
+  configuration:
+    destinationPath: s3://cnpg/
+    endpointURL: http://rustfs.rustfs.svc.cluster.local:9000
+    s3Credentials:
+      accessKeyId:
+        name: kea-db-backup-s3
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: kea-db-backup-s3
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  instanceSidecarConfiguration:
+    env:
+      # Newer boto3 data-integrity checks break S3-compatible stores like
+      # RustFS (x-amz-content-sha256 errors, plugin issue #393).
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required

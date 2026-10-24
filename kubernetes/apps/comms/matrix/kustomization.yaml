@@ -11,6 +11,11 @@ resources:
   - secret-matrix-alertbot.sops.yaml
   - cluster-matrix-db.yaml
   - database-mas.yaml
+  - podmonitor-matrix-db.yaml
+  # matrix-db's point-in-time-recovery backups to RustFS (Barman Cloud plugin)
+  - secret-matrix-db-backup.sops.yaml
+  - objectstore-matrix-db.yaml
+  - scheduledbackup-matrix-db.yaml
   - httproute-matrix.yaml
   - httproute-account.yaml
   - httproute-chat.yaml

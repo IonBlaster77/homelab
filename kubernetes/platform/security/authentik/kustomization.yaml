@@ -11,6 +11,10 @@ resources:
   - secret-authentik-db.sops.yaml
   - cluster-authentik-db.yaml
   - podmonitor-authentik-db.yaml
+  # Its point-in-time-recovery backups to RustFS (Barman Cloud plugin)
+  - secret-authentik-db-backup.sops.yaml
+  - objectstore-authentik-db.yaml
+  - scheduledbackup-authentik-db.yaml
   # LDAP / RADIUS outpost LoadBalancers (no outposts exist yet)
   - service-ldap.yaml
   - service-radius.yaml

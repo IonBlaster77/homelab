@@ -1,0 +1,18 @@
+# Daily base backup of kea-db to RustFS via the Barman Cloud plugin.
+# 15:40 UTC = 02:10 Adelaide; the clusters are staggered 10 min apart from
+# grafana-db's 15:00. CNPG cron has a seconds field. No `immediate`: it would
+# fire before the pods restart with the sidecar and fail; the first base backup
+# is taken by hand (see the cnpg-barman-cloud README).
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: kea-db-daily
+  namespace: kea
+spec:
+  schedule: "0 40 15 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: kea-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

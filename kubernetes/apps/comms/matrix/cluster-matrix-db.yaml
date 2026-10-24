@@ -27,3 +27,12 @@ spec:
         login: true
         passwordSecret:
           name: matrix-db-mas
+  # Point-in-time recovery: the Barman Cloud plugin archives every WAL segment
+  # and stores base backups in RustFS (s3://cnpg/matrix-db/, see
+  # objectstore-matrix-db.yaml). Adding this restarts both pods once.
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: matrix-db-backup
+        serverName: matrix-db
