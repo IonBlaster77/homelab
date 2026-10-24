@@ -216,6 +216,12 @@ spec:
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
+          # Same config as the agent, above all HERMES_HOME=/home/hermes/.hermes:
+          # without it the CLI uses the image default /opt/data, and
+          # `hermes plugins install` fails with Permission denied there.
+          envFrom:
+            - configMapRef:
+                name: hermes-config
           env:
             - name: HOME
               value: /home/hermes
