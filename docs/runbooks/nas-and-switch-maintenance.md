@@ -58,8 +58,15 @@ kubectl describe pvc -n media media-nfs | grep -A20 '^Used By:'
 reschedules the pod (and its NFS mount) onto a different node, which is
 still exposed; only actually stopping the pod removes the mount.
 
-```bash
-kubectl scale deploy -n media bazarr jellyfin nzbget qbittorrent radarr sonarr unpackerr --replicas=0
+**Do this through git, not `kubectl scale`.** The `media` Application and
+its parent `bootstrap-apps` both have selfHeal on and the manifests pin
+`replicas: 1`, so a `kubectl scale` (or pausing `media`'s auto-sync) is
+reverted within minutes, silently re-mounting NFS mid-maintenance. Open a
+PR setting `replicas: 0` on these Deployments under
+`kubernetes/apps/media/media-stack/`, merge it, then `argocd app sync media`:
+
+```
+bazarr jellyfin nzbget qbittorrent radarr sonarr unpackerr
 ```
 
 (Cross-check this list against step 1's `Used By:` output — new *arr
@@ -89,11 +96,8 @@ Wait for all 4 nodes `Ready`, etcd raft indexes matching across all
 three control-plane members, and the NAS responding to ping, before
 proceeding.
 
-**6. Scale the media Deployments back up:**
-
-```bash
-kubectl scale deploy -n media bazarr jellyfin nzbget qbittorrent radarr sonarr unpackerr --replicas=1
-```
+**6. Scale the media Deployments back up:** revert the step-2 PR (or a
+follow-up PR restoring `replicas: 1`), merge, and `argocd app sync media`.
 
 ---
 
