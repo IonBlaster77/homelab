@@ -8,7 +8,7 @@ langfuse:
   web:
     image:
       repository: docker.io/langfuse/langfuse
-      tag: "4.63.0@sha256:2a968062bd445f891a0c2494682535dc914d0df46350c99aece44bca4489572f"
+      tag: "4.69.0@sha256:394c425afbd0d4305cc1fb167ff4a2984cb80c7e80fd2f5adb777e29c1d097a8"
     resources:
       requests:
         cpu: 150m
