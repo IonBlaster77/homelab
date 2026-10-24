@@ -1,0 +1,23 @@
+# Renders the Nextcloud chart (helmCharts, needs the plugin's --enable-helm)
+# plus this folder's own manifests. app.yaml is deliberately NOT listed: it
+# is picked up by the root app. *.sops.yaml files are decrypted by the
+# sops-kustomize plugin before this runs.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: nextcloud
+    repo: https://nextcloud.github.io/helm/
+    version: 9.4.1
+    releaseName: nextcloud
+    namespace: nextcloud
+    valuesFile: values.yaml
+resources:
+  - namespace.yaml
+  - secret-nextcloud-admin.sops.yaml
+  - secret-nextcloud-redis.sops.yaml
+  - cluster-nextcloud-db.yaml
+  - deployment-redis.yaml
+  - service-redis.yaml
+  - httproute.yaml
+  - referencegrant.yaml
+  - networkpolicy.yaml

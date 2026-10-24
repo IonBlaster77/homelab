@@ -1,0 +1,234 @@
+# Values for the Nextcloud chart (nextcloud.github.io/helm).
+# Reference: https://github.com/nextcloud/helm/blob/main/charts/nextcloud/values.yaml
+
+# PHP-FPM image (tag = chart appVersion + flavor, so it moves with the chart
+# version in kustomization.yaml). Nextcloud upgrades must go ONE major
+# version at a time: never let a chart bump skip a Nextcloud major.
+image:
+  flavor: fpm-alpine
+
+# nginx serves static files and passes PHP to FPM on 127.0.0.1:9000. The
+# unprivileged image listens on 8080 as uid 101, so the pod can stay PSA
+# restricted (the default nginx image binds 80 as root).
+nginx:
+  enabled: true
+  image:
+    repository: nginxinc/nginx-unprivileged
+    tag: 1.30.6-alpine
+  containerPort: 8080
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+service:
+  type: ClusterIP
+  port: 8080
+
+nextcloud:
+  host: cloud.jupitertech.net
+  trustedDomains:
+    - cloud.jupitertech.net
+  # The Service's targetPort: nginx's port, since nginx is in front.
+  containerPort: 8080
+
+  # Break-glass local admin (nextcloud-username / nextcloud-password in
+  # secret-nextcloud-admin.sops.yaml). Everyone else signs in through
+  # Authentik once user_oidc is set up (README.md).
+  existingSecret:
+    enabled: true
+    secretName: nextcloud-admin
+    usernameKey: nextcloud-username
+    passwordKey: nextcloud-password
+
+  # Recreate (the chart default): the pod holds ReadWriteOnce volumes.
+  # Created this way, so Argo SSA keeps it (see the RWO strategy note in
+  # kubernetes/platform/system/harbor/kustomization.yaml for the opposite case).
+  strategy:
+    type: Recreate
+
+  # www-data in the Alpine image is uid/gid 82. The image's entrypoint
+  # supports running as that user directly (it skips its root-only chown
+  # steps), and fsGroup makes the Longhorn volumes group-writable for it.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 82
+    runAsGroup: 82
+    fsGroup: 82
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+
+  extraEnv:
+    # Read by the image's PHP ini. Large single uploads only matter for
+    # browser uploads by people without accounts (File drop); the desktop
+    # and phone clients upload in chunks.
+    - name: PHP_MEMORY_LIMIT
+      value: 512M
+    - name: PHP_UPLOAD_LIMIT
+      value: 16G
+
+  # Merged into config.php. Settings that live in the database (sharing
+  # defaults, background-job mode, apps) are set by the hooks below.
+  configs:
+    homelab.config.php: |-
+      <?php
+      $CONFIG = array(
+        // Every request arrives from the Gateway's Envoy, which has a pod
+        // address. Trusting the pod range makes Nextcloud take the client
+        // IP from X-Forwarded-For instead (Envoy appends the address it saw;
+        // through the tunnel that is Cloudflare's view of the client). The
+        // brute-force protection needs the real IP, or one bad password
+        // would throttle everyone at once.
+        'trusted_proxies' => array('10.244.0.0/16'),
+        'forwarded_for_headers' => array('HTTP_X_FORWARDED_FOR'),
+        // TLS ends at the Gateway; generate https links regardless.
+        'overwriteprotocol' => 'https',
+        'overwrite.cli.url' => 'https://cloud.jupitertech.net',
+        'default_phone_region' => 'AU',
+        // Heavy background jobs run in a 4h window from this hour (UTC):
+        // 17:00 UTC = 03:30 ACDT / 02:30 ACST, after the 16:30 UTC Longhorn
+        // daily backup has started.
+        'maintenance_window_start' => 17,
+      );
+
+  # PHP-FPM worker pool (the image's default of 5 workers is too few once
+  # several clients sync at once).
+  phpConfigs:
+    zz-homelab.conf: |-
+      [www]
+      pm = dynamic
+      pm.max_children = 20
+      pm.start_servers = 4
+      pm.min_spare_servers = 2
+      pm.max_spare_servers = 6
+
+  hooks:
+    # Runs once, after the first install.
+    post-installation: |-
+      #!/bin/sh
+      set -eu
+      occ() { php /var/www/html/occ "$@"; }
+      # Background jobs come from the CronJob below, not from page loads.
+      occ background:cron
+      # Sign-in via Authentik (configured by hand once the Authentik app
+      # exists, README.md), the NAS "Dump" folder, and TOTP for the
+      # break-glass admin.
+      occ app:install user_oidc || occ app:enable user_oidc
+      occ app:enable files_external
+      occ app:install twofactor_totp || occ app:enable twofactor_totp
+    # Runs on every start, so these settings can't drift from git.
+    before-starting: |-
+      #!/bin/sh
+      set -eu
+      occ() { php /var/www/html/occ "$@"; }
+      if occ status --output=json | grep -q '"installed":true'; then
+        # Share links get a 30-day expiry by default (changeable per link).
+        occ config:app:set core shareapi_default_expire_date --value=yes
+        occ config:app:set core shareapi_expire_after_n_days --value=30
+      fi
+
+# --- Database and cache --------------------------------------------------------
+internalDatabase:
+  enabled: false
+
+# CloudNativePG cluster nextcloud-db (cluster-nextcloud-db.yaml); its
+# generated nextcloud-db-app secret has every connection detail.
+externalDatabase:
+  enabled: true
+  type: postgresql
+  existingSecret:
+    enabled: true
+    secretName: nextcloud-db-app
+    usernameKey: username
+    passwordKey: password
+    hostKey: host
+    databaseKey: dbname
+
+# The in-namespace Redis (deployment-redis.yaml), not the shared Sentinel one.
+externalRedis:
+  enabled: true
+  host: nextcloud-redis
+  port: "6379"
+  existingSecret:
+    enabled: true
+    secretName: nextcloud-redis
+    passwordKey: redis-password
+
+# --- Storage ---------------------------------------------------------------
+# Both volumes are two-replica NVMe: the app volume holds config.php, whose
+# instance secrets can't be regenerated, so it gets the same protection as
+# the files. Prune/Delete=false: Argo never deletes them, even if this app
+# or the chart's PVC templates go away.
+persistence:
+  enabled: true
+  storageClass: longhorn-nvme-double
+  accessMode: ReadWriteOnce
+  # /var/www/html: Nextcloud's code, config, apps and themes.
+  size: 5Gi
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  # The files. Grow it here (Longhorn expands online).
+  nextcloudData:
+    enabled: true
+    storageClass: longhorn-nvme-double
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    annotations:
+      argocd.argoproj.io/sync-options: Prune=false,Delete=false
+
+# --- Background jobs -----------------------------------------------------------
+# A Kubernetes CronJob running cron.php every 5 minutes (the sidecar option
+# needs root). It mounts the same ReadWriteOnce volumes, so it must run on
+# the node where the Nextcloud pod is.
+cronjob:
+  enabled: true
+  type: cronjob
+  cronjob:
+    affinity:
+      podAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: nextcloud
+                app.kubernetes.io/component: app
+            topologyKey: kubernetes.io/hostname
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi
+
+# --- Probes and resources ----------------------------------------------------
+# The first start installs Nextcloud into the database, which takes a few
+# minutes; the startup probe holds off liveness until then.
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 60
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 2Gi

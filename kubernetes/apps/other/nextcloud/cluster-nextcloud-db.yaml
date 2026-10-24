@@ -1,0 +1,18 @@
+# Nextcloud's database. No credentials secret is supplied, so CloudNativePG
+# generates one (nextcloud-db-app: username, password, host, dbname, ...)
+# and Nextcloud reads all four from it (externalDatabase.existingSecret).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: nextcloud-db
+  namespace: nextcloud
+spec:
+  instances: 2
+  storage:
+    # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: nextcloud
+      owner: nextcloud

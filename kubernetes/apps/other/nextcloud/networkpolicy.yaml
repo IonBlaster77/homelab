@@ -1,0 +1,137 @@
+---
+# Default deny all ingress and egress for every pod in the nextcloud namespace.
+# (One empty rule = deny-all; an empty list is rejected by Cilium. See
+# kubernetes/apps/ai/crawl4ai/networkpolicy.yaml.)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-default-deny
+  namespace: nextcloud
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# Nextcloud, its CronJob, Redis and the database talk to each other freely.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-allow-intra-namespace
+  namespace: nextcloud
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-allow-dns
+  namespace: nextcloud
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The Gateway reaches only the Nextcloud pod's nginx. Container port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-allow-gateway-ingress
+  namespace: nextcloud
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud
+      app.kubernetes.io/component: app
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# Reply traffic to cross-node Envoy (Gateway) connections, as in the other
+# apps, EXCEPT the Kubernetes API VIP. Also how Nextcloud reaches Authentik
+# (auth.jupitertech.net resolves to the Gateway VIP) for OIDC sign-in.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-allow-node-egress
+  namespace: nextcloud
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud
+  egress:
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
+---
+# The app store (installing user_oidc, files_external's dependencies, app
+# updates) and Nextcloud's update and well-known checks. Public addresses
+# only, HTTPS/HTTP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-allow-internet
+  namespace: nextcloud
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# Database pods: the CloudNativePG operator manages them, and they talk to
+# the Kubernetes API (instance manager).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-db-allow-apiserver-and-operator
+  namespace: nextcloud
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: nextcloud-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP

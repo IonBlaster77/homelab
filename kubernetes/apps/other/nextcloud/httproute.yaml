@@ -1,0 +1,26 @@
+# cloud.jupitertech.net: Nextcloud via the chart's "nextcloud" Service
+# (nginx in front of PHP-FPM). LAN-ONLY for now: AdGuard resolves it to the
+# Gateway and there is no Cloudflare DNS record. It goes public (with a
+# Cloudflare Access bypass) only once sign-in is Authentik-only; see
+# README.md, "Going public".
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nextcloud
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - cloud.jupitertech.net
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: nextcloud
+          namespace: nextcloud
+          port: 8080
