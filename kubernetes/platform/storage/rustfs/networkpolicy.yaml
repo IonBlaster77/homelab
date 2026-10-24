@@ -1,0 +1,39 @@
+---
+# Default deny all ingress and egress for the rustfs namespace.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rustfs-default-deny
+  namespace: rustfs
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# DNS resolution. RustFS needs no other egress: no internet (update checks,
+# telemetry), no other cluster services.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rustfs-allow-dns
+  namespace: rustfs
+spec:
+  endpointSelector:
+    matchLabels:
+      app: rustfs
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+#
+# No client is admitted on 9000 yet. Each client gets its own policy here when
+# it is wired up (the CNPG clusters first, then Langfuse); see README.md.
