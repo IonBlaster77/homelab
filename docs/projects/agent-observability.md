@@ -152,6 +152,29 @@ cluster → restore the RustFS volume from the NAS → start RustFS → CNPG rec
 counts, the UI works remotely through Access + Authentik, and ingestion is unreachable
 from outside.
 
+**Status (2026-10-25):** everything but remote access is done.
+
+- **Langfuse 4.69** runs LAN-only at `langfuse.jupitertech.net` (`kubernetes/apps/ai/langfuse`).
+  Langfuse v4 writes in `events_only` mode, so the legacy `/api/public/ingestion` endpoint
+  rejects trace creation. Agents must send OTLP to `/api/public/otel/v1/traces`.
+- **Hermes** traces through the Langfuse plugin (#312, #313, #315).
+- **Claude Code** traces through a home-grown Stop hook rather than Langfuse's, because
+  Langfuse's needs the v4 SDK and sends no masking. The hook is
+  `~/.claude/hooks/langfuse_otlp_hook.py` on the Windows machine. It sends each finished turn
+  as OTLP spans (generations with token usage, tools as tool spans), masks keys, tokens, PEM
+  blocks and long base64 first, and truncates long text. It reads the transcript
+  incrementally, returns in about 0.2 s and exports from a detached worker.
+  - Credentials: `~/.claude/langfuse/credentials.json`; log: `~/.claude/langfuse/hook.log`.
+  - Opt out with `CC_LANGFUSE_DISABLE=1`.
+- **Retention:**
+  - The `langfuse/trace-retention` CronJob (#324) deletes traces older than 30 days every
+    night at 16:30 UTC. It's a plain CronJob, not a CronWorkflow, so there's no Argo
+    Workflows dependency.
+  - A RustFS lifecycle rule expires `langfuse/events/` after 7 days. That rule is bucket
+    state, recorded in the RustFS README.
+- **Left to do:** an Authentik OIDC app and a Cloudflare Access app plus tunnel hostname for
+  remote access. Both need the user.
+
 ## Phase 3: Paperclip + Pi
 
 - Inventory Hermes' cron jobs (needs a read-only `kubectl exec` into the Hermes pod).
@@ -196,7 +219,7 @@ is no longer acceptable.
 | 6 | ClickHouse: chart-bundled (community-supported) or ClickHouse operator (officially supported) | **Bundled, single replica.** Fewer moving parts; revisit if it bites. |
 | 7 | Redis: chart-bundled or the existing Sentinel HA (`redis-sentinel.redis:26379`) | **Reuse the existing Redis** (checked 2026-10-24, compatible; see below). |
 | 8 | Postgres | **Own CNPG cluster**, consistent with everything else, and it gets phase 1's point-in-time recovery. |
-| 9 | Trace retention | **Built-in retention is Enterprise-only for self-hosting** (checked 2026-10-24); the open-source edition keeps data forever. **Recommend a nightly CronWorkflow** that deletes traces older than 30 days via the API, plus a RustFS lifecycle rule on the raw-event prefix. See below. |
+| 9 | Trace retention | **Built-in retention is Enterprise-only for self-hosting** (checked 2026-10-24); the open-source edition keeps data forever. **Done 2026-10-25:** a nightly CronJob (`langfuse/trace-retention`, #324) deletes traces older than 30 days via the API, and a RustFS lifecycle rule expires `events/` after 7 days. See below. |
 | 10 | Hostname | `langfuse.jupitertech.net`: Cloudflare Access app + AdGuard rewrite + Authentik app. |
 
 #### Detail for #7: Langfuse on the existing Redis
@@ -239,7 +262,8 @@ Things to handle when wiring it:
 
 - **Nightly delete job.** List traces older than the cutoff and call the batch
   `DELETE /api/public/traces`, which removes their observations and scores from every
-  store. Run it as an Argo **CronWorkflow** with a project API key. Deletion is
+  store. Built as a plain CronJob with the project API key (candidates come from
+  ClickHouse `events_full`, newest event older than the cutoff). Deletion is
   asynchronous (usually within 15 min) and rate-limited, so batch it, then re-query to
   confirm. No official script exists, so it's a small one to write.
 - **Raw events in S3.** Langfuse writes every incoming event to S3 first, and deleting
