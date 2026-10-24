@@ -14,7 +14,6 @@ resources:
   - objectstore-kea-db.yaml
   - scheduledbackup-kea-db.yaml
   - configmap.yaml
-  - configmap-db-schema.yaml
   - deployment.yaml
   - service.yaml
   - job-grafana-grants.yaml

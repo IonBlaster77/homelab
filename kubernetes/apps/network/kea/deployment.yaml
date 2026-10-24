@@ -14,40 +14,34 @@ spec:
         app: kea-dhcp4
     spec:
       initContainers:
-        - name: socket-perms
-          image: busybox:1.38
-          command: ["chmod", "750", "/kea/sockets"]
-          securityContext:
-            runAsUser: 0
-          volumeMounts:
-            - name: ctrl-socket
-              mountPath: /kea/sockets
-        - name: db-init
-          image: postgres:18
+        # Creates the lease database schema on an empty database, or upgrades
+        # it to this Kea version's schema (a no-op when already current).
+        # kea-dhcp4 refuses to start against an older schema. Same image
+        # version as kea-dhcp4: Renovate updates them together.
+        - name: db-schema
+          image: jonasal/kea-admin:3.2.1
           command: ["/bin/sh", "-c"]
           args:
             - |
-              PGPASSWORD=$DB_PASSWORD psql \
-                -h kea-db-rw.kea.svc.cluster.local \
-                -U kea -d kea \
-                -c "SELECT version FROM schema_version LIMIT 1" \
-              && echo "schema already initialised, skipping" \
-              || PGPASSWORD=$DB_PASSWORD psql \
-                -h kea-db-rw.kea.svc.cluster.local \
-                -U kea -d kea \
-                -f /schema/dhcpdb_create.pgsql
+              set -e
+              db="-h kea-db-rw.kea.svc.cluster.local -u kea -p ${DB_PASSWORD} -n kea"
+              if kea-admin db-version pgsql $db >/dev/null 2>&1; then
+                echo "schema $(kea-admin db-version pgsql $db), upgrading if needed"
+                kea-admin db-upgrade pgsql $db
+              else
+                echo "no schema, creating"
+                kea-admin db-init pgsql $db
+              fi
+              echo "schema now $(kea-admin db-version pgsql $db)"
           env:
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: kea-db-credentials
                   key: password
-          volumeMounts:
-            - name: kea-db-schema
-              mountPath: /schema
       containers:
         - name: kea-dhcp4
-          image: jonasal/kea-dhcp4:2.6.3
+          image: jonasal/kea-dhcp4:3.2.1
           command: ["/bin/sh", "-c"]
           args:
             - |
@@ -63,39 +57,20 @@ spec:
             - name: dhcp
               containerPort: 67
               protocol: UDP
-          volumeMounts:
-            - name: kea-config
-              mountPath: /etc/kea
-            - name: ctrl-socket
-              mountPath: /kea/sockets
-          readinessProbe:
-            exec:
-              command: ["/bin/sh", "-c", "test -S /kea/sockets/kea4-ctrl-socket"]
-            initialDelaySeconds: 10
-            periodSeconds: 5
-        - name: kea-ctrl-agent
-          image: jonasal/kea-ctrl-agent:2.6.3
-          command: ["kea-ctrl-agent", "-c", "/etc/kea/kea-ctrl-agent.conf"]
-          ports:
+            # The management API (control-sockets in the config). Kea 3.x
+            # serves it from kea-dhcp4 itself; there's no Control Agent.
             - name: api
               containerPort: 8000
               protocol: TCP
           volumeMounts:
             - name: kea-config
               mountPath: /etc/kea
-            - name: ctrl-socket
-              mountPath: /kea/sockets
           readinessProbe:
             tcpSocket:
-              port: 8000
+              port: api
             initialDelaySeconds: 10
-            periodSeconds: 10
+            periodSeconds: 5
       volumes:
         - name: kea-config
           configMap:
             name: kea-config
-        - name: kea-db-schema
-          configMap:
-            name: kea-db-schema
-        - name: ctrl-socket
-          emptyDir: {}
