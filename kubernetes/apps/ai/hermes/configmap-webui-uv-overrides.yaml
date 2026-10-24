@@ -1,0 +1,20 @@
+# uv overrides for hermes-webui's install of the agent's dependencies.
+#
+# On start, hermes-webui runs `uv pip install -e <agent-src>[all]` into its
+# own venv. hermes-agent v0.22.5 requires Pillow==13.0.0 (security advisory
+# fixes) but its dependency browser-harness==0.1.13 pins pillow==12.3.0; the
+# agent resolves that with [tool.uv].override-dependencies, which
+# `uv pip install` ignores. So the webui saw "requirements are unsatisfiable"
+# and exited on every start (HTTP 503), 2026-10-24.
+#
+# UV_OVERRIDE (set on the webui container) applies the same override the
+# agent's own pyproject uses. Remove this file and the env var when
+# browser-harness allows Pillow 13 (upstream has the same note).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-webui-uv-overrides
+  namespace: hermes
+data:
+  overrides.txt: |
+    Pillow==13.0.0

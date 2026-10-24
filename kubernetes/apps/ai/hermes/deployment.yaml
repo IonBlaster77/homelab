@@ -205,6 +205,9 @@ spec:
             claimName: hermes-data
         - name: agent-share
           emptyDir: {}
+        - name: webui-uv-overrides
+          configMap:
+            name: hermes-webui-uv-overrides
         - name: mcp-servers-fragment
           configMap:
             name: hermes-mcp-servers
@@ -368,6 +371,12 @@ spec:
             # legacy path and this has no effect.
             - name: HERMES_WEBUI_GATEWAY_USE_RUNS_API
               value: "1"
+            # The webui installs the agent's deps with `uv pip install`, which
+            # ignores the agent's [tool.uv] overrides; without this the
+            # Pillow 13 / browser-harness pin conflict makes it exit on start.
+            # See configmap-webui-uv-overrides.yaml.
+            - name: UV_OVERRIDE
+              value: /etc/uv-overrides/overrides.txt
           ports:
             - containerPort: 8787
               name: webui
@@ -376,6 +385,9 @@ spec:
               mountPath: /home/hermes/.hermes
             - name: agent-share
               mountPath: /home/hermeswebui/.hermes/hermes-agent
+            - name: webui-uv-overrides
+              mountPath: /etc/uv-overrides
+              readOnly: true
           resources:
             requests:
               memory: "128Mi"

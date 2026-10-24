@@ -12,6 +12,7 @@ resources:
   - pvc.yaml
   - configmap.yaml
   - configmap-mcp-servers.yaml
+  - configmap-webui-uv-overrides.yaml
   - configmap-skill-alert-triage.yaml
   - configmap-skill-infra-mcp-readonly.yaml
   - configmap-skill-hardware-deals.yaml
