@@ -52,6 +52,18 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: monitoring
             cnpg.io/cluster: grafana-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: matrix
+            cnpg.io/cluster: matrix-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: harbor
+            cnpg.io/cluster: harbor-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
+            cnpg.io/cluster: authentik-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: kea
+            cnpg.io/cluster: kea-db
       toPorts:
         - ports:
             - port: "9000"

@@ -72,7 +72,7 @@ tested end to end on grafana-db, 2026-10-24.
 | Cluster | Archiving | First base backup | Restore tested |
 |---|---|---|---|
 | grafana-db | 2026-10-24 (#288) | 2026-10-24 | 2026-10-24 |
-| matrix-db | not yet (also needs a PodMonitor) | | |
-| harbor-db | not yet (also needs a PodMonitor) | | |
-| authentik-db | not yet (last: highest stakes) | | |
-| kea-db | skipped: Kea is unused | | |
+| matrix-db | 2026-10-24 (+ PodMonitor) | 2026-10-24 | |
+| harbor-db | 2026-10-24 (+ PodMonitor) | 2026-10-24 | |
+| authentik-db | 2026-10-24 | 2026-10-24 | |
+| kea-db | 2026-10-24 (included even though Kea is unused: it's tiny) | 2026-10-24 | |

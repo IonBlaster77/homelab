@@ -18,6 +18,11 @@ resources:
   - secret-harbor.sops.yaml
   - secret-harbor-signing.sops.yaml
   - cluster-harbor-db.yaml
+  - podmonitor-harbor-db.yaml
+  # harbor-db's point-in-time-recovery backups to RustFS (Barman Cloud plugin)
+  - secret-harbor-db-backup.sops.yaml
+  - objectstore-harbor-db.yaml
+  - scheduledbackup-harbor-db.yaml
   - httproute.yaml
   - referencegrant.yaml
   - servicemonitor.yaml

@@ -155,6 +155,15 @@ spec:
   egress:
     - toEntities:
         - kube-apiserver
+    # The Barman Cloud sidecar uploads WAL and base backups to RustFS.
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
   ingress:
     - fromEndpoints:
         - matchLabels:
@@ -164,6 +173,15 @@ spec:
             - port: "8000"
               protocol: TCP
             - port: "5432"
+              protocol: TCP
+    # Prometheus scrapes CNPG metrics (podmonitor-harbor-db.yaml).
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
               protocol: TCP
 ---
 # Prometheus scrapes Harbor's metrics endpoints (ServiceMonitor, port 8001).

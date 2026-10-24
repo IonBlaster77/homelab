@@ -1,0 +1,17 @@
+# CNPG metrics for matrix-db (none were scraped before 2026-10-24), so the
+# CNPG alerts, including WALArchiveBacklog, cover it. Hand-rolled like
+# grafana-db's: spec.monitoring.enablePodMonitor is deprecated in CNPG.
+# matrix-db-allow-prometheus in networkpolicy.yaml admits the scrape.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: matrix-db
+  namespace: matrix
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: matrix-db
+  podMetricsEndpoints:
+    - port: metrics

@@ -27,3 +27,12 @@ spec:
         comment: "Read-only Grafana datasource user"
         passwordSecret:
           name: kea-db-grafana-credentials
+  # Point-in-time recovery: the Barman Cloud plugin archives every WAL segment
+  # and stores base backups in RustFS (s3://cnpg/kea-db/, see
+  # objectstore-kea-db.yaml). Adding this restarts both pods once.
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: kea-db-backup
+        serverName: kea-db
