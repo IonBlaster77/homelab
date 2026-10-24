@@ -34,6 +34,27 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
+---
+# CNPG clusters: the Barman Cloud sidecar in each Postgres pod uploads WAL and
+# base backups. One entry per cluster as it is wired up; each cluster's key
+# can only touch its own s3://cnpg/<cluster>/ prefix anyway.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: rustfs-allow-ingress-from-cnpg
+  namespace: rustfs
+spec:
+  endpointSelector:
+    matchLabels:
+      app: rustfs
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            cnpg.io/cluster: grafana-db
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
 #
-# No client is admitted on 9000 yet. Each client gets its own policy here when
-# it is wired up (the CNPG clusters first, then Langfuse); see README.md.
+# Each further client gets its own entry or policy here (see README.md).

@@ -11,6 +11,10 @@ resources:
   - secret-grafana-db.sops.yaml
   - cluster-grafana-db.yaml
   - podmonitor-grafana-db.yaml
+  # Its point-in-time-recovery backups to RustFS (Barman Cloud plugin)
+  - secret-grafana-db-backup.sops.yaml
+  - objectstore-grafana-db.yaml
+  - scheduledbackup-grafana-db.yaml
   # CNPG operator metrics + upstream alert rules
   - podmonitor-cnpg.yaml
   - prometheusrule-cnpg.yaml

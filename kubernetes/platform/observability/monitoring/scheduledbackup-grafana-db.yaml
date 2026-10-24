@@ -1,0 +1,18 @@
+# Daily base backup of grafana-db to RustFS via the Barman Cloud plugin.
+# 15:00 UTC = 01:30 Adelaide, ahead of Longhorn's daily NAS backup. CNPG
+# cron has a seconds field. `immediate` takes the first one as soon as this
+# is created, so point-in-time recovery works from day one.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: grafana-db-daily
+  namespace: monitoring
+spec:
+  schedule: "0 0 15 * * *"
+  immediate: true
+  backupOwnerReference: self
+  cluster:
+    name: grafana-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

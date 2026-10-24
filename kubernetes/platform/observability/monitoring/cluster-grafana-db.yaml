@@ -15,3 +15,12 @@ spec:
       owner: grafana
       secret:
         name: grafana-db-credentials
+  # Point-in-time recovery: the Barman Cloud plugin archives every WAL segment
+  # and stores base backups in RustFS (s3://cnpg/grafana-db/, see
+  # objectstore-grafana-db.yaml). Adding this restarts both pods once.
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: grafana-db-backup
+        serverName: grafana-db
