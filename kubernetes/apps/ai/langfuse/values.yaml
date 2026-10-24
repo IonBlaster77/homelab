@@ -88,15 +88,13 @@ langfuse:
   additionalEnv:
     # The shared Redis: Langfuse's own ACL user, which can only touch
     # langfuse:* keys. REDIS_KEY_PREFIX covers both its cache and its BullMQ
-    # queues. Langfuse reads REDIS_USERNAME / REDIS_AUTH for the data
-    # connection (set explicitly; Sentinel itself has no password).
+    # queues. The chart already sets REDIS_AUTH from redis.auth.existingSecret;
+    # don't add it here too, or server-side apply rejects the Deployment
+    # ("duplicate entries for key REDIS_AUTH"). Sentinel has no password.
     - name: REDIS_KEY_PREFIX
       value: "langfuse:"
     - name: REDIS_USERNAME
       value: langfuse
-    - name: REDIS_AUTH
-      valueFrom:
-        secretKeyRef: {name: redis-langfuse, key: password}
 
 postgresql:
   deploy: false
