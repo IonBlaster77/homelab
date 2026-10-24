@@ -191,3 +191,24 @@ spec:
           annotations:
             summary: "{{ $labels.instance }} is on track to run out of memory within 7 days"
             description: "Extrapolating the last 24h, MemAvailable reaches zero inside a week. This fires while there is still time to schedule a drain rather than discover it at 95%. If NodeKernelMemoryUnaccounted is also firing for this instance it is the known kernel leak; if not, something is growing in a way that IS accounted for, so check `kubectl top pods --sort-by=memory` on that node first."
+
+    - name: redis-memory
+      rules:
+        - alert: RedisMemoryHigh
+          # The shared Redis (Harbor, Langfuse's BullMQ queues) runs with no
+          # maxmemory, so the real ceiling is the redis container's 256Mi
+          # limit: past it the pod is OOMKilled, not evicting. Langfuse's
+          # queues grow in RAM whenever its workers stall (e.g. ClickHouse
+          # down). 50% leaves headroom for an AOF rewrite's fork, whose
+          # copy-on-write pages count against the same limit.
+          expr: >-
+            redis_memory_used_bytes
+            / on(namespace, pod) group_left
+            max by (namespace, pod) (kube_pod_container_resource_limits{namespace="redis", container="redis", resource="memory"})
+            > 0.5
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Redis {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit"
+            description: "Normal is a few MB. Growth usually means a consumer has stopped draining its queue: check langfuse-worker's logs and the ClickHouse pod first, then `redis-cli INFO keyspace` for which prefix is growing. At 100% the pod is OOMKilled and Sentinel fails over, which drops Harbor's and Langfuse's in-flight work."
