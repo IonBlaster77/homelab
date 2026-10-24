@@ -1,5 +1,29 @@
 # kube-prometheus-stack upgrade: 83.7.0 → 92.x
 
+**Done 2026-10-25: 83.7.0 → 92.13.1** in nine steps (#318–#323, #326–#328),
+plus one fix (#325, below). End state: operator v0.94.1 (CRDs 0.94.1),
+Prometheus 3.15.0, Grafana 13.2.4, 72/72 targets, 248 rules, 0 errors.
+Restore points: `grafana-db-pre-kps-84`, `-89`, `-90` (Barman, RustFS).
+
+## What actually happened
+
+- **Step 6 (89.2.4) broke every Grafana dashboard for ~25 min.** Grafana 13
+  moved core datasources (Prometheus, Loki, Tempo, ...) out of core and, at
+  startup, "preinstalls" newer copies: it registers the bundled plugin, then
+  unregisters it to replace its files. Chart 13 made the root filesystem
+  read-only, so the replace failed and the plugins stayed unregistered:
+  every query returned 404 `plugin.notRegistered`. `/api/health` and the
+  database stayed OK, so only a real datasource query shows it. Fixed in
+  #325 with `grafana.ini` `[plugins] preinstall_disabled = true` (keep the
+  image's bundled versions). Steps 1–5 logged the same preinstall attempt
+  failing with `permission denied`, harmlessly, because the files could not
+  be unlinked before the plugins were unregistered.
+- Steps 3 and 5 logged a burst of operator `connection reset` errors to the
+  API server during the sync; `PrometheusOperatorStatusUpdateErrors`,
+  `KubeClientErrors` and `ArgoCDAppOutOfSync` went pending and cleared.
+- Each step briefly shows ~16 rules as `unknown` (not yet evaluated after
+  Prometheus restarts); they turn `ok` within a minute.
+
 Plan written 2026-10-25. Upgrades the `monitoring` app (Prometheus,
 Alertmanager, Grafana, node-exporter, kube-state-metrics, Prometheus
 operator) nine chart majors, **one major per step**, with a check between
@@ -75,7 +99,12 @@ chart 13), and has no `extraVolumeMounts` for `/tmp`.
    kubectl logs -n monitoring deploy/monitoring-kube-prometheus-operator --since=10m | grep -iE 'error|forbidden'
    ```
 
+   Also run a real query through Grafana's datasources (`/api/ds/query`, or
+   `/api/datasources/uid/<uid>/health` for `prometheus` and `loki`):
+   `/api/health` only covers Grafana's own database.
+
    Pass: targets back to 72 up, rules 0 errors, Grafana `database: ok`,
+   both datasources `OK`,
    CRD version matches the step, operator log clean, Watchdog still firing
    (it's the always-on alert; Alertmanager receives it).
 5. Steps 1 and 6: also open Grafana, load a dashboard (Longhorn, CNPG) and

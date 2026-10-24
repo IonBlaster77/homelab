@@ -57,3 +57,14 @@ kube-prometheus-stack:
   field that newer Kubernetes adds, which otherwise shows as OutOfSync.
 - **The chart's admission-webhook Jobs** (hooks) re-run on every sync; if a
   sync hangs, check those Jobs first.
+- **Grafana plugin preinstall is off** (`[plugins] preinstall_disabled`).
+  Grafana 13 otherwise unregisters its bundled Prometheus/Loki plugins at
+  startup to replace them, which fails on the chart's read-only root
+  filesystem and leaves every dashboard with "Plugin not registered". To
+  add a plugin, list it under `grafana.plugins`. Checking Grafana after a
+  change: `/api/health` only covers its database; query a datasource.
+- **Prometheus and node-exporter images are distroless** (since chart 85):
+  no shell or `wget` inside. Query Prometheus through the API-server proxy
+  (`kubectl get --raw /api/v1/namespaces/monitoring/services/http:monitoring-kube-prometheus-prometheus:9090/proxy/api/v1/...`).
+- **Upgrades:** one chart major at a time; see
+  `docs/runbooks/kube-prometheus-stack-upgrade.md` (83 → 92 done 2026-10-25).
