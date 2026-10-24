@@ -64,6 +64,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: kea
             cnpg.io/cluster: kea-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: langfuse
+            cnpg.io/cluster: langfuse-db
       toPorts:
         - ports:
             - port: "9000"

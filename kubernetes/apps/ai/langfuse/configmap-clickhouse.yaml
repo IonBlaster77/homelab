@@ -1,0 +1,43 @@
+# ClickHouse server settings on top of the image's defaults (config.d).
+# Users and passwords are NOT here: they're in secret-clickhouse.sops.yaml,
+# mounted into users.d.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+  namespace: langfuse
+data:
+  langfuse.xml: |
+    <clickhouse>
+      <!-- Single node: Langfuse runs with CLICKHOUSE_CLUSTER_ENABLED=false,
+           so no Keeper/ZooKeeper and no cluster definition. -->
+      <listen_host>0.0.0.0</listen_host>
+      <!-- Langfuse requires UTC (the default); pinned so it can't drift. -->
+      <timezone>UTC</timezone>
+      <logger>
+        <level>warning</level>
+        <console>1</console>
+      </logger>
+      <!-- System log tables grow without bound by default and are the usual
+           way a small ClickHouse fills its disk. Keep a week. -->
+      <query_log replace="1">
+        <database>system</database>
+        <table>query_log</table>
+        <engine>ENGINE = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + INTERVAL 7 DAY</engine>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+      </query_log>
+      <part_log replace="1">
+        <database>system</database>
+        <table>part_log</table>
+        <engine>ENGINE = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + INTERVAL 7 DAY</engine>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+      </part_log>
+      <metric_log remove="1"/>
+      <asynchronous_metric_log remove="1"/>
+      <trace_log remove="1"/>
+      <text_log remove="1"/>
+      <latency_log remove="1"/>
+      <processors_profile_log remove="1"/>
+      <query_views_log remove="1"/>
+      <query_metric_log remove="1"/>
+    </clickhouse>

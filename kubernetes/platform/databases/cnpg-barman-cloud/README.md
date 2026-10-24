@@ -76,3 +76,4 @@ tested end to end on grafana-db, 2026-10-24.
 | harbor-db | 2026-10-24 (+ PodMonitor) | 2026-10-24 | |
 | authentik-db | 2026-10-24 | 2026-10-24 | 2026-10-24 |
 | kea-db | 2026-10-24 (included even though Kea is unused: it's tiny) | 2026-10-24 | |
+| langfuse-db | from creation, 2026-10-24 | after first start | |

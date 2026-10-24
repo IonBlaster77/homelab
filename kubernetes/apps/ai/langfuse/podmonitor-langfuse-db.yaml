@@ -1,0 +1,16 @@
+# CNPG metrics for langfuse-db, so the CNPG alerts (incl. WALArchiveBacklog)
+# cover it. Hand-rolled like the other clusters' (enablePodMonitor is
+# deprecated). langfuse-db-allow-cnpg in networkpolicy.yaml admits the scrape.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: langfuse-db
+  namespace: langfuse
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: langfuse-db
+  podMetricsEndpoints:
+    - port: metrics
