@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "searxng": {
+      "url": "http://searxng-mcp.searxng.svc.cluster.local:3000/mcp",
+      "headers": {
+        "Authorization": "!echo Bearer $(cat /etc/pi-tools/searxng-mcp-token)"
+      },
+      "description": "Web search through the homelab's SearXNG. Give plain keywords; site: and OR operators return nothing.",
+      "exposure": "direct",
+      "toolExposure": {
+        "web_url_read": "hidden"
+      }
+    }
+  }
+}

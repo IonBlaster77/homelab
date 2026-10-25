@@ -142,7 +142,8 @@ spec:
             - port: "8080"
               protocol: TCP
 ---
-# MCP ingress from Hermes (namespace+label selector — survives IP churn).
+# MCP ingress from Hermes and from Paperclip's Pi (namespace+label selector —
+# survives IP churn). The name predates Paperclip; kept to avoid churn.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -157,6 +158,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: hermes
             app: hermes
+        - matchLabels:
+            io.kubernetes.pod.namespace: paperclip
+            app: paperclip
       toPorts:
         - ports:
             - port: "3000"
