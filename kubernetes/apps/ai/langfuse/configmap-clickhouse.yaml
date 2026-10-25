@@ -32,6 +32,20 @@ data:
         <engine>ENGINE = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + INTERVAL 7 DAY</engine>
         <flush_interval_milliseconds>7500</flush_interval_milliseconds>
       </part_log>
+      <!-- Server errors by code: worth keeping, but for a week, not forever
+           (on by default with no TTL). -->
+      <error_log replace="1">
+        <database>system</database>
+        <table>error_log</table>
+        <engine>ENGINE = MergeTree PARTITION BY event_date ORDER BY event_time TTL event_date + INTERVAL 7 DAY</engine>
+        <flush_interval_milliseconds>7500</flush_interval_milliseconds>
+      </error_log>
+      <!-- Also on by default with no TTL, and only useful for ClickHouse
+           performance debugging: histogram_metric_log alone was ~1M rows a
+           day on an idle server (2026-10-25). -->
+      <histogram_metric_log remove="1"/>
+      <opentelemetry_span_log remove="1"/>
+      <background_schedule_pool_log remove="1"/>
       <metric_log remove="1"/>
       <asynchronous_metric_log remove="1"/>
       <trace_log remove="1"/>
