@@ -1,0 +1,17 @@
+# PAPERCLIP_HOME: instance config, uploaded assets, agent workspaces and
+# sessions (~/.pi), and the Pi CLI the initContainer installs. Its own
+# secrets-encryption key comes from secret.sops.yaml, not from here.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: paperclip-data
+  namespace: paperclip
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi

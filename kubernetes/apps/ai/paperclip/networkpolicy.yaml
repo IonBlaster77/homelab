@@ -1,0 +1,163 @@
+---
+# Default deny all ingress and egress for the paperclip namespace. (One empty
+# rule = deny-all; an empty list is rejected by Cilium. See
+# kubernetes/apps/ai/crawl4ai/networkpolicy.yaml.)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-default-deny
+  namespace: paperclip
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# The server to its Postgres, and Postgres replication.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-allow-intra-namespace
+  namespace: paperclip
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-allow-dns
+  namespace: paperclip
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Agent CLIs run inside the server pod and need their model providers
+# (chatgpt.com, api.openai.com, ...) and npm (the Pi install): public
+# internet on 80/443 only, excluding private/link-local/loopback ranges. Same
+# pattern as playwright-mcp and research-worker. This is the real sandbox
+# boundary: an agent can't reach anything else in the cluster or the LAN.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-allow-internet
+  namespace: paperclip
+spec:
+  endpointSelector:
+    matchLabels:
+      app: paperclip
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 169.254.0.0/16
+            - 127.0.0.0/8
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+            - port: "80"
+              protocol: TCP
+---
+# The Gateway (paperclip.jupitertech.net HTTPRoute) reaches the UI/API.
+# Container port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-allow-gateway-ingress
+  namespace: paperclip
+spec:
+  endpointSelector:
+    matchLabels:
+      app: paperclip
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3100"
+              protocol: TCP
+---
+# Reply traffic to Envoy (Gateway) connections: native routing evaluates
+# replies against egress policy (see hermes-allow-node-egress). Narrower than
+# the other apps' 10.77.20.0/24 on purpose: agents run in this pod, so only
+# the four node IPs and the ingress identity, never the NAS, the API VIP or
+# the rest of the LAN. Update the list if a node is added or renumbered.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-allow-gateway-replies
+  namespace: paperclip
+spec:
+  endpointSelector:
+    matchLabels:
+      app: paperclip
+  egress:
+    - toEntities:
+        - ingress
+    - toCIDR:
+        - 10.77.20.11/32
+        - 10.77.20.12/32
+        - 10.77.20.13/32
+        - 10.77.20.14/32
+---
+# paperclip-db: the CloudNativePG operator manages it; its instance manager
+# talks to the Kubernetes API; the Barman Cloud sidecar uploads to RustFS;
+# Prometheus scrapes CNPG metrics.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-db-allow-cnpg
+  namespace: paperclip
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: paperclip-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP

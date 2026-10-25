@@ -1,0 +1,52 @@
+# Paperclip
+
+Control plane for lightweight agents. Pi runs Hermes' routine crons here, so
+those crons stop paying for Hermes' full context. Phase 3 of task #50. Plan and
+decisions: [`docs/projects/agent-observability.md`](../../../../docs/projects/agent-observability.md).
+
+| | |
+|---|---|
+| **URL** | https://paperclip.jupitertech.net (LAN only, via an AdGuard rewrite to the Gateway VIP) |
+| **Image** | `ghcr.io/paperclipai/paperclip:2026.1023.0`, pinned by digest |
+| **Pi** | `@earendil-works/pi-coding-agent` 1.4.0, installed onto the data volume by the `install-pi` initContainer |
+| **Namespace** | `paperclip` (PSA `restricted`) |
+| **Database** | CNPG `paperclip-db` (2 instances), point-in-time recovery to RustFS `s3://cnpg/paperclip-db/` |
+| **Storage** | `paperclip-data`, 10Gi Longhorn: config, workspaces, agent sessions, the Pi install |
+| **Secrets** | `paperclip-secrets` (SOPS): auth, agent-JWT, approval-signing and secrets-encryption keys |
+
+## How it's sandboxed
+
+Paperclip's adapters start agent CLIs as child processes **inside the server
+pod**, so the pod itself is the sandbox (decided 2026-10-24):
+
+- **Pod hardening:** non-root (uid 1000), read-only root filesystem, every
+  capability dropped, and no service-account token.
+- **Egress:** the public internet on 80/443 only, for model providers and npm.
+  Private, link-local and loopback ranges are excluded.
+- **Other egress:** its own Postgres, DNS, and replies to the Gateway. Reply
+  traffic may go to the four node IPs, never to the NAS, the API VIP or the
+  rest of the LAN. Update the list in `networkpolicy.yaml` if nodes change.
+- **No in-cluster services yet.** A cron that needs one (searxng, crawl4ai,
+  Langfuse) gets its own egress rule here plus ingress on the service's side,
+  added when that cron moves.
+
+## First start (needs the user)
+
+1. Open the URL, create an account, and choose **Claim this instance**. In
+   `authenticated/private` mode, the first person to sign in can claim it, so
+   do this right after the first sync.
+2. Set `PAPERCLIP_AUTH_DISABLE_SIGN_UP` to `"true"` in `deployment.yaml` so
+   nobody else on the LAN can register.
+3. Sign Pi in to the model provider. ChatGPT plan first (decision #11): run
+   `kubectl -n paperclip exec -it deploy/paperclip -- pi`, then `/login`. With
+   no browser in the pod, paste the redirect URL or code back in. Don't copy
+   Hermes' ChatGPT credentials: the two clients would rotate one refresh token
+   between them and log each other out.
+4. Take the first base backup of `paperclip-db` by hand (see the
+   cnpg-barman-cloud README).
+
+## Upgrades
+
+Renovate bumps the image (`2026.MMDD.N` CalVer). The Pi version is
+`PI_VERSION` in the initContainer: Renovate doesn't see it, so bump it by hand.
+The initContainer reinstalls only when that version changes.
