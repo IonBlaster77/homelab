@@ -120,6 +120,29 @@ spec:
         - 10.77.20.13/32
         - 10.77.20.14/32
 ---
+# Pi's Langfuse extension exports traces over OTLP straight to Langfuse web,
+# in-cluster. The langfuse namespace allows this side in
+# langfuse-web-allow-paperclip.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: paperclip-allow-langfuse
+  namespace: paperclip
+spec:
+  endpointSelector:
+    matchLabels:
+      app: paperclip
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: langfuse
+            app.kubernetes.io/name: langfuse
+            app.kubernetes.io/component: web
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
 # paperclip-db: the CloudNativePG operator manages it; its instance manager
 # talks to the Kubernetes API; the Barman Cloud sidecar uploads to RustFS;
 # Prometheus scrapes CNPG metrics.

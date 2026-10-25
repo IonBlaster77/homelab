@@ -185,3 +185,26 @@ spec:
         - ports:
             - port: "3000"
               protocol: TCP
+---
+# Paperclip (kubernetes/apps/ai/paperclip): Pi's Langfuse extension exports
+# traces over OTLP straight to web's API, in-cluster. The paperclip namespace
+# allows this side in paperclip-allow-langfuse.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-web-allow-paperclip
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: paperclip
+            app: paperclip
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP

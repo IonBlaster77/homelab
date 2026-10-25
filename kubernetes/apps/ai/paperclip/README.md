@@ -30,6 +30,38 @@ pod**, so the pod itself is the sandbox (decided 2026-10-24):
   Langfuse) gets its own egress rule here plus ingress on the service's side,
   added when that cron moves.
 
+## Tracing to Langfuse
+
+Every Pi run is traced by `pi-extension-langfuse.ts`. It's home-grown with no
+npm dependencies, so no third-party code runs next to the model sign-in.
+
+- **What it sends:** one "Pi run" trace per run, with the Pi session as the
+  Langfuse session. Each model call is a generation with its token usage, and
+  each tool call is a tool span.
+- **Before it leaves the pod:** text is masked with the Claude Code hook's
+  rules and truncated.
+- **Where it goes:** the "agents" project, over OTLP/HTTP JSON to
+  `langfuse-web` in-cluster, using the `pi-langfuse` secret mounted at
+  `/etc/pi-langfuse`.
+- **How it's installed:** the ConfigMap generator ships the file, and the
+  initContainer copies it into `~/.pi/agent/extensions/` on every start.
+- **Failure and opt-out:** an export failure is logged to stderr and never
+  fails the run. `PI_LANGFUSE_DISABLE=1` turns it off.
+
+Test the masking in the pod with `node` (Node 24 runs `.ts` directly):
+`import("/paperclip/.pi/agent/extensions/langfuse.ts")` and call `mask()`.
+
+## MCP
+
+Pi 1.4 has built-in MCP (stdio and streamable HTTP, **not SSE**) in
+`~/.pi/agent/mcp.json`. Its default `codemode` exposure keeps tool definitions
+out of the model's context. So crons can use the same MCP servers as Hermes,
+not CLI wrappers.
+
+- **crawl4ai:** Hermes reaches it over SSE, so Pi needs its streamable-HTTP
+  endpoint.
+- **Network:** each server needs an egress rule here and ingress on its side.
+
 ## First start (needs the user)
 
 1. Open the URL, create an account, and choose **Claim this instance**. In
