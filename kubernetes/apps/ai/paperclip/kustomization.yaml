@@ -25,6 +25,10 @@ resources:
 configMapGenerator:
   # Pi's Langfuse tracing extension, copied into ~/.pi/agent/extensions/ by the
   # install-pi initContainer. The name hash rolls the pod when the file changes.
+  # `namespace` must match the Deployment's, or kustomize doesn't rewrite the
+  # Deployment's reference to the hashed name (and the pod waits forever on a
+  # ConfigMap that doesn't exist).
   - name: pi-extension-langfuse
+    namespace: paperclip
     files:
       - langfuse.ts=pi-extension-langfuse.ts
