@@ -17,7 +17,7 @@ with.
 | | |
 |---|---|
 | **Namespace** | `langfuse` (PSA `restricted`, default-deny) |
-| **ClickHouse** | `clickhouse` StatefulSet, 26.4.5.143 by digest, single node, 20Gi `longhorn-ssd`. User `langfuse` (password in `clickhouse-users`); the built-in `default` user only from localhost |
+| **ClickHouse** | `clickhouse` StatefulSet, 26.8 LTS (26.8.34.13) by digest; Renovate offers LTS releases only, single node, 20Gi `longhorn-ssd`. User `langfuse` (password in `clickhouse-users`); the built-in `default` user only from localhost |
 | **Postgres** | `langfuse-db` (CNPG, 2 × 5Gi `longhorn-nvme`), point-in-time recovery to `s3://cnpg/langfuse-db/`, daily base backup 15:50 UTC |
 | **Object storage** | RustFS bucket `langfuse`, key `app-langfuse` (`langfuse-s3`), full access to that bucket only |
 | **Redis** | The shared Sentinel HA Redis, as ACL user `langfuse` (keys `langfuse:*` only; `REDIS_KEY_PREFIX` covers the cache and the BullMQ queues) |
