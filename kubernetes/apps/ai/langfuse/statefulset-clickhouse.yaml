@@ -38,7 +38,11 @@ spec:
           type: RuntimeDefault
       containers:
         - name: clickhouse
-          image: docker.io/clickhouse/clickhouse-server:26.4.5.143@sha256:10c8dfc39d3fa015f3fbf44d77efa8f794a004e0ae1e509fbd1d4dfac88bb006
+          # The 26.8 LTS line (about a year of fixes), not the latest regular
+          # release: Renovate only offers LTS releases (.3 and .8) for this
+          # image. Langfuse v4 needs >= 25.12. ClickHouse can't be downgraded
+          # once it has run a newer version; the way back is a volume restore.
+          image: docker.io/clickhouse/clickhouse-server:26.8.34.13@sha256:8b28eb09479c36c4533eec7a6268917d04ba3a6fd90e3f4205f70e761b6d7779
           env:
             - name: CLICKHOUSE_DO_NOT_CHOWN
               value: "1"

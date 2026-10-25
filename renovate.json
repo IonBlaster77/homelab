@@ -36,6 +36,11 @@
       "groupName": "kea"
     },
     {
+      "description": "ClickHouse (Langfuse's trace store): LTS releases only. ClickHouse's LTS lines are the .3 and .8 releases (26.3, 26.8, 27.3, ...), supported about a year; regular releases get about three months. Langfuse v4 needs >= 25.12.",
+      "matchPackageNames": ["docker.io/clickhouse/clickhouse-server"],
+      "allowedVersions": "/^\\d+\\.[38]\\.\\d+\\.\\d+$/"
+    },
+    {
       "description": "kubectl is only supported within one minor version of the API server. The cluster runs Kubernetes 1.35 (Talos), so allow 1.35.x and 1.36.x. Widen this when Talos/Kubernetes is upgraded (task #33).",
       "matchPackageNames": ["registry.k8s.io/kubectl", "rancher/kubectl"],
       "allowedVersions": "/^v?1\\.3[56]\\./"
