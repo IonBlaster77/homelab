@@ -44,6 +44,24 @@ config:
         style: row
         columns: 2
         icon: mdi-shield-lock
+      # Things with no web UI of their own: the tile is there for its
+      # status badge (pod state from the Kubernetes API), so a glance
+      # shows whether everything the cluster runs is up.
+      Platform Services:
+        tab: Infrastructure
+        style: row
+        columns: 4
+        icon: mdi-cogs
+      Databases:
+        tab: Infrastructure
+        style: row
+        columns: 4
+        icon: mdi-database
+      Monitoring Pipeline:
+        tab: Infrastructure
+        style: row
+        columns: 4
+        icon: mdi-chart-line
       Network Hardware:
         tab: Infrastructure
         style: row
@@ -64,6 +82,11 @@ config:
         style: row
         columns: 2
         icon: mdi-speaker-multiple
+      Files & Chat:
+        tab: Apps
+        style: row
+        columns: 2
+        icon: mdi-account-group
       Tools & AI:
         tab: Apps
         style: row
@@ -166,6 +189,17 @@ config:
             siteMonitor: http://argo-workflows-server.argo-workflows.svc.cluster.local:2746
             namespace: argo-workflows
             app: argo-workflows-server
+        - Harbor:
+            id: harbor-card
+            href: https://registry.jupitertech.net
+            description: Container registry & pull-through cache — LAN only
+            icon: harbor.png
+            # Through the Gateway: the harbor namespace is default-deny
+            # and only admits the Gateway. /api/v2.0/ping answers "Pong".
+            siteMonitor: https://registry.jupitertech.net/api/v2.0/ping
+            namespace: harbor
+            app: harbor
+            podSelector: app=harbor
 
     - Network & Security:
         - Authentik:
@@ -195,6 +229,218 @@ config:
             namespace: kea
             app: kea-dhcp4
             podSelector: app=kea-dhcp4
+        - Cilium:
+            id: cilium-card
+            description: CNI, network policy, load balancer IPs — agents + operator
+            icon: cilium.png
+            namespace: kube-system
+            app: cilium
+            podSelector: app.kubernetes.io/name in (cilium-agent,cilium-operator)
+        - Cilium Gateway:
+            id: cilium-gateway-card
+            description: The shared Gateway (10.77.20.60) every web UI goes through
+            icon: mdi-gate
+            # Any Gateway-routed host proves the path; this is Homepage's
+            # own, so it fails only if the Gateway (or Envoy) does.
+            siteMonitor: https://home.jupitertech.net
+            namespace: kube-system
+            app: cilium-envoy
+            podSelector: app.kubernetes.io/name=cilium-envoy
+        - Cloudflare Tunnel:
+            id: cloudflared-card
+            description: cloudflared — public hostnames in from Cloudflare
+            icon: cloudflare.png
+            namespace: cloudflared
+            app: cloudflared
+            podSelector: app=cloudflared
+        - CoreDNS:
+            id: coredns-card
+            description: In-cluster DNS
+            icon: coredns.png
+            namespace: kube-system
+            app: coredns
+            podSelector: k8s-app=kube-dns
+
+    # No web UIs here: each tile's badge is the pod status Homepage reads
+    # from the Kubernetes API (namespace + podSelector), which needs no
+    # network access to the app.
+    - Platform Services:
+        - Redis:
+            id: redis-card
+            description: Shared HA Redis + Sentinel (3 pods)
+            icon: redis.png
+            namespace: redis
+            app: redis
+            podSelector: app=redis
+        - RustFS:
+            id: rustfs-card
+            description: In-cluster S3 for database backups
+            icon: mdi-bucket-outline
+            namespace: rustfs
+            app: rustfs
+            podSelector: app=rustfs
+        - CloudNativePG:
+            id: cnpg-card
+            description: Postgres operator + Barman Cloud backup plugin
+            icon: postgresql.png
+            namespace: cnpg-system
+            app: cloudnative-pg
+            podSelector: app.kubernetes.io/name in (cloudnative-pg,plugin-barman-cloud)
+        - cert-manager:
+            id: cert-manager-card
+            description: Wildcard certificate (Cloudflare DNS-01)
+            icon: cert-manager.png
+            namespace: cert-manager
+            app: cert-manager
+            podSelector: app.kubernetes.io/instance=cert-manager
+        - Loki:
+            id: loki-card
+            description: Log store (Grafana Explore)
+            icon: loki.png
+            namespace: logging
+            app: loki
+            podSelector: app.kubernetes.io/name=loki
+        - Alloy:
+            id: alloy-card
+            description: Log shipper, one per node
+            icon: mdi-transit-connection-variant
+            namespace: logging
+            app: alloy
+            podSelector: app.kubernetes.io/name=alloy
+        - metrics-server:
+            id: metrics-server-card
+            description: Pod/node CPU & memory for kubectl top and Homepage
+            icon: mdi-gauge
+            namespace: kube-system
+            app: metrics-server
+            podSelector: app.kubernetes.io/name=metrics-server
+        - Snapshot Controller:
+            id: snapshot-controller-card
+            description: Volume snapshots (Longhorn, CNPG)
+            icon: mdi-camera-timer
+            namespace: kube-system
+            app: snapshot-controller
+            podSelector: app.kubernetes.io/name=snapshot-controller
+        - Node Uncordon:
+            id: node-uncordon-card
+            description: Uncordons nodes after a reboot, one per node
+            icon: mdi-autorenew
+            namespace: kube-system
+            app: node-uncordon
+            podSelector: app=node-uncordon
+
+    # One tile per CloudNativePG cluster (2 instances each) plus the shared
+    # Redis above. Pods only: the databases aren't reachable from Homepage.
+    - Databases:
+        - authentik-db:
+            id: authentik-db-card
+            description: Authentik
+            icon: postgresql.png
+            namespace: authentik
+            app: authentik-db
+            podSelector: cnpg.io/cluster=authentik-db
+        - grafana-db:
+            id: grafana-db-card
+            description: Grafana
+            icon: postgresql.png
+            namespace: monitoring
+            app: grafana-db
+            podSelector: cnpg.io/cluster=grafana-db
+        - harbor-db:
+            id: harbor-db-card
+            description: Harbor
+            icon: postgresql.png
+            namespace: harbor
+            app: harbor-db
+            podSelector: cnpg.io/cluster=harbor-db
+        - kea-db:
+            id: kea-db-card
+            description: Kea leases
+            icon: postgresql.png
+            namespace: kea
+            app: kea-db
+            podSelector: cnpg.io/cluster=kea-db
+        - langfuse-db:
+            id: langfuse-db-card
+            description: Langfuse
+            icon: postgresql.png
+            namespace: langfuse
+            app: langfuse-db
+            podSelector: cnpg.io/cluster=langfuse-db
+        - matrix-db:
+            id: matrix-db-card
+            description: Synapse + MAS
+            icon: postgresql.png
+            namespace: matrix
+            app: matrix-db
+            podSelector: cnpg.io/cluster=matrix-db
+        - nextcloud-db:
+            id: nextcloud-db-card
+            description: Nextcloud
+            icon: postgresql.png
+            namespace: nextcloud
+            app: nextcloud-db
+            podSelector: cnpg.io/cluster=nextcloud-db
+        - paperclip-db:
+            id: paperclip-db-card
+            description: Paperclip
+            icon: postgresql.png
+            namespace: paperclip
+            app: paperclip-db
+            podSelector: cnpg.io/cluster=paperclip-db
+
+    # What turns metrics into alerts and gets them to Matrix. Grafana,
+    # Prometheus and Alertmanager themselves are under Cluster Management.
+    - Monitoring Pipeline:
+        - Prometheus Operator:
+            id: prometheus-operator-card
+            description: Turns ServiceMonitors/rules into Prometheus config
+            icon: prometheus.png
+            namespace: monitoring
+            app: prometheus-operator
+            podSelector: app=kube-prometheus-stack-operator
+        - Alert Bridge:
+            id: alert-bridge-card
+            description: Alertmanager → Matrix #alerts rooms
+            icon: mdi-bell-ring
+            namespace: matrix
+            app: alertmanager-receiver
+            podSelector: app.kubernetes.io/name=alertmanager-receiver
+        - node-exporter:
+            id: node-exporter-card
+            description: Host metrics, one per node
+            icon: mdi-server
+            namespace: monitoring
+            app: prometheus-node-exporter
+            podSelector: app.kubernetes.io/name=prometheus-node-exporter
+        - kube-state-metrics:
+            id: kube-state-metrics-card
+            description: Kubernetes object metrics
+            icon: kubernetes.png
+            namespace: monitoring
+            app: kube-state-metrics
+            podSelector: app.kubernetes.io/name=kube-state-metrics
+        - Blackbox Exporter:
+            id: blackbox-exporter-card
+            description: Probes DNS, Kea API, NAS NFS, the Gateway
+            icon: mdi-radar
+            namespace: monitoring
+            app: blackbox-exporter
+            podSelector: app=blackbox-exporter
+        - MikroTik Exporter:
+            id: mikrotik-exporter-card
+            description: Router metrics
+            icon: mikrotik.png
+            namespace: monitoring
+            app: mikrotik-exporter
+            podSelector: app=mikrotik-exporter
+        - UniFi Poller:
+            id: unifi-poller-card
+            description: UniFi AP & controller metrics
+            icon: mdi-access-point-network
+            namespace: monitoring
+            app: unifi-poller
+            podSelector: app=unifi-poller
 
     - Media:
         - Jellyfin:
@@ -321,6 +567,42 @@ config:
             siteMonitor: http://arr-dashboard.media.svc.cluster.local:3000
             namespace: media
             app: arr-dashboard
+        - FlareSolverr:
+            id: flaresolverr-card
+            description: Solves Cloudflare challenges for Prowlarr — no web UI
+            icon: flaresolverr.png
+            namespace: media
+            app: flaresolverr
+            podSelector: app=flaresolverr
+        - Unpackerr:
+            id: unpackerr-card
+            description: Extracts finished downloads for the *arrs — no web UI
+            icon: unpackerr.png
+            namespace: media
+            app: unpackerr
+            podSelector: app=unpackerr
+
+    - Files & Chat:
+        - Nextcloud:
+            id: nextcloud-card
+            href: https://cloud.jupitertech.net
+            description: Files, sync and share links — LAN only (for now)
+            icon: nextcloud.png
+            # Through the Gateway (the namespace is default-deny).
+            siteMonitor: https://cloud.jupitertech.net/status.php
+            namespace: nextcloud
+            app: nextcloud
+            # The app and its Redis; not the cron Job pods (component=cronjob).
+            podSelector: app.kubernetes.io/name in (nextcloud,nextcloud-redis),app.kubernetes.io/component!=cronjob
+        - Matrix:
+            id: matrix-card
+            href: https://chat.jupitertech.net
+            description: Element chat, alert rooms and Hermes
+            icon: element.png
+            siteMonitor: https://matrix.jupitertech.net/_matrix/client/versions
+            namespace: matrix
+            app: synapse
+            podSelector: app.kubernetes.io/name in (synapse-main,matrix-authentication-service,element-web,haproxy)
 
     - Tools & AI:
         - SearXNG:
@@ -412,6 +694,38 @@ config:
             namespace: streamystats
             app: streamystats
             podSelector: app=streamystats
+        - Langfuse:
+            id: langfuse-card
+            href: https://langfuse.jupitertech.net
+            description: LLM tracing for Hermes
+            icon: mdi-chart-timeline-variant
+            siteMonitor: https://langfuse.jupitertech.net/api/public/health
+            namespace: langfuse
+            app: langfuse
+            podSelector: app in (web,worker,clickhouse)
+        - Paperclip:
+            id: paperclip-card
+            href: https://paperclip.jupitertech.net
+            description: Paperclip — LAN only
+            icon: mdi-paperclip
+            siteMonitor: https://paperclip.jupitertech.net
+            namespace: paperclip
+            app: paperclip
+            podSelector: app=paperclip
+        - Research Worker:
+            id: research-worker-card
+            description: Sandboxed terminal for Hermes — no web UI
+            icon: mdi-console
+            namespace: research-worker
+            app: research-worker
+            podSelector: app=research-worker
+        - SearXNG MCP:
+            id: searxng-mcp-card
+            description: Search tools for Hermes (MCP server) — no web UI
+            icon: mdi-magnify
+            namespace: searxng
+            app: searxng-mcp
+            podSelector: app=searxng-mcp
 
     - Network Hardware:
         - MikroTik CCR1036:
