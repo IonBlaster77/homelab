@@ -56,9 +56,15 @@ spec:
           args:
             - |
               set -eu
-              # Langfuse tracing extension: refreshed on every start.
-              mkdir -p /paperclip/.pi/agent/extensions
-              cp /etc/pi-extensions/langfuse.ts /paperclip/.pi/agent/extensions/langfuse.ts
+              # Langfuse tracing extension, MCP servers and skills: refreshed
+              # on every start from the ConfigMaps (git is the source of truth).
+              A=/paperclip/.pi/agent
+              mkdir -p "$A/extensions" "$A/skills/hardware-deals/scripts" /paperclip/data/hardware-deals
+              cp /etc/pi-extensions/langfuse.ts "$A/extensions/langfuse.ts"
+              cp /etc/pi-agent-config/mcp.json "$A/mcp.json"
+              cp /etc/pi-agent-config/hardware-deals-SKILL.md "$A/skills/hardware-deals/SKILL.md"
+              cp /etc/pi-agent-config/hardware-deals-md.sh "$A/skills/hardware-deals/scripts/md.sh"
+              chmod 755 "$A/skills/hardware-deals/scripts/md.sh"
               D=/paperclip/tools/pi
               if [ "$(cat "$D/.version" 2>/dev/null)" = "$PI_VERSION" ]; then
                 echo "pi $PI_VERSION already installed"; exit 0
@@ -79,6 +85,9 @@ spec:
               mountPath: /tmp
             - name: pi-extension-langfuse
               mountPath: /etc/pi-extensions
+              readOnly: true
+            - name: pi-agent-config
+              mountPath: /etc/pi-agent-config
               readOnly: true
       containers:
         - name: paperclip
@@ -157,6 +166,10 @@ spec:
             - name: pi-langfuse
               mountPath: /etc/pi-langfuse
               readOnly: true
+            # crawl4ai / searxng-mcp tokens for the crons' tools.
+            - name: pi-tools
+              mountPath: /etc/pi-tools
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -167,6 +180,13 @@ spec:
         - name: pi-langfuse
           secret:
             secretName: pi-langfuse
+            defaultMode: 0440
+        - name: pi-agent-config
+          configMap:
+            name: pi-agent-config
+        - name: pi-tools
+          secret:
+            secretName: pi-tools
             defaultMode: 0440
         - name: tmp
           emptyDir:

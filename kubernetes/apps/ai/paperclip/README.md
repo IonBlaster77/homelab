@@ -58,9 +58,34 @@ Pi 1.4 has built-in MCP (stdio and streamable HTTP, **not SSE**) in
 out of the model's context. So crons can use the same MCP servers as Hermes,
 not CLI wrappers.
 
-- **crawl4ai:** Hermes reaches it over SSE, so Pi needs its streamable-HTTP
-  endpoint.
 - **Network:** each server needs an egress rule here and ingress on its side.
+
+Pi's agent config lives in this folder and is copied into `~/.pi/agent/` by the
+initContainer on every start. Git is the source of truth, so changes made in
+Pi's `/mcp` UI don't survive a restart.
+
+| File | Goes to | What it is |
+|---|---|---|
+| `pi/mcp.json` | `~/.pi/agent/mcp.json` | searxng-mcp (search tool `direct`, `web_url_read` hidden). The token is read from `/etc/pi-tools` by a header command |
+| `pi/hardware-deals-SKILL.md` | `~/.pi/agent/skills/hardware-deals/SKILL.md` | Port of Hermes' hardware-deals skill 1.6.2 (see below) |
+| `pi/md.sh` | `…/hardware-deals/scripts/md.sh` | Page → markdown through crawl4ai's REST `/md` |
+
+**crawl4ai** (0.9.5) offers MCP only over SSE, which Pi can't use, so the skill
+calls the REST `/md` endpoint through `md.sh`. That's the same thing Hermes' `md`
+tool does. Tokens: the `pi-tools` secret, the same ones as Hermes'.
+
+**What the Pi port of hardware-deals changes:**
+- **Tools:** `scripts/md.sh` instead of crawl4ai's `md` tool.
+- **Files:** the price logs live in `/paperclip/data/hardware-deals/`.
+- **Budget:** about 60–70 calls instead of Hermes' 100-turn cap.
+- **Previous report:** read from `last-report-<category>.md` instead of
+  Hermes' `context_from`, so each run can start a fresh session rather than
+  growing one.
+- **Delivery:** the report is the run's final answer in Paperclip. Matrix
+  delivery isn't wired: that's still to decide.
+
+Before cutting over, copy Hermes' `/opt/data/hardware-deals/price-log-*.csv`
+here, then disable the Hermes crons.
 
 ## First start (needs the user)
 

@@ -16,6 +16,8 @@ resources:
   - secret.sops.yaml
   # Pi's Langfuse tracing: the agents-project key pair
   - secret-pi-langfuse.sops.yaml
+  # Pi's cron tools: crawl4ai and searxng-mcp bearer tokens
+  - secret-pi-tools.sops.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
@@ -32,3 +34,12 @@ configMapGenerator:
     namespace: paperclip
     files:
       - langfuse.ts=pi-extension-langfuse.ts
+  # Pi's agent config, copied into ~/.pi/agent/ by the same initContainer on
+  # every start (so edits made in Pi's /mcp UI don't survive a restart; change
+  # them here): MCP servers, and the skills the crons use.
+  - name: pi-agent-config
+    namespace: paperclip
+    files:
+      - mcp.json=pi/mcp.json
+      - hardware-deals-SKILL.md=pi/hardware-deals-SKILL.md
+      - hardware-deals-md.sh=pi/md.sh
