@@ -188,6 +188,34 @@ from outside.
 - Pi's traces go to Langfuse through an extension. If Pi can't report, that's
   trigger 2 below.
 
+**Status (2026-10-25):**
+
+- **Paperclip deployed** LAN-only (#333): `ghcr.io/paperclipai/paperclip:2026.1023.0`,
+  `authenticated/private`, with Pi 1.4.0 on its data volume.
+  - **Database:** CNPG `paperclip-db` with point-in-time recovery. The first base backup is
+    done.
+  - **Sandbox:** egress verified from inside the pod. Only the public internet is reachable;
+    the API VIP, NAS, Gateway VIP, LAN, RustFS and kubelet are all blocked.
+- **The MCP assumption above is out of date.** Pi 1.4 has built-in MCP (stdio and
+  streamable HTTP, not SSE). Its default `codemode` exposure keeps tool definitions out of
+  the context. Decision #12 changes: crons use the existing MCP servers, not CLI wrappers.
+  crawl4ai needs its streamable-HTTP endpoint, because Hermes uses SSE.
+- **Pi tracing** is a home-grown extension (`kubernetes/apps/ai/paperclip/pi-extension-langfuse.ts`).
+  It has no npm dependencies and sends OTLP/HTTP JSON, with the Claude Code hook's masking.
+  Langfuse accepts OTLP JSON, which I checked by sending a test span. Trigger 2 doesn't fire.
+- **Cron inventory and cost**, input tokens per run from Langfuse on 2026-10-24:
+
+  | Cron | Uses | Input tokens per run | Plan |
+  |---|---|---|---|
+  | `daily-health-review` | infra-mcp, gpt-5.6-sol | ~339k | Move |
+  | `hardware-deals-{gpus,ram,storage}` | searxng + crawl4ai + a price-log file, gpt-5.6-terra | 72k–111k each | Move first: self-contained |
+  | `daily-work-learning-content-check-in` | Hermes' `session_search` | — | Stays on Hermes (needs Hermes memory) |
+  | `daily-warning-review` | — | — | Already disabled, superseded by the health review |
+
+- **Waiting on the user:**
+  - claim the instance, then set `PAPERCLIP_AUTH_DISABLE_SIGN_UP=true`;
+  - sign Pi in to ChatGPT (`/login` in the pod).
+
 ## Phase 4 triggers (an LLM proxy and off-site copies)
 
 Add LiteLLM (or similar) only when one of these happens:
@@ -279,6 +307,6 @@ Things to handle when wiring it:
 | # | Decision | Recommendation |
 |---|---|---|
 | 11 | Pi's model sign-in | ChatGPT plan (shares Hermes' limits) or an API key (pay per token, which is proxy trigger 1). **Plan first**, and measure. |
-| 12 | MCP for Pi | **CLI wrappers** over `pi-mcp-adapter`. |
+| 12 | MCP for Pi | **Revised 2026-10-25:** Pi 1.4's built-in MCP with `codemode` exposure, against the existing servers. CLI wrappers only for a server Pi can't reach (SSE-only). Never `pi-mcp-adapter`. |
 | 13 | Cluster access for crons | Read-only, borrowed from infra-mcp's ClusterRole, per cron, never broader. |
 | 14 | Which crons move | Decided by the inventory. |
