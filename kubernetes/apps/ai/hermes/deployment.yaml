@@ -512,6 +512,22 @@ spec:
             - name: webui-uv-overrides
               mountPath: /etc/uv-overrides
               readOnly: true
+            # Same repo-managed skills as hermes-agent. Without these the
+            # Skills tab reads the empty subPath placeholders left on the PVC
+            # and shows "(no content)"; read-only so in-UI edits fail loudly
+            # instead of landing in a file the agent never reads.
+            - name: skill-alert-triage
+              mountPath: /home/hermes/.hermes/skills/devops/alert-triage/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
+            - name: skill-infra-mcp-readonly
+              mountPath: /home/hermes/.hermes/skills/devops/infra-mcp-readonly/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
+            - name: skill-hardware-deals
+              mountPath: /home/hermes/.hermes/skills/shopping/hardware-deals/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
           resources:
             requests:
               memory: "128Mi"
