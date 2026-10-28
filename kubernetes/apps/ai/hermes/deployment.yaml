@@ -20,10 +20,10 @@ spec:
         # Bump when configmap-mcp-servers.yaml changes: the fragment is only
         # merged into config.yaml by an initContainer, so a ConfigMap edit
         # alone never reaches the running pod.
-        hermes/config-fragment-rev: "2026-10-21-max-turns-100"
+        hermes/config-fragment-rev: "2026-10-28-disable-web-toolset"
         # Bump when a configmap-skill-*.yaml changes: skills are subPath
         # mounts, which never update in a running pod.
-        hermes/skills-rev: "2026-10-23-alert-triage-1.3.0"
+        hermes/skills-rev: "2026-10-28-research-sandbox-1.0.0"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always
@@ -340,6 +340,9 @@ spec:
         - name: skill-hardware-deals
           configMap:
             name: hermes-skill-hardware-deals
+        - name: skill-research-sandbox
+          configMap:
+            name: hermes-skill-research-sandbox
 
       containers:
         - name: hermes-agent
@@ -441,6 +444,10 @@ spec:
               mountPath: /home/hermes/.hermes/skills/shopping/hardware-deals/SKILL.md
               subPath: SKILL.md
               readOnly: true
+            - name: skill-research-sandbox
+              mountPath: /home/hermes/.hermes/skills/research/research-sandbox/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
           # Each cron run is its own ~250-300 MiB process on top of the
           # ~430 MiB gateway. Three concurrent runs hit the old 1Gi limit and
           # the cgroup OOM killer took out all of them (2026-10-21 02:34).
@@ -526,6 +533,10 @@ spec:
               readOnly: true
             - name: skill-hardware-deals
               mountPath: /home/hermes/.hermes/skills/shopping/hardware-deals/SKILL.md
+              subPath: SKILL.md
+              readOnly: true
+            - name: skill-research-sandbox
+              mountPath: /home/hermes/.hermes/skills/research/research-sandbox/SKILL.md
               subPath: SKILL.md
               readOnly: true
           resources:

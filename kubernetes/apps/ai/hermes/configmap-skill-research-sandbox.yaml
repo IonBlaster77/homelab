@@ -1,0 +1,41 @@
+# Hermes skill "research-sandbox", mounted at
+# ~/.hermes/skills/research/research-sandbox/SKILL.md (deployment.yaml).
+# Changes need a pod restart (subPath mounts don't update live). Written from
+# the failures in the 2026-10-28 research run; keep it to environment facts
+# the model can't discover cheaply, not general research advice.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-skill-research-sandbox
+  namespace: hermes
+data:
+  SKILL.md: |
+    ---
+    name: research-sandbox
+    description: Facts about your terminal sandbox and web tools that save wasted tool calls. Load this before any research, download, GitHub/Hugging Face/Civitai lookup, or multi-step terminal work, and before delegating research to subagents (pass the relevant points on in their context).
+    version: 1.0.0
+    metadata:
+      hermes:
+        tags: [research, terminal, sandbox, github, web]
+    ---
+
+    # Research sandbox: what works and what doesn't
+
+    Your `terminal` and `execute_code` run over SSH in `research-worker`, an isolated Alpine Linux pod with **no credentials of any kind** and restricted egress. Hermes' own pod is a different machine.
+
+    ## Reading the web
+    - Search: the `searxng` tools. Read a URL: `crawl4ai` `md` (pass `q` for query-focused extraction; `f=raw` if fit drops content). There is no `web_search`/`web_extract` built-in.
+    - Pages that need a login (Civitai downloads marked login-only, private Hugging Face repos) will return 401/403. Note them as inaccessible and move on; don't retry or look for workarounds.
+
+    ## GitHub
+    - `gh` is not installed and couldn't log in anyway. Use the REST API with curl, unauthenticated (60 requests/hour, so be selective):
+      - repo: `curl -s https://api.github.com/repos/OWNER/REPO`
+      - search: `curl -s "https://api.github.com/search/repositories?q=QUERY"`
+      - file: `curl -sL https://raw.githubusercontent.com/OWNER/REPO/HEAD/PATH`
+    - `git clone` of a public repo works. `fatal: could not read Username for 'https://github.com'` means the repo **doesn't exist or is private**, not an auth problem: check the name with the API instead of retrying.
+
+    ## Shell and Python
+    - GNU userland is installed (findutils, coreutils, grep, sed, gawk), plus `rg`, `fd`, `jq`, `git`, `curl`, `node`/`npm`.
+    - `pip install <pkg>` installs into the persistent venv; no `--break-system-packages` or new venv needed. Preinstalled: requests, beautifulsoup4, lxml, pandas, pillow, openpyxl, pdfplumber, pytesseract.
+    - Write files under `/opt/data/...`: it's the only writable root for your file tools, and it persists across sandbox restarts (9 GB total; clean up large downloads you no longer need). The `search_files` tool takes a ripgrep regex: escape `{`, `}`, `(`, `)` when searching for literal code.
+    - Skill scripts are available at the same `~/.hermes/skills/...` paths `skill_view` shows you.
