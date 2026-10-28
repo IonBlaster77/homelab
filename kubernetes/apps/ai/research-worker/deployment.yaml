@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: research-worker
+      annotations:
+        # Bump when configmap.yaml changes: the entrypoint only runs at pod
+        # start, so a ConfigMap edit alone never reaches the running pod.
+        research-worker/entrypoint-rev: "2026-10-28-gnu-tools-skill-path"
     spec:
       serviceAccountName: research-worker-sa
       restartPolicy: Always
@@ -59,8 +63,14 @@ spec:
             - name: workspace
               mountPath: /workspace
             # Hermes' file tools run here (over SSH), and only write under
-            # /opt/data (HERMES_WRITE_SAFE_ROOT). Persistent home for the
-            # hardware-deals price logs, inside that root.
+            # /opt/data (HERMES_WRITE_SAFE_ROOT). Persist all of it: research
+            # runs leave findings and downloads there (~1 GB on 2026-10-28),
+            # which the container overlay lost on every restart.
+            - name: workspace
+              mountPath: /opt/data
+              subPath: opt-data
+            # Persistent home for the hardware-deals price logs, inside that
+            # root (kept as its own subPath so existing logs stay put).
             - name: workspace
               mountPath: /opt/data/hardware-deals
               subPath: hardware-deals

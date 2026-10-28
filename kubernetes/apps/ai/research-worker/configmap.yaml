@@ -24,7 +24,11 @@ data:
     # GNU tar, not BusyBox's: Hermes' SSH file sync pipes into
     # `tar xf - --no-overwrite-dir`, which BusyBox tar rejects, so every
     # sync died with SIGPIPE (rc=-13) and spilled tool output never arrived.
-    apk add bash openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool tar
+    # Same reason for the rest of the GNU userland: models write GNU flags
+    # (find -printf, sed -i -E, sort -V, ps aux) and BusyBox rejects them,
+    # each one a wasted tool round (2026-10-28 research run).
+    apk add bash openssh-server curl wget jq git ripgrep fd unzip p7zip file poppler-utils qpdf tesseract-ocr imagemagick nodejs npm python3 py3-pip exiftool tar \
+      findutils coreutils grep sed gawk diffutils procps-ng less
 
     mkdir -p /workspace/ssh_host_keys /root/.ssh /var/empty/sshd
     chmod 700 /root/.ssh
@@ -97,6 +101,19 @@ data:
     PYVER=$(python3 -c 'import sys; print("python%d.%d" % sys.version_info[:2])')
     rm -rf /usr/lib/$PYVER/site-packages
     ln -s /workspace/venv/lib/$PYVER/site-packages /usr/lib/$PYVER/site-packages
+    # With site-packages pointing at the venv, a bare `pip install` (system
+    # pip) lands in the venv anyway — but Alpine's PEP 668 marker makes it
+    # refuse with externally-managed-environment first. Nothing here is
+    # system-managed in the sense the marker protects, so drop it.
+    rm -f /usr/lib/$PYVER/EXTERNALLY-MANAGED
+
+    # Hermes' SSH backend syncs skills to this host's $HOME/.hermes
+    # (/root/.hermes), but skill_view shows the model Hermes' own absolute
+    # paths (/home/hermes/.hermes/skills/...), so every skill script call
+    # (grounded-citations' sources.py) failed with "No such file". Alias the
+    # Hermes-side path to the synced copy.
+    mkdir -p /root/.hermes /home/hermes
+    ln -sfn /root/.hermes /home/hermes/.hermes
 
     npm config set prefix /opt/npm-global
 

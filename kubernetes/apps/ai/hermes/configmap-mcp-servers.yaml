@@ -18,6 +18,12 @@ data:
     # run (2026-10-21) used all 60 on research and ended with no report.
     agent:
       max_turns: 100
+      # The built-in web toolset is web_search + web_extract. With no paid
+      # extract vendor configured, web_extract always fails ("search-only
+      # backend"), and Hermes has no per-tool disable, only per-toolset.
+      # searxng (search) and crawl4ai (md/html: read a URL) are self-hosted
+      # and cover both, without spending Codex quota on search calls.
+      disabled_toolsets: [web]
     # delegate_task subagents. Unset, they inherit the parent's gpt-5.6-sol
     # at xhigh: one WebUI research chat (2026-10-28, 3 children, ~30 min)
     # spent ~23.6M tokens and exhausted the ChatGPT Plus 5h window, which
