@@ -24,6 +24,15 @@ data:
       # searxng (search) and crawl4ai (md/html: read a URL) are self-hosted
       # and cover both, without spending Codex quota on search calls.
       disabled_toolsets: [web]
+    # Stream the model's reasoning summaries to clients. Hermes defaults this
+    # to true, but it was false here, so the WebUI (whose own show_thinking
+    # setting is on) had nothing to render while a turn ran — just a spinner
+    # for minutes during long syntheses. gpt-5.x sends summaries, not raw
+    # chain-of-thought; they show as collapsible thinking blocks. Doesn't
+    # cover time spent waiting on subagents (that needs nesquena/hermes-webui
+    # #6505).
+    display:
+      show_reasoning: true
     # delegate_task subagents. Unset, they inherit the parent's gpt-5.6-sol
     # at xhigh: one WebUI research chat (2026-10-28, 3 children, ~30 min)
     # spent ~23.6M tokens and exhausted the ChatGPT Plus 5h window, which
