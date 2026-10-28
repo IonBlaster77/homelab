@@ -18,6 +18,22 @@ data:
     # run (2026-10-21) used all 60 on research and ended with no report.
     agent:
       max_turns: 100
+    # delegate_task subagents. Unset, they inherit the parent's gpt-5.6-sol
+    # at xhigh: one WebUI research chat (2026-10-28, 3 children, ~30 min)
+    # spent ~23.6M tokens and exhausted the ChatGPT Plus 5h window, which
+    # also broke smart approvals (their aux LLM call 429'd and escalated to
+    # the broken manual prompt). terra/medium matches the hardware-deals
+    # cron jobs. Keys confirmed against tools/delegate_tool_config.py.
+    delegation:
+      provider: openai-codex
+      model: gpt-5.6-terra
+      reasoning_effort: medium
+      # Default 250. Children that run out return partial output with
+      # exit_reason max_iterations rather than burning quota on retries.
+      max_iterations: 80
+      # Inactivity cap, not total runtime — any progress resets it; default
+      # 0 = none. Children get a budget warning at ~80% of the window.
+      child_timeout_seconds: 600
     # approvals.mode is GLOBAL — Hermes has no per-tool/per-backend approval
     # scoping (confirmed: NousResearch/hermes-agent#33905/#80993 are open,
     # unimplemented feature requests for exactly that). 'smart' (an auxiliary
