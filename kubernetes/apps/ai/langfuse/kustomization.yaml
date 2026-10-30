@@ -11,7 +11,7 @@ kind: Kustomization
 helmCharts:
   - name: langfuse
     repo: https://langfuse.github.io/langfuse-k8s
-    version: 2.1.6
+    version: 2.2.0
     releaseName: langfuse
     namespace: langfuse
     valuesFile: values.yaml
