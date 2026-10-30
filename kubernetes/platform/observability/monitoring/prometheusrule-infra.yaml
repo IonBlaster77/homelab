@@ -47,14 +47,31 @@ spec:
           annotations:
             summary: "Longhorn backup for volume {{ $labels.volume }} is in Error state"
             description: "The hourly backup job ran but this backup failed — check `kubectl get backups -n longhorn-system` for details."
+        # Longhorn 1.13 exports robustness as one 0/1 series per state label
+        # (unknown/healthy/degraded/faulted), not as a 0-3 enum, so the old
+        # `longhorn_volume_robustness == 3` could never match. Verified live
+        # 2026-10-30: 49 volumes x 4 states = 196 series, values only 0 or 1.
         - alert: LonghornVolumeFaulted
-          expr: longhorn_volume_robustness == 3
+          expr: longhorn_volume_robustness{state="faulted"} == 1
           for: 5m
           labels:
             severity: critical
           annotations:
-            summary: "Longhorn volume {{ $labels.volume }} ({{ $labels.pvc }}) is Faulted"
+            summary: "Longhorn volume {{ $labels.volume }} ({{ $labels.pvc_namespace }}/{{ $labels.pvc }}) is Faulted"
             description: "All replicas for this volume are unavailable — data on this PVC is currently inaccessible."
+        - alert: LonghornVolumeDegraded
+          # After the 2026-10-30 power cut every attached volume went degraded
+          # at once, and ~25 minutes after boot only one was still rebuilding,
+          # so 30m stays quiet through a normal post-reboot rebuild. Past that the
+          # rebuild is usually stuck retrying (harbor-db-1 looped on "failed to
+          # find metadata for volume-snap-*" against talos4's replica).
+          expr: longhorn_volume_robustness{state="degraded"} == 1
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} ({{ $labels.pvc_namespace }}/{{ $labels.pvc }}) has been Degraded for 30m+"
+            description: "The volume is still serving from its remaining replicas, but it is one more failure away from Faulted. Check `kubectl get replicas.longhorn.io -n longhorn-system -l longhornvolume={{ $labels.volume }}` and the engine's FailedRebuilding events; a replica that keeps failing to rebuild on the same node (often talos4's BX500 disk) can be deleted so Longhorn creates a fresh one elsewhere."
 
     - name: cilium-gateway
       rules:
