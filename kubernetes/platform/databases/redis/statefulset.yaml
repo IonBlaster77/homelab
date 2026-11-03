@@ -67,7 +67,7 @@ spec:
         # Configs go in an emptyDir (Sentinel rewrites its file at runtime
         # and the password must not land on the PVC).
         - name: config
-          image: redis:8.10.2-alpine
+          image: redis:8.10.3-alpine
           env:
             - name: REDIS_PASSWORD
               valueFrom:
@@ -160,7 +160,7 @@ spec:
               drop: [ALL]
       containers:
         - name: redis
-          image: redis:8.10.2-alpine
+          image: redis:8.10.3-alpine
           command: ["redis-server", "/etc/redis/redis.conf"]
           env:
             - name: REDIS_PASSWORD
@@ -200,7 +200,7 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
         - name: sentinel
-          image: redis:8.10.2-alpine
+          image: redis:8.10.3-alpine
           command: ["redis-sentinel", "/etc/redis/sentinel.conf"]
           ports:
             - containerPort: 26379
