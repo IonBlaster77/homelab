@@ -11,7 +11,9 @@ spec:
   storage:
     # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
     storageClass: longhorn-nvme
-    size: 5Gi
+    # Was 5Gi: the primary filled it with WAL on ~2026-10-30 and CNPG refused
+    # to start Postgres ("no free disk space for WALs"), taking Nextcloud down.
+    size: 10Gi
   bootstrap:
     initdb:
       database: nextcloud
