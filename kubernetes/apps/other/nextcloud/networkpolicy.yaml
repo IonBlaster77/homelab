@@ -135,3 +135,12 @@ spec:
               protocol: TCP
             - port: "5432"
               protocol: TCP
+    # Prometheus scrapes the CNPG exporter (podmonitor-nextcloud-db.yaml).
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
