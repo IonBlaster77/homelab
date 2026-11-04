@@ -16,6 +16,7 @@ resources:
   - secret-nextcloud-admin.sops.yaml
   - secret-nextcloud-redis.sops.yaml
   - cluster-nextcloud-db.yaml
+  - podmonitor-nextcloud-db.yaml
   - deployment-redis.yaml
   - service-redis.yaml
   - httproute.yaml

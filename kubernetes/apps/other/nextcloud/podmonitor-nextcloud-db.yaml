@@ -1,0 +1,18 @@
+# CNPG metrics for nextcloud-db, so the CNPG alerts cover it. Hand-rolled like
+# the other clusters' (enablePodMonitor is deprecated). Missing until
+# 2026-11-04, which is why a replica stuck from 2026-10-30 never raised
+# PGReplication. nextcloud-db-allow-apiserver-and-operator in
+# networkpolicy.yaml admits the scrape.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: nextcloud-db
+  namespace: nextcloud
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: nextcloud-db
+  podMetricsEndpoints:
+    - port: metrics

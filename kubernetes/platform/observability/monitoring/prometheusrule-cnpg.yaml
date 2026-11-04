@@ -79,3 +79,29 @@ spec:
           for: 1m
           labels:
             severity: warning
+        # Not upstream: a replication slot is holding WAL on the primary. CNPG's
+        # HA slots have no size cap (max_slot_wal_keep_size -1), so a replica
+        # that stops consuming makes the primary keep every segment until its
+        # volume fills. That took Nextcloud down 2026-10-30 to 11-04 (a replica
+        # stopped replaying but stayed Ready). Healthy peak over 30 days was one
+        # segment (~16 MiB) on every cluster.
+        - alert: ReplicationSlotRetainingWAL
+          annotations:
+            description: "Slot {{ $labels.slot_name }} on {{ $labels.namespace }}/{{ $labels.pod }} is holding {{ $value | humanize1024 }}B of WAL."
+            summary: "A replica has stopped consuming WAL; the primary's volume will fill."
+          expr: cnpg_pg_replication_slots_pg_wal_lsn_diff > 1073741824
+          for: 15m
+          labels:
+            severity: warning
+        # Not upstream: a CNPG instance pod Prometheus has no metrics for, so
+        # none of the alerts above can see it (nextcloud-db had no PodMonitor
+        # until 2026-11-04). bootstrap-controller is the init container CNPG
+        # puts in every instance pod, and only there.
+        - alert: CNPGInstanceNotScraped
+          annotations:
+            description: "{{ $labels.namespace }}/{{ $labels.pod }} has no CNPG metrics: add a PodMonitor and admit Prometheus on port 9187."
+            summary: "A CloudNativePG instance is not being monitored."
+          expr: kube_pod_init_container_info{container="bootstrap-controller"} unless on(namespace, pod) cnpg_collector_up
+          for: 30m
+          labels:
+            severity: warning
