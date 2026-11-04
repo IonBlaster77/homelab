@@ -105,3 +105,16 @@ spec:
           for: 30m
           labels:
             severity: warning
+        # Not upstream: the exporter is scraped but its replication queries fail,
+        # so PGReplication and ReplicationSlotRetainingWAL go blind while
+        # CNPGInstanceNotScraped stays quiet. Happened to nextcloud-db, whose
+        # installer revoked CONNECT from PUBLIC. Every healthy instance, primary
+        # or replica, reports cnpg_pg_replication_lag.
+        - alert: CNPGReplicationMetricsMissing
+          annotations:
+            description: "{{ $labels.namespace }}/{{ $labels.pod }} is scraped but reports no replication metrics; check its postgres log for \"Error collecting user query\"."
+            summary: "CNPG replication queries are failing, so replication alerts cannot fire."
+          expr: cnpg_collector_up unless on(namespace, pod) cnpg_pg_replication_lag
+          for: 30m
+          labels:
+            severity: warning

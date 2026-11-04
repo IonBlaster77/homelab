@@ -18,3 +18,10 @@ spec:
     initdb:
       database: nextcloud
       owner: nextcloud
+      # Nextcloud's installer revokes CONNECT on its database from PUBLIC, which
+      # locks out CNPG's metrics user (a pg_monitor member) and silently drops
+      # the replication and slot metrics the alerts rely on. A grant to the
+      # role itself survives that revoke. Runs only at bootstrap; the live
+      # cluster got the same GRANT by hand on 2026-11-04.
+      postInitApplicationSQL:
+        - GRANT CONNECT ON DATABASE nextcloud TO pg_monitor
