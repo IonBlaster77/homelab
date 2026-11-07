@@ -166,6 +166,66 @@ spec:
             summary: "Access point {{ $labels.name }} is offline"
             description: "The UniFi controller reports zero uptime for this AP, meaning it's currently unreachable/disconnected."
 
+    # OOM kills, both kinds, to #alerts-critical (severity: critical).
+    # See docs/projects/oom-protection.md for the 2026-11-07 incidents.
+    - name: oom-kills
+      rules:
+        # 1. Kernel OOM kill: a container exceeded its own memory limit.
+        #    Restart + last reason OOMKilled catches the usual case;
+        #    container_oom_events_total also catches a child process killed
+        #    inside a container that keeps running (e.g. a Postgres backend).
+        - alert: ContainerOOMKilled
+          expr: |
+            (
+              sum by (namespace, pod, container) (
+                (increase(kube_pod_container_status_restarts_total[10m]) > 0)
+                and on (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1)
+              )
+            )
+            or
+            (
+              sum by (namespace, pod, container) (increase(container_oom_events_total{container!="", container!="POD"}[10m])) > 0
+            )
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) was OOM-killed"
+            description: "The kernel killed this container for exceeding its memory limit. Check its usage against the limit (Grafana) and raise the limit or fix the leak. Repeated kills look like CrashLoopBackOff."
+        # 2. Talos OOM-controller storm. Talos SIGKILLs whole pod cgroups when
+        #    its podruntime/system cgroups stall on memory, regardless of free
+        #    RAM; Kubernetes then records exit 137, NOT "OOMKilled". Signature:
+        #    3+ containers on one node restarting with 137 within 3 minutes.
+        #    Ignores nodes booted in the last 15 min (shutdown kills look the
+        #    same). Replayed 2026-11-07: fires for talos1's 05:30/05:38 storms
+        #    (8 containers). Blind spot: victims that get REPLACED rather than
+        #    restarted (talos3's 06:48 storm hit CNPG pods, which failed over
+        #    to new pods) - the exact signal is the Talos log line
+        #    "OOM controller triggered" (talosctl dmesg / get oomactions).
+        - alert: NodeKillStorm
+          expr: |
+            (
+              count by (node) (
+                (
+                  (increase(kube_pod_container_status_restarts_total[3m]) > 0)
+                  and on (namespace, pod, container) (kube_pod_container_status_last_terminated_exitcode == 137)
+                  and on (namespace, pod, container) (kube_pod_container_status_last_terminated_reason{reason!="OOMKilled"} == 1)
+                )
+                * on (namespace, pod) group_left (node) max by (namespace, pod, node) (kube_pod_info)
+              ) >= 3
+            )
+            and on (node)
+            (
+              label_replace(
+                (time() - node_boot_time_seconds) * on (instance) group_left (nodename) node_uname_info,
+                "node", "$1", "nodename", "(.*)"
+              ) > 900
+            )
+          labels:
+            severity: critical
+          annotations:
+            summary: "{{ $value }} containers on {{ $labels.node }} were SIGKILLed within 3 minutes"
+            description: "Likely the Talos OOM controller. Confirm with `talosctl -n <node> dmesg | grep 'OOM controller'` and `talosctl -n <node> get oomactions -o yaml` (shows the victims and the PSI values that triggered it). Then find what caused the memory stall on that node."
+
     - name: kernel-memory
       rules:
         # Memory the kernel holds that no counter attributes: not anon, not
