@@ -29,6 +29,17 @@ defaultSettings:
   # Orphans are, by definition, not used by any replica. Was the
   # orphan-auto-deletion Setting ("true") before Longhorn 1.9.
   orphanResourceAutoDeletion: replica-data
+  # Rebuild at most 2 replicas per node at once (default 5). After the
+  # talos4 Talos upgrade on 2026-11-07, 5-at-a-time resync onto its BX500
+  # (EPHEMERAL + "ssd" Longhorn disk) pinned it at 100% busy: containerd
+  # timed out creating containers and CNPG standbys and Prometheus could
+  # not start for 10+ minutes. Slower rebuilds, but the node stays usable.
+  concurrentReplicaRebuildPerNodeLimit: 2
+  # Wait 30 min (default 10) for a failed replica's node to come back
+  # before rebuilding a new copy elsewhere. A Talos upgrade reboot takes
+  # ~10 min; with the default, Longhorn started full rebuilds on other
+  # nodes instead of resyncing the rebooted node's own replicas.
+  replicaReplenishmentWaitInterval: 1800
 longhornManager:
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
