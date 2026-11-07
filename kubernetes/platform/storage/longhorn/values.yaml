@@ -34,7 +34,14 @@ defaultSettings:
   # (EPHEMERAL + "ssd" Longhorn disk) pinned it at 100% busy: containerd
   # timed out creating containers and CNPG standbys and Prometheus could
   # not start for 10+ minutes. Slower rebuilds, but the node stays usable.
-  concurrentReplicaRebuildPerNodeLimit: 2
+  #
+  # TEMPORARILY 4 for the rest of the Talos v1.12.12 rollout (talos2,
+  # talos3): their own Samsung 860/850 disks take the rebuild writes, and
+  # each delta resync is only ~30-90 s, so the per-node queue of 2 was the
+  # bottleneck (~20-25 min per node). SET BACK TO 2 once talos3 is done:
+  # this is one global number and talos4's BX500 can't take 4 when it is
+  # the node being written to.
+  concurrentReplicaRebuildPerNodeLimit: 4
   # How long Longhorn waits for a failed replica to come back (cheap delta
   # resync) before building a new copy elsewhere (full copy). Kept at the
   # 10 min default on purpose: quick re-replication matters more than
