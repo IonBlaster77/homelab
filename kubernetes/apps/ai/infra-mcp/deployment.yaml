@@ -27,7 +27,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: infra-mcp
-          image: python:3.14-slim
+          image: python:3.14-slim@sha256:af8a5aa14780025dbfbcfbc81bd8a91ebd87711dd5b0f48ed71090949dd7cb1d
           command:
             - /bin/sh
             - /etc/infra-mcp/entrypoint.sh
