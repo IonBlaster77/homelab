@@ -44,15 +44,35 @@ existingSecretAdminPassword: harbor-secrets
 existingSecretAdminPasswordKey: HARBOR_ADMIN_PASSWORD
 existingSecretSecretKey: harbor-secrets
 
+# --- Resources and priority (docs/projects/oom-protection.md) ----------------
+# Sized 2026-11-07 from Prometheus: requests from 7-day use, memory limits ~2x
+# the 30-day peak (floor 128Mi), never a CPU limit. Every node pulls images
+# through core + registry + nginx, so those three are homelab-critical; the
+# portal, jobservice and exporter keep default priority.
 core:
   existingSecret: harbor-secrets
   secretName: harbor-token
   existingXsrfSecret: harbor-secrets
   existingXsrfSecretKey: CSRF_KEY
+  priorityClassName: homelab-critical
+  # ~120 MiB typical, 262 MiB peak
+  resources:
+    requests:
+      cpu: 20m
+      memory: 192Mi
+    limits:
+      memory: 768Mi
 
 jobservice:
   existingSecret: harbor-secrets
   existingSecretKey: JOBSERVICE_SECRET
+  # ~35 MiB typical, 36 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 48Mi
+    limits:
+      memory: 128Mi
 
 registry:
   existingSecret: harbor-secrets
@@ -60,6 +80,51 @@ registry:
   credentials:
     username: harbor_registry_user
     existingSecret: harbor-secrets
+  priorityClassName: homelab-critical
+  registry:
+    # ~116 MiB typical, 282 MiB peak (blob uploads)
+    resources:
+      requests:
+        cpu: 10m
+        memory: 192Mi
+      limits:
+        memory: 768Mi
+  controller:
+    # ~31 MiB typical, 32 MiB peak
+    resources:
+      requests:
+        cpu: 10m
+        memory: 48Mi
+      limits:
+        memory: 128Mi
+
+nginx:
+  priorityClassName: homelab-critical
+  # ~46 MiB typical, 153 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 384Mi
+
+portal:
+  # ~5 MiB typical, 11 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      memory: 128Mi
+
+exporter:
+  # ~23 MiB typical, 29 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
 
 # --- Storage -----------------------------------------------------------------
 persistence:
