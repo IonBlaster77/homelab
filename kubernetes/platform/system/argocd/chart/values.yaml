@@ -156,7 +156,7 @@ argo-cd:
             memory: 96Mi
           limits:
             memory: 512Mi
-        image: quay.io/argoproj/argocd:v3.3.7
+        image: quay.io/argoproj/argocd:v3.6.1
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
@@ -195,7 +195,7 @@ argo-cd:
             memory: 128Mi
           limits:
             memory: 512Mi
-        image: quay.io/argoproj/argocd:v3.3.7
+        image: quay.io/argoproj/argocd:v3.6.1
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
