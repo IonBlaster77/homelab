@@ -67,8 +67,9 @@ persistence:
   resourcePolicy: "keep"
   persistentVolumeClaim:
     registry:
-      # One replica on NVMe: cached images re-download if ever lost (see
-      # longhorn/storageclass-nvme-single.yaml). Expand here if it fills up.
+      # Class is nvme-single, but the Longhorn volume was raised to 2
+      # replicas on 2026-11-07 (README Gotchas). Recreating the PVC? Use
+      # longhorn-nvme-double (~100Gi). Expand here if it fills up.
       storageClass: longhorn-nvme-single
       size: 150Gi
     jobservice:

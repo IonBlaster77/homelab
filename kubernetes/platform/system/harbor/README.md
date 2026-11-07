@@ -15,7 +15,7 @@ The homelab's container registry. Two jobs:
 | **URL** | https://registry.jupitertech.net (web UI + registry API). **LAN-only**: AdGuard rewrite, no Cloudflare record |
 | **Chart** | [`harbor`](https://github.com/goharbor/harbor-helm) from `helm.goharbor.io`, version pinned in `kustomization.yaml` (`helmCharts`) |
 | **Namespace** | `harbor` (PSA `restricted`) |
-| **Storage** | Image store 150Gi `longhorn-nvme-single` (one replica, NVMe); Trivy cache 5Gi and job logs 1Gi on `longhorn-ssd` |
+| **Storage** | Image store 150Gi `longhorn-nvme-single` PVC, but **2 replicas** set on the Longhorn volume (NVMe, talos3 + talos4; see Gotchas); Trivy cache 5Gi and job logs 1Gi on `longhorn-ssd` |
 | **Database** | CloudNativePG `harbor-db` (2 × 5Gi NVMe), database `registry` |
 | **Redis** | The HA Redis via Sentinel (`kubernetes/platform/databases/redis`, master `mymaster`, DB indexes 0, 1, 2, 5) |
 | **Depends on** | CloudNativePG, Redis, Longhorn, Gateway, the sops-kustomize plugin with `--enable-helm`, AdGuard (DNS) |
@@ -66,9 +66,20 @@ port 8001.
   adding `release: monitoring` made a duplicate YAML key Kustomize rejects.
 - **The migration hook stays off** (`enableMigrateHelmHook: false`): under
   Argo it would be a PreSync Job. Harbor core migrates its schema at startup.
-- **The image store has one replica.** If its node is down, pushes and cache
-  pulls fail until it returns; Talos nodes fall back to the real registries,
-  but private images built here are unavailable meanwhile.
+- **The image store has two replicas, set on the Longhorn volume, not the
+  StorageClass.** The PVC is still `longhorn-nvme-single`, because a PVC's
+  class can't change in place. On 2026-11-07 the Longhorn volume itself
+  (`pvc-3b92456f-…`) was raised to `numberOfReplicas: 2`: one copy on talos3
+  NVMe, one on talos4 NVMe.
+  - **Why:** with one copy, every reboot of its node took Harbor's storage
+    offline. Pulls stalled, with EOFs in harbor-core. It also blocked that
+    node's drain (Longhorn `block-if-contains-last-replica`).
+  - **What it needed:** Longhorn over-provisioning at 150%. Longhorn reserves
+    by volume size (150Gi), not by the 57 GB used.
+  - **If the PVC is ever recreated:** use `longhorn-nvme-double`, and drop the
+    size to about 100Gi.
+  - **Speed:** a healthy cache miss runs at about internet speed, and a hit at
+    about 500-700 Mbit/s. Slow pulls mean the store is offline or rebuilding.
 - **No "token" in file names.** The repo's `.gitignore` has a `*token*`
   safety rule, which silently kept `secret-harbor-token.sops.yaml` out of git
   (Argo then failed: file not found). Hence `secret-harbor-signing.sops.yaml`
