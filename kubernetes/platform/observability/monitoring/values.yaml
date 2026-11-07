@@ -8,15 +8,53 @@ kubeScheduler:
 kubeControllerManager:
   enabled: false
 
+# --- Resources and priority (docs/projects/oom-protection.md) ----------------
+# Sized 2026-11-07 from Prometheus: memory requests from 7-day use, CPU
+# requests from the 7-day average, never a CPU limit. Prometheus itself is
+# request-only (its memory tracks series count; a limit kill means a long WAL
+# replay); the small exporters/operator get a limit of ~2x the 30-day peak.
+
 # node-exporter must run on control-plane nodes too
 prometheus-node-exporter:
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
       effect: NoSchedule
+  # ~28 MiB typical, 42 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+
+# ~43 MiB typical, 81 MiB peak. Its metrics feed most alerts.
+kube-state-metrics:
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 192Mi
+
+# ~43 MiB typical, 79 MiB peak
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 192Mi
 
 prometheus:
   prometheusSpec:
+    priorityClassName: homelab-critical
+    # ~3.8 GiB typical, 3.9 GiB 30-day peak. Request only, no limit.
+    resources:
+      requests:
+        cpu: 110m
+        memory: 4Gi
     retention: 60d
     # Size cap below the 50Gi volume, leaving room for the WAL: at 45GB the
     # volume sat at ~88% and would trip KubePersistentVolumeFillingUp
@@ -40,6 +78,21 @@ prometheus:
               storage: 50Gi
 
 grafana:
+  # ~760 MiB typical, 801 MiB peak. Default priority: dashboards can wait.
+  resources:
+    requests:
+      cpu: 70m
+      memory: 768Mi
+    limits:
+      memory: 2Gi
+  # The dashboard/datasource sidecars: ~90 MiB each, flat
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 96Mi
+      limits:
+        memory: 256Mi
   # Loki (logging namespace) as a log datasource alongside Prometheus.
   additionalDataSources:
     - name: Loki
@@ -130,6 +183,15 @@ grafana:
 alertmanager:
   enabled: true
   alertmanagerSpec:
+    # The alert path to Matrix. ~42 MiB typical, 46 MiB peak; the operator
+    # already defaulted a 200Mi request.
+    priorityClassName: homelab-critical
+    resources:
+      requests:
+        cpu: 10m
+        memory: 200Mi
+      limits:
+        memory: 384Mi
     storage:
       volumeClaimTemplate:
         spec:
