@@ -1,4 +1,16 @@
 installCRDs: true
+# OOM protection (docs/projects/oom-protection.md): evicted after ordinary
+# pods; requests from 7-day use, memory limit ~2x the 30-day peak, never a CPU
+# limit. Sized 2026-11-07.
+global:
+  priorityClassName: homelab-critical
+# controller: ~38 MiB typical, 87 MiB peak
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 192Mi
 # Use public resolvers for the DNS-01 zone/SOA lookup instead of
 # in-cluster CoreDNS. In-cluster resolution was returning an empty
 # Cloudflare zone ID during challenge cleanup (DELETE /zones//dns_records
@@ -12,11 +24,25 @@ tolerations:
     operator: "Exists"
     effect: "NoSchedule"
 webhook:
+  # ~26 MiB typical, 62 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
       effect: "NoSchedule"
 cainjector:
+  # ~145 MiB typical, 167 MiB peak
+  resources:
+    requests:
+      cpu: 10m
+      memory: 192Mi
+    limits:
+      memory: 384Mi
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"

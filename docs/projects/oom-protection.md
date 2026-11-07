@@ -133,6 +133,41 @@ Apply: one node at a time with `talosctl apply-config` (dry-run says "without a
 reboot"; only the kubelet restarts). Check node allocatable, the kubelet configz and
 the podruntime cgroup's memory.min/low on each node afterwards.
 
+## Steps 2 and 5 design: requests, limits and priorities
+
+Decided with the user on 2026-11-07:
+
+- **Databases (CNPG):** memory request = limit (384Mi; authentik and paperclip
+  512Mi, about 2× their 30-day peak) plus a CPU request and **no CPU limit**.
+  So they are Burstable, not the Guaranteed QoS the CNPG docs recommend: CPU is
+  the scarce resource here (4 cores per node). Any memory limit already exempts
+  a pod from the Talos OOM controller's ranking.
+- **Steady pods** (Argo CD, Authentik, Harbor, AdGuard, Kea, cert-manager,
+  Grafana, the CNPG operator, trivy-operator): a memory request from 7-day use,
+  and a memory limit of about 2× the 30-day peak, with a 128Mi floor.
+- **Request only**, no limit: kube-apiserver, Cilium, longhorn-manager and
+  Prometheus. Their use tracks load, and killing them hurts most.
+- **CPU:** requests from the 7-day average on every critical pod. Never CPU
+  limits.
+- **Capacity:** everything must fit with one node down. Memory fits (86%).
+  CPU comes to about 106% with one node down, which the user accepted until
+  two more nodes are added.
+- **Priorities:** `homelab-critical` (1e8, below longhorn-critical) for tier 1
+  and `homelab-batch` (-1000) for Trivy scan jobs. Neither preempts.
+  Tier 0 keeps system-*-critical and longhorn-critical.
+- **Keeping sizes right:** alerts for "over request for a day" and "above 85%
+  of limit", a Grafana panel, and the Vertical Pod Autoscaler in recommend-only
+  mode (CNPG treats `spec.resources` as the source of truth).
+- **Scope:** critical pods only. The rest get defaults later, through Kyverno.
+- **Rollout:** five batches, in a night window. The PriorityClasses ship and
+  sync first, because a pod that names a missing class is rejected.
+  1. PriorityClasses, cert-manager, CNPG operator, AdGuard, Kea, Harbor,
+     trivy-operator.
+  2. Prometheus, Grafana, Argo CD, Authentik.
+  3. The CNPG databases, two or three at a time (one primary switchover each).
+  4. Cilium (manual sync; agent and envoy together) and longhorn-manager.
+  5. kube-apiserver request (2Gi) in the Talos config, via sops.
+
 ## Step 1 runbook: Talos v1.12.6 → v1.12.12
 
 Installer:

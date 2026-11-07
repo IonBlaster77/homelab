@@ -33,6 +33,16 @@ operator:
   # drops unfixed Medium/Low/Unknown series at scrape time.
   metricsVulnIdEnabled: true
 
+# The operator itself: ~900 MiB steady (its report cache), 947 MiB 7-day peak
+# (sized 2026-11-07). Memory limit ~2x peak, no CPU limit, default priority
+# (docs/projects/oom-protection.md).
+resources:
+  requests:
+    cpu: 40m
+    memory: 1Gi
+  limits:
+    memory: 2Gi
+
 compliance:
   specs:
     - k8s-nsa-1.0
@@ -58,6 +68,10 @@ serviceMonitor:
         action: drop
 
 trivyOperator:
+  # Scan jobs are the first thing the kubelet evicts under memory pressure
+  # (scan bursts set off the 2026-11-07 OOM storms). They are retried by the
+  # operator. See docs/projects/oom-protection.md.
+  scanJobPodPriorityClassName: homelab-batch
   # Scan jobs stay off talos4 (its BX500 is both the ephemeral disk and a
   # Longhorn disk: heavy scratch writes push other volumes read-only) and off
   # talos2 (16 GiB, kernel memory leak). Image layers are unpacked into the

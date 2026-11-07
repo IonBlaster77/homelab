@@ -13,6 +13,8 @@ spec:
       labels:
         app: kea-dhcp4
     spec:
+      # DHCP: evicted after ordinary pods (docs/projects/oom-protection.md).
+      priorityClassName: homelab-critical
       initContainers:
         # Creates the lease database schema on an empty database, or upgrades
         # it to this Kea version's schema (a no-op when already current).
@@ -47,6 +49,14 @@ spec:
             - |
               sed "s|__DB_PASSWORD__|${DB_PASSWORD}|g" /etc/kea/kea-dhcp4.conf.tmpl > /tmp/kea-dhcp4.conf
               exec kea-dhcp4 -c /tmp/kea-dhcp4.conf
+          # Sized 2026-11-07: ~7 MiB typical, 31 MiB 30-day peak. Limit floor
+          # 128Mi; no CPU limit (docs/projects/oom-protection.md).
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
           env:
             - name: DB_PASSWORD
               valueFrom:

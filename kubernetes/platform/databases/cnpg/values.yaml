@@ -2,3 +2,13 @@ tolerations:
   - key: node-role.kubernetes.io/control-plane
     operator: Exists
     effect: NoSchedule
+# OOM protection (docs/projects/oom-protection.md): the operator manages every
+# database, so it is evicted after ordinary pods. ~84 MiB typical, 105 MiB
+# 30-day peak (sized 2026-11-07); memory limit ~2x peak, no CPU limit.
+priorityClassName: homelab-critical
+resources:
+  requests:
+    cpu: 20m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
