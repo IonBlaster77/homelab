@@ -17,7 +17,7 @@ hosted LLM APIs and uses the rest of `kubernetes/apps/ai/` as its tools:
 | **URL** | https://hermes.jupitertech.net (web UI, via the Gateway, behind Cloudflare Access) |
 | **Image** | `nousresearch/hermes-agent`, pinned by tag and digest |
 | **Namespace** | `hermes` (PSA `baseline`; was needed by the SSH sidecar removed 2026-11-07) |
-| **Storage** | `hermes-data`, 10Gi Longhorn RWO: `~/.hermes` (config, memory, sessions) |
+| **Storage** | `hermes-data`, 10Gi Longhorn RWO: `~/.hermes` (config, memory, sessions); `hermes-webui-uv-cache`, 4Gi Longhorn RWO: the webui's uv download cache (disposable) |
 | **Depends on** | The five tool apps above, Gateway, Longhorn, the sops-kustomize plugin, outbound internet for LLM APIs |
 
 ## Files
@@ -29,7 +29,7 @@ hosted LLM APIs and uses the rest of `kubernetes/apps/ai/` as its tools:
 | `namespace.yaml` | Namespace, PSA `baseline` |
 | `serviceaccount.yaml`, `role.yaml`, `rolebinding.yaml` | The pod's ServiceAccount and its (namespace-scoped) role |
 | `secret.sops.yaml` | `hermes-secret`: LLM API keys, MCP bearer tokens, SSH keys (SOPS/age encrypted) |
-| `pvc.yaml` | `hermes-data` |
+| `pvc.yaml` | `hermes-data`, `hermes-webui-uv-cache` |
 | `configmap.yaml` | Base Hermes settings |
 | `configmap-mcp-servers.yaml` | The MCP/terminal/approvals fragment merged into `config.yaml` at start |
 | `deployment.yaml` | Init containers (permissions, config merge) + `hermes-agent`, `hermes-webui` |

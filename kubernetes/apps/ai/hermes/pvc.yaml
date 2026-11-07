@@ -12,3 +12,23 @@ spec:
   resources:
     requests:
       storage: 10Gi
+---
+# hermes-webui's uv download cache and uv-managed Python, so a restart
+# installs from local disk instead of re-downloading (deployment.yaml has the
+# details). Disposable: deleting it only costs one slow start. Same 3-replica
+# class as hermes-data, so it adds no new single-node dependency to the pod.
+# The trim-webui-uv-cache init container keeps it under 3 GiB.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hermes-webui-uv-cache
+  namespace: hermes
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 4Gi

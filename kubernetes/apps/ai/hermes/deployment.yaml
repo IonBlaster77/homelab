@@ -284,15 +284,44 @@ spec:
         # AIAgent`) on every chat request. Copy the agent's source (not its
         # venv — different Python version/ABI than the webui image, would
         # break compiled deps) out of the agent image into a shared volume.
+        #
+        # Also skipped: the bundled runtimes under tools/ (chromium, ffmpeg,
+        # node, npm, python, ripgrep, uv: ~1.3G) and the image's uv-cache
+        # (~410M). Only the agent container runs them, from its own
+        # /opt/hermes. The webui's pm resolves its tool store to
+        # $HERMES_HOME/tools, and its ffmpeg lookup uses PATH, so neither
+        # reads this copy (checked 2026-11-07). Copying them cost ~1 min per
+        # start, twice: here and in the webui's own staging rsync.
         - name: share-agent-src
           image: nousresearch/hermes-agent:v0.22.5@sha256:9c5561579f3ffdf333401797094ac3a743738d6c25d40f4331c7bf77b694238d
           command:
             - sh
             - -c
-            - "tar --exclude=node_modules --exclude=.playwright --exclude=.venv -C /opt/hermes -cf - . | tar -C /home/hermeswebui/.hermes/hermes-agent -xf -"
+            - "tar --exclude=node_modules --exclude=.playwright --exclude=.venv --exclude=./uv-cache --exclude='./tools/*-linux-x64' --exclude='./tools/chromium-*' -C /opt/hermes -cf - . | tar -C /home/hermeswebui/.hermes/hermes-agent -xf -"
           volumeMounts:
             - name: agent-share
               mountPath: /home/hermeswebui/.hermes/hermes-agent
+          securityContext:
+            runAsUser: 0
+
+        # Keep the webui's persistent uv cache bounded. It gains new wheels
+        # with every webui/agent bump; past 3 GiB (of 4Gi) start it clean
+        # rather than let a full disk fail the install and the webui.
+        - name: trim-webui-uv-cache
+          image: nousresearch/hermes-agent:v0.22.5@sha256:9c5561579f3ffdf333401797094ac3a743738d6c25d40f4331c7bf77b694238d
+          command:
+            - sh
+            - -c
+            - |
+              used=$(du -sm /uv_cache | cut -f1)
+              echo "webui uv cache: ${used} MiB"
+              if [ "$used" -gt 3072 ]; then
+                echo "over 3072 MiB, clearing"
+                find /uv_cache -mindepth 1 -delete
+              fi
+          volumeMounts:
+            - name: webui-uv-cache
+              mountPath: /uv_cache
           securityContext:
             runAsUser: 0
 
@@ -302,6 +331,9 @@ spec:
             claimName: hermes-data
         - name: agent-share
           emptyDir: {}
+        - name: webui-uv-cache
+          persistentVolumeClaim:
+            claimName: hermes-webui-uv-cache
         - name: langfuse-pth
           configMap:
             name: hermes-langfuse-pth
@@ -497,6 +529,19 @@ spec:
             # See configmap-webui-uv-overrides.yaml.
             - name: UV_OVERRIDE
               value: /etc/uv-overrides/overrides.txt
+            # The webui rebuilds its venv on every start (a new container has
+            # none). Keeping uv's download cache and its managed Python on a
+            # PVC turns ~55s of downloads into local copies. Only the cache
+            # persists, never the venv: the image skips the install whenever
+            # a venv exists, so a kept venv would go stale after an upgrade.
+            # The venv lives on the overlay, so uv can't hardlink from the
+            # PVC; copy mode says so up front instead of warning.
+            - name: UV_CACHE_DIR
+              value: /uv_cache
+            - name: UV_PYTHON_INSTALL_DIR
+              value: /uv_cache/python
+            - name: UV_LINK_MODE
+              value: copy
           ports:
             - containerPort: 8787
               name: webui
@@ -505,6 +550,8 @@ spec:
               mountPath: /home/hermes/.hermes
             - name: agent-share
               mountPath: /home/hermeswebui/.hermes/hermes-agent
+            - name: webui-uv-cache
+              mountPath: /uv_cache
             - name: webui-uv-overrides
               mountPath: /etc/uv-overrides
               readOnly: true
