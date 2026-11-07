@@ -34,6 +34,22 @@ cilium:
     enabled: true
   operator:
     replicas: 1
+    # OOM protection (docs/projects/oom-protection.md), sized 2026-11-07:
+    # ~93 MiB typical, 157 MiB 30-day peak. Request only, no limit.
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
+  # Envoy (the Gateway's L7 proxy, one per node): ~97 MiB typical, 301 MiB
+  # peak. Request only, no limit; the request lifts it out of BestEffort, the
+  # class Talos' OOM controller kills first. The cilium-agent gets its request
+  # at the next Cilium upgrade instead: restarting the agent alone can desync
+  # Envoy's proxy port (memory: cilium agent/envoy restart pairing).
+  envoy:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
   hubble:
     relay:
       enabled: true
