@@ -100,7 +100,11 @@ machine:
         # Allows for supplying the image used to perform the installation.
         #
         # page_owner DEBUG schematic 29ed3086, applied with the v1.12.12
-        # upgrade on 2026-11-07 for the memory-leak hunt. To go back to the
+        # upgrade on 2026-11-07 for the memory-leak hunt. IT DOES NOTHING:
+        # the Talos kernel has no CONFIG_PAGE_OWNER, so boot logs
+        # `Unknown kernel command line parameters "... page_owner=on"` and
+        # there is no /proc/page_owner. Harmless (otherwise identical), but
+        # switch back to the plain schematic at the next upgrade. To go back to the
         # plain schematic used by the other nodes, upgrade with
         #   factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.12
         # and set the image line below to it. A plain reboot or apply-config
