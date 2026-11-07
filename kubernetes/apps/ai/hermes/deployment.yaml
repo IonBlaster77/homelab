@@ -553,7 +553,7 @@ spec:
         # namespace is labeled pod-security: baseline to permit this.
         # ------------------------------------------------------------------
         - name: hermes-ssh
-          image: lscr.io/linuxserver/openssh-server:10.3_p1-r1-ls239
+          image: lscr.io/linuxserver/openssh-server:10.3_p1-r2-ls242
           imagePullPolicy: Always
           env:
             - name: PUID
