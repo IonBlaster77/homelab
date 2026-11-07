@@ -1,0 +1,55 @@
+# Trivy Operator: scans every running workload's image for known
+# vulnerabilities (daily, and whenever a workload changes), plus config
+# audits, RBAC assessments and exposed secrets. Results are Kubernetes
+# objects (VulnerabilityReport etc.) and Prometheus metrics; alerts go to
+# Matrix #alerts-vulnerabilities. The upstream chart plus this folder
+# (network policies) in one app. See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: trivy-operator
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply below, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: homelab
+  sources:
+    # The aquasecurity Helm repo, not the GHCR OCI copy: GHCR stops at 0.32.1.
+    # Chart 0.38.1 = operator 0.36.1 with Trivy 0.76.1, well clear of the
+    # March 2026 compromised releases (CVE-2026-33634, Trivy 0.69.4-0.69.6).
+    - repoURL: https://aquasecurity.github.io/helm-charts
+      chart: trivy-operator
+      targetRevision: 0.38.1
+      helm:
+        releaseName: trivy-operator
+        valueFiles:
+          - $values/kubernetes/platform/security/trivy-operator/values.yaml
+    # This folder: applies its own manifests (network policies) and, as ref
+    # "values", supplies values.yaml to the chart above.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/security/trivy-operator
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: trivy-system
+  syncPolicy:
+    automated:
+      # Safe to prune: the CRDs only hold scan reports, which the operator
+      # regenerates.
+      prune: true
+      selfHeal: true
+    managedNamespaceMetadata:
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        # Nothing here needs host access (the node-collector is off, see
+        # values.yaml). Warn on restricted to show what tightening would take.
+        pod-security.kubernetes.io/enforce: baseline
+        pod-security.kubernetes.io/warn: restricted
+    syncOptions:
+      - CreateNamespace=true
+      # The report CRDs are too large for a client-side apply annotation.
+      - ServerSideApply=true

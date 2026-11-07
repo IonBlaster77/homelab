@@ -1,0 +1,104 @@
+# Vulnerability alerts from Trivy Operator (kubernetes/platform/security/
+# trivy-operator). Agreed behaviour (2026-11-07):
+#   - #alerts-vulnerabilities gets a message when a NEW finding appears:
+#     any severity that has a fix, plus High/Critical with no fix. Unfixed
+#     Medium/Low/Unknown are dropped at scrape time (ServiceMonitor relabel in
+#     the trivy-operator values), so they never get here.
+#   - New fixable Criticals also go to #alerts-critical.
+#   - Everything still outstanding goes into the weekly digest
+#     (cronjob-vulnerability-digest.yaml), not repeated alerts.
+# "New" = present now, absent 6h ago AND 1d ago. Two look-backs so the short
+# gap while a report expires and is rescanned (daily TTL) doesn't count as
+# new. Alerts therefore resolve by themselves within 6h; the receivers have
+# send_resolved off, because "resolved" here does not mean "fixed".
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: trivy
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: trivy-recording
+      # Must stay under Prometheus' 5m lookback, or the offset queries below
+      # miss samples and everything looks new.
+      interval: 2m
+      rules:
+        # One series per image + CVE + package, whatever runs it. Workload,
+        # pod, tag and digest are dropped on purpose: a rollout or a tag bump
+        # that doesn't fix a CVE must not make it "new" again. A changed
+        # fixed_version (an unfixed High gaining a fix) does count as new.
+        - record: trivy:vulnerability:present
+          expr: max by (image_registry, image_repository, vuln_id, resource, severity, fixed_version) (trivy_vulnerability_id)
+        - record: trivy:vulnerability:new
+          expr: |
+            trivy:vulnerability:present
+              unless on (image_registry, image_repository, vuln_id, resource, severity, fixed_version)
+            (trivy:vulnerability:present offset 6h or trivy:vulnerability:present offset 1d)
+        - record: trivy:exposedsecrets:present
+          expr: max by (image_registry, image_repository, severity) (trivy_image_exposedsecrets) > 0
+
+    - name: trivy-alerts
+      interval: 2m
+      rules:
+        # Every rule ends with the same guard: stay quiet until a full day of
+        # history exists, so the first scan of the whole cluster (everything
+        # "new") becomes the baseline instead of hundreds of messages. The
+        # first weekly digest covers that baseline.
+        - alert: TrivyNewVulnerabilities
+          expr: |
+            count by (image_registry, image_repository, severity) (trivy:vulnerability:new)
+            and on () (count(trivy:vulnerability:present offset 1d) > 0)
+          labels:
+            category: vulnerability
+          annotations:
+            summary: "{{ $value }} new {{ $labels.severity }} vulnerabilities in {{ $labels.image_registry }}/{{ $labels.image_repository }}"
+            description: >-
+              {{ $value }} new {{ $labels.severity }} in {{ $labels.image_registry }}/{{ $labels.image_repository }}
+              (used in: {{ range query (printf "count by (namespace) (trivy_image_vulnerabilities{image_registry=%q,image_repository=%q})" $labels.image_registry $labels.image_repository) }}{{ .Labels.namespace }} {{ end }}).
+              {{ range query (printf "topk(15, trivy:vulnerability:new{image_registry=%q,image_repository=%q,severity=%q})" $labels.image_registry $labels.image_repository $labels.severity) }}{{ .Labels.vuln_id }} in {{ .Labels.resource }} ({{ if .Labels.fixed_version }}fixed in {{ .Labels.fixed_version }}{{ else }}no fix yet{{ end }}); {{ end }}
+              Details: https://grafana.jupitertech.net/d/ycwPj724k
+        - alert: TrivyNewCriticalFixable
+          expr: |
+            count by (image_registry, image_repository) (trivy:vulnerability:new{severity="Critical", fixed_version!=""})
+            and on () (count(trivy:vulnerability:present offset 1d) > 0)
+          labels:
+            severity: critical
+            category: vulnerability
+          annotations:
+            summary: "{{ $value }} new fixable Critical vulnerabilities in {{ $labels.image_registry }}/{{ $labels.image_repository }}"
+            description: >-
+              {{ $value }} new Critical with a fix available in {{ $labels.image_registry }}/{{ $labels.image_repository }}
+              (used in: {{ range query (printf "count by (namespace) (trivy_image_vulnerabilities{image_registry=%q,image_repository=%q})" $labels.image_registry $labels.image_repository) }}{{ .Labels.namespace }} {{ end }}):
+              {{ range query (printf "topk(15, trivy:vulnerability:new{image_registry=%q,image_repository=%q,severity=\"Critical\",fixed_version!=\"\"})" $labels.image_registry $labels.image_repository) }}{{ .Labels.vuln_id }} in {{ .Labels.resource }} (fixed in {{ .Labels.fixed_version }}); {{ end }}
+              Bump the image (check for a Renovate PR first). Details in #alerts-vulnerabilities.
+        - alert: TrivyNewExposedSecret
+          expr: |
+            (
+              trivy:exposedsecrets:present
+                unless on (image_registry, image_repository, severity)
+              (trivy:exposedsecrets:present offset 6h or trivy:exposedsecrets:present offset 1d)
+            )
+            and on () (count(trivy:vulnerability:present offset 1d) > 0)
+          labels:
+            category: vulnerability
+          annotations:
+            summary: "Secret found inside image {{ $labels.image_registry }}/{{ $labels.image_repository }}"
+            description: >-
+              Trivy found {{ $value }} {{ $labels.severity }} exposed secret(s) baked into
+              {{ $labels.image_registry }}/{{ $labels.image_repository }}. Read the ExposedSecretReport
+              (kubectl get exposedsecretreports -A) and rotate the credential if it is real.
+
+    - name: trivy-health
+      rules:
+        # Without the operator every vulnerability alert above goes quiet, so
+        # its absence is itself an alert (normal #alerts-warning route).
+        - alert: TrivyOperatorDown
+          expr: absent(up{namespace="trivy-system", service="trivy-operator"} == 1)
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Trivy Operator metrics have been missing for 30m"
+            description: "No vulnerability alerts can fire while this is down. Check the trivy-operator pod in trivy-system and the trivy-operator Argo CD app."

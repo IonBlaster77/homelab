@@ -1,0 +1,117 @@
+# Default deny all ingress and egress for trivy-system.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-default-deny
+  namespace: trivy-system
+spec:
+  endpointSelector: {}
+  # A list with one EMPTY RULE (- {}) is the canonical deny-all; an empty list
+  # (ingress: []) is rejected by Cilium and leaves the namespace open.
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-allow-dns
+  namespace: trivy-system
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The operator watches workloads and writes reports; scan jobs don't mount a
+# service-account token (chart default), so this is effectively the operator.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-allow-egress-to-apiserver
+  namespace: trivy-system
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# Scan jobs talk to the built-in Trivy server (4954); the operator health-
+# checks it. Everything inside the namespace may talk to everything else.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-allow-intra-namespace
+  namespace: trivy-system
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# Image pulls through Harbor's pull-through cache at the Gateway VIP
+# (registry.jupitertech.net -> 10.77.20.60). See the mirrors in values.yaml.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-allow-egress-harbor
+  namespace: trivy-system
+spec:
+  endpointSelector: {}
+  egress:
+    - toCIDR:
+        - 10.77.20.60/32
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Outbound HTTPS: the Trivy server downloads its vulnerability databases and
+# the operator its check bundle from mirror.gcr.io, and scan jobs pull images
+# from registries Harbor doesn't mirror. CDN-fronted, so 443 rather than a CIDR.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-allow-egress-https
+  namespace: trivy-system
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Prometheus scrapes the operator's metrics. Port is the pod's container port
+# (post-DNAT), not the Service port (80).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: trivy-system-allow-ingress-from-monitoring
+  namespace: trivy-system
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: trivy-operator
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

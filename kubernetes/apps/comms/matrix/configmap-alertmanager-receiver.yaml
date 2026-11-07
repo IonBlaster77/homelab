@@ -25,6 +25,8 @@ data:
       room-mapping:
         alerts-critical: "!IHSCVidCmFd2py1dGRxtgeUYgjkKuKI2XUxLb8JFd3E"
         alerts-warning: "!0lyEnSgrdxRHsROoG4CWcRCnb_ZAKqSloxs2_lghhww"
+        # Created 2026-11-07 (same createRoom settings as matrix-rooms.sh).
+        alerts-vulnerabilities: "!BxNEYeaRambZbwsc9BZYAoqPUhinX4ocNaZsH1Ag75U"
     # A firing template is REQUIRED (the receiver refuses to start without
     # one). This is the project's default plus the namespace. No separate
     # resolved-template: the default one shows only .Labels.name, which most

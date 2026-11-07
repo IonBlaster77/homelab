@@ -110,6 +110,11 @@ config:
         style: row
         columns: 3
         icon: mdi-chip
+      Vulnerabilities:
+        tab: Patch Ops
+        style: row
+        columns: 3
+        icon: mdi-shield-bug
 
   bookmarks:
     - Quick Links:
@@ -937,6 +942,94 @@ config:
             # 2026-08-15: only cpu/memory/interface/route/uptime).
             description: Version check blocked — see task #26
             icon: mdi-alert-circle-outline
+
+    # Running-image vulnerabilities from Trivy Operator
+    # (kubernetes/platform/security/trivy-operator), read from the
+    # trivy:vulnerability:present recording rule in Prometheus. Counts are
+    # unique image + CVE + package, whatever runs the image. Same rule as the
+    # Matrix alerts: anything with a fix, plus High/Critical with no fix
+    # (unfixed Medium/Low are dropped at scrape time). `or vector(0)` so an
+    # empty result shows 0 instead of a widget error. Every card links to the
+    # Trivy Operator Grafana dashboard for the CVE-level detail.
+    - Vulnerabilities:
+        - Fixable Critical + High:
+            id: vuln-fixable-high-card
+            description: Fix available — bump the image
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-shield-alert
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Critical%7CHigh%22%2Cfixed_version!%3D%22%22%7D)%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Findings
+                  format: number
+        - Images to bump:
+            id: vuln-images-card
+            description: Images with a fixable Critical or High
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-package-variant-closed
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(count%20by%20(image_registry%2C%20image_repository)%20(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Critical%7CHigh%22%2Cfixed_version!%3D%22%22%7D))%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Images
+                  format: number
+        - Unfixed Critical + High:
+            id: vuln-unfixed-high-card
+            description: No fix upstream yet — mitigate or wait
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-shield-off
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Critical%7CHigh%22%2Cfixed_version%3D%22%22%7D)%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Findings
+                  format: number
+        - Fixable Medium + Low:
+            id: vuln-fixable-low-card
+            description: Fix available, lower priority
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-shield-half-full
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Medium%7CLow%7CUnknown%22%7D)%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Findings
+                  format: number
+        - New (7 days):
+            id: vuln-new-week-card
+            description: Findings that appeared this week
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-new-box
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%20unless%20on%20(image_registry%2C%20image_repository%2C%20vuln_id%2C%20resource%2C%20severity%2C%20fixed_version)%20trivy%3Avulnerability%3Apresent%20offset%207d)%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Findings
+                  format: number
+        - Secrets in images:
+            id: vuln-secrets-card
+            description: Images with a credential baked in — should be 0
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-key-alert
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(count%20by%20(image_registry%2C%20image_repository)%20(trivy%3Aexposedsecrets%3Apresent))%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Images
+                  format: number
 
   widgets:
     - kubernetes:
