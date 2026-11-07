@@ -65,8 +65,9 @@ So kubelet eviction never acts before Talos does.
    - kernel 6.18.18 → 6.18.49
    - the "kubelet stuck restarting" fix, etcd fixes and API hardening
 
-   Kubernetes stays pinned at v1.35.0; moving to 1.35.8 with `upgrade-k8s` is a
-   separate step. Runbook below.
+   Kubernetes was then moved from 1.35.0 to 1.35.8 as a separate step with
+   `talosctl upgrade-k8s` (done 2026-11-07; it also bumped CoreDNS to 1.14.2 and
+   reset its ConfigMap, which Argo selfHeal restored). Runbook below.
 2. **Memory requests for critical pods**, via Git. Proposed tiers:
    - **Tier 0:** apiserver, Cilium, CoreDNS, Longhorn.
    - **Tier 1:** AdGuard, Kea and its DB, CNPG clusters, Authentik, cert-manager,
