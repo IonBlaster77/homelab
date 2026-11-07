@@ -63,6 +63,14 @@ defaultSettings:
   # capped by concurrentReplicaRebuildPerNodeLimit above instead.
   replicaReplenishmentWaitInterval: 600
 longhornManager:
+  # OOM protection (docs/projects/oom-protection.md), sized 2026-11-07:
+  # ~1.27 GiB typical, 2.45 GiB 30-day peak, ~270m CPU average. Request only,
+  # no limit: a kill here stalls every volume operation on the node. Priority
+  # is already longhorn-critical (chart default).
+  resources:
+    requests:
+      cpu: 270m
+      memory: 1Gi
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
