@@ -78,16 +78,60 @@ So kubelet eviction never acts before Talos does.
    each node's capacity; talos2 is tight (16 GiB, 11 GiB 7-day peak).
 3. **Talos OOMConfig tuning**, only if still needed after 1 and 2 (v1.14 defaults
    are the reference).
-4. **kubelet reservations and eviction:**
-   - raise system plus kube reserved to about 1–1.5 GiB
-   - set eviction at about 500 Mi–1 Gi free
-
-   This lets the kubelet evict gracefully, by priority, first.
+4. **kubelet reservations and eviction** (decided 2026-11-07, design below):
+   2 GiB reserved, soft eviction at 1 Gi free, hard eviction at 500 Mi free.
 5. **PriorityClasses** for tiers 0 and 1, with `preemptionPolicy: Never`.
 6. **Alerting:** ship Talos service logs (machined `controller-runtime`) to Alloy and
    Loki, and alert on OOM-controller kills. Today there is no signal at all.
 
-Decisions 2–6 are still open; see the 2026-11-07 session notes.
+Decisions 2, 3, 5 and 6 are still open; see the 2026-11-07 session notes.
+
+## Step 4 design: kubelet reservations and eviction
+
+Set in `machine.kubelet.extraConfig` in every `talos/*.yaml`, the same on all nodes:
+
+| Setting | Value | Why |
+|---|---|---|
+| `systemReserved` | memory 512Mi; cpu 50m, ephemeral-storage 256Mi, pid 100 | Talos default memory for control planes (workers were 384Mi). The other three restate Talos' defaults: Talos only fills `systemReserved` when the map is empty, so setting memory alone would drop them. |
+| `kubeReserved` | memory 1536Mi | podruntime (etcd, kubelet, containerd) uses 1.5–2.2 GiB at steady state. |
+| `evictionHard` | memory.available 500Mi, plus the default disk thresholds | 500Mi is the Kubernetes docs' example. |
+| `mergeDefaultEvictionSettings` | true | Without it, any threshold not listed becomes 0, so disk eviction would silently stop. |
+| `evictionSoft` | memory.available 1Gi for 1m30s | Graceful eviction (up to 60 s) before the hard limit. |
+| `evictionMinimumReclaim` | memory.available 256Mi | Avoids evicting one small pod at a time. |
+
+Effect: pods' allocatable memory drops by about 2.4 GiB (23.3 → 20.8 GiB; talos2
+15.4 → 12.9 GiB). The kubepods cgroup cap drops by about 1.5 GiB. Requests were at
+most 8 GiB per node when this was set. In the previous 30 days free memory never went
+below 9 GiB on any node except talos2 during its kernel leak (3 GiB), so eviction
+should not fire in normal use.
+
+Sources and reasoning:
+- Kubernetes docs ("Reserve Compute Resources", "Node-pressure Eviction"):
+  `Allocatable = capacity − kubeReserved − systemReserved − evictionHard`.
+  Enforce only `pods`. Hard-capping system/kube reserved can OOM critical daemons.
+- Sizing comparison: GKE's tiered formula would reserve about 3.1 GiB on 24 GiB
+  (2.6 on 16). GKE's newer formula and EKS's are pod-density based, about 0.6–1.7 GiB.
+  This design is sized from the measured podruntime use instead.
+- Not used: `kernelMemcgNotification`. It relies on cgroup v1 memcg thresholds, and
+  Talos runs cgroup v2.
+
+Caveats:
+- Hard eviction ignores PodDisruptionBudgets and kills immediately; soft eviction
+  allows up to `evictionMaxPodGracePeriod`.
+- Victims are pods using more than they requested, sorted by priority. Every
+  BestEffort pod counts as over its request, so Prometheus and the CNPG databases are
+  the first candidates until step 2 (requests) and step 5 (PriorityClasses) land.
+- The kubelet counts `active_file` page cache as used (kubernetes#43916). It is
+  0.35–1.8 GiB per node today, so keep the soft threshold modest.
+- This covers the case where a node really runs out of memory. The 2026-11-07 storms
+  were memory-*stall* triggers with about 9 GiB free, which the v1.12.12 upgrade and
+  step 2 address.
+- Alerts: kube-prometheus-stack's `KubeNodeEviction` and `KubeNodePressure` (warning)
+  already cover evictions and MemoryPressure.
+
+Apply: one node at a time with `talosctl apply-config` (dry-run says "without a
+reboot"; only the kubelet restarts). Check node allocatable, the kubelet configz and
+the podruntime cgroup's memory.min/low on each node afterwards.
 
 ## Step 1 runbook: Talos v1.12.6 → v1.12.12
 
