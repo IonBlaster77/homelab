@@ -3,11 +3,11 @@
 # version pinned in app.yaml.
 
 operator:
-  # PAUSED for the Talos v1.12.12 rolling upgrade (2026-11-07): no new scan
-  # jobs while nodes drain and Longhorn rebuilds, because scan bursts helped
-  # set off Talos OOM storms on nodes still on v1.12.6. Reports and metrics
-  # stay as they are. Set back to 1 once all four nodes are upgraded.
-  replicas: 0
+  # Scale to 0 to pause scanning during cluster-wide maintenance (it was
+  # paused for the Talos v1.12.12 rollout on 2026-11-07, when scan bursts
+  # helped set off OOM storms on nodes still on v1.12.6). Reports and
+  # metrics stay; TrivyOperatorDown ignores a deliberate 0.
+  replicas: 1
   # One Trivy server in this namespace keeps the vulnerability database for
   # every scan (downloaded once, refreshed by the server). Scan jobs run in
   # ClientServer mode against it. Completely separate from Harbor's own Trivy.
