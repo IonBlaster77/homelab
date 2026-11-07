@@ -7,8 +7,14 @@ operator:
   # every scan (downloaded once, refreshed by the server). Scan jobs run in
   # ClientServer mode against it. Completely separate from Harbor's own Trivy.
   builtInTrivyServer: true
-  # 4-core nodes: at most two image scans at once.
-  scanJobsConcurrentLimit: 2
+  # ONE scan job at a time. A job is one pod with a Trivy container per image
+  # in the workload, all running in parallel (cilium: 7, hermes: 10), each
+  # pulling and unpacking its image. Two such jobs at once on talos1 set off
+  # Talos' OOM controller twice on 2026-11-07 (memory-pressure trigger, not
+  # free RAM: >9 GiB stayed available). It kills only pods WITHOUT a memory
+  # limit, so the scans survived and kube-apiserver, the Longhorn
+  # instance-manager, Grafana and the Argo controller were killed instead.
+  scanJobsConcurrentLimit: 1
   # Big images (the Hermes agent is ~2 GB) take longer than the 5m default.
   scanJobTimeout: 15m
   # Reports expire after 24h, which triggers a fresh scan: the daily rescan.
@@ -75,10 +81,13 @@ trivy:
       "lscr.io": registry.jupitertech.net/lscr
       "mcr.microsoft.com": registry.jupitertech.net/mcr
       "public.ecr.aws": registry.jupitertech.net/ecr-public
+  # Per scan container (a job has one per image). Measured 2026-11-07: peaks
+  # of 200-500 MiB working set. The request matches that peak so the
+  # scheduler counts the real load instead of stacking big jobs on one node.
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 512Mi
     limits:
       cpu: 500m
       memory: 1Gi
