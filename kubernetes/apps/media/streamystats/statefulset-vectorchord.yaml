@@ -33,7 +33,7 @@ spec:
         fsGroup: 999
       containers:
         - name: postgres
-          image: tensorchord/vchord-postgres:pg17-v0.4.1
+          image: tensorchord/vchord-postgres:pg17-v0.4.3
           # args, NOT command: upstream's compose sets `command:`, which in
           # Compose overrides CMD and leaves docker-entrypoint.sh (ENTRYPOINT)
           # in place. In Kubernetes `command:` overrides ENTRYPOINT instead,
