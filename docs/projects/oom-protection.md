@@ -1,0 +1,140 @@
+# Protecting critical pods from OOM kills
+
+**Started:** 2026-11-07. That day, Trivy Operator's first full scan set off Talos'
+OOM controller on talos1: 16 kills in two waves, at 05:30:56Z and 05:38:16Z.
+
+The victims were:
+- kube-apiserver (the API VIP refused connections for about a minute)
+- the Longhorn instance-manager (every volume on talos1 detached; about 11 pods
+  restarted; 24 volumes rebuilt)
+- longhorn-manager, Grafana, argocd-application-controller and trivy-operator
+
+Trivy is now limited to one scan job at a time (#379). This project is about
+protecting the cluster from the next spike, whatever causes it.
+
+## How it happened
+
+- **What Talos watched:** not free RAM. More than 9 GiB stayed available. On
+  v1.12.6, Talos fires on memory *stall* in its **podruntime** cgroup, which holds
+  containerd, the kubelet and etcd. That stall was 9.8% while the node as a whole
+  was at 0.88%. Evidence: `talosctl -n <node> get oomactions -o yaml` stores the
+  metrics behind every kill. It keeps the last 50 and loses them on reboot.
+- **Why podruntime stalled:**
+  - The page cache fills RAM, which is normal.
+  - A scan burst allocated about 1.5 GiB in under a minute, with about 700 MiB of
+    dirty/writeback pages.
+  - containerd, the kubelet and etcd were pushed into direct reclaim.
+  - Their parent cgroup had **no memory protection**, so their own reservations
+    didn't count. Fixed upstream in v1.12.11.
+- **What it kills:** pods with no memory limit, ranked by QoS class × memory use.
+  A big pod with requests (kube-apiserver) could outrank a small pod with none.
+  Fixed upstream in v1.12.9 with strict QoS ordering.
+- **Why 16 kills:** the trigger had no cooldown, so it killed again every 500 ms.
+  That made things worse, because containerd and the kubelet couldn't keep up
+  cleaning up. Fixed upstream in v1.12.10 ([#13622](https://github.com/siderolabs/talos/issues/13622)).
+
+## Current exposure (2026-11-07)
+
+Ranking every pod the way the controller does put critical infrastructure first
+on every node:
+- kube-apiserver
+- the Longhorn instance-manager and longhorn-manager
+- Prometheus, the Argo CD controller and Grafana
+- every CNPG Postgres pod, plus Authentik
+
+Unprotected pods: talos1 31/42, talos2 18/39, talos3 37/47, talos4 29/43.
+
+These household-critical pods have **no requests at all** (BestEffort): AdGuard
+primary DNS, Kea DHCP and its DB, cert-manager and cilium-operator.
+
+The scheduler is blind to much of the memory in use. On talos1, requests add up to
+21% of RAM while about 45% is used.
+
+kubelet settings today:
+- `systemReserved` 512Mi, no `kubeReserved`
+- `evictionHard memory.available` 100Mi
+
+So kubelet eviction never acts before Talos does.
+
+## Plan
+
+1. **Upgrade Talos to v1.12.12** (agreed 2026-11-07). This fixes all three failure
+   modes above and also brings:
+   - containerd 2.1.6 → 2.2.7. 2.1.x is EOL and affected by CVE-2026-46680.
+   - runc 1.3.6
+   - kernel 6.18.18 → 6.18.49
+   - the "kubelet stuck restarting" fix, etcd fixes and API hardening
+
+   Kubernetes stays pinned at v1.35.0; moving to 1.35.8 with `upgrade-k8s` is a
+   separate step. Runbook below.
+2. **Memory requests for critical pods**, via Git. Proposed tiers:
+   - **Tier 0:** apiserver, Cilium, CoreDNS, Longhorn.
+   - **Tier 1:** AdGuard, Kea and its DB, CNPG clusters, Authentik, cert-manager,
+     cloudflared, Argo CD, Prometheus and Alertmanager, Harbor.
+
+   CNPG clusters get Guaranteed QoS, as the CNPG docs recommend. Spiky pods get
+   requests only. Sizes come from the 7–30-day peak in Prometheus, checked against
+   each node's capacity; talos2 is tight (16 GiB, 11 GiB 7-day peak).
+3. **Talos OOMConfig tuning**, only if still needed after 1 and 2 (v1.14 defaults
+   are the reference).
+4. **kubelet reservations and eviction:**
+   - raise system plus kube reserved to about 1–1.5 GiB
+   - set eviction at about 500 Mi–1 Gi free
+
+   This lets the kubelet evict gracefully, by priority, first.
+5. **PriorityClasses** for tiers 0 and 1, with `preemptionPolicy: Never`.
+6. **Alerting:** ship Talos service logs (machined `controller-runtime`) to Alloy and
+   Loki, and alert on OOM-controller kills. Today there is no signal at all.
+
+Decisions 2–6 are still open; see the 2026-11-07 session notes.
+
+## Step 1 runbook: Talos v1.12.6 → v1.12.12
+
+Installer:
+`factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.12`
+(same schematic: iscsi-tools, nfs-utils, util-linux-tools).
+
+Notes:
+- **EPHEMERAL is kept.** Since Talos 1.8, upgrades never wipe the system disk and
+  `--preserve` is always on (the flag is gone from talosctl 1.12). Longhorn data
+  under `/var/lib/longhorn` survives.
+- **The node does the drain itself.** It cordons and drains, reboots once into the
+  new image, then makes it permanent and uncordons. Talos refuses to upgrade a
+  control-plane node if that would lose etcd quorum.
+- **Rollback:** `talosctl -n <node> rollback`. A node that fails to boot rolls back
+  automatically.
+
+**Before:**
+- Update the talosctl client in WSL to 1.12.12 (recommended to match).
+- `talosctl -n 10.77.20.11 etcd status` and `etcd members`: 3 members, no errors.
+- All Longhorn volumes `healthy`.
+- `kubectl get nodes`: all Ready.
+- Argo CD apps all Healthy.
+- Don't run it during a Trivy full scan, or on a day the UPS matters. The UPS is
+  still out of service.
+
+**Order:**
+1. talos4 (worker, no etcd)
+2. talos1
+3. talos2 (16 GiB)
+4. talos3 last: Harbor's registry PVC is single-replica on talos3, so the registry
+   is down while it reboots. Nodes fall back to upstream registries.
+
+Per node:
+```bash
+talosctl -n <ip> upgrade --image factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.12
+talosctl -n <ip> version            # Tag: v1.12.12
+kubectl get nodes                   # Ready, uncordoned
+kubectl -n longhorn-system get volumes.longhorn.io   # wait until all healthy before the next node
+talosctl -n 10.77.20.11 etcd status # control-plane nodes: all members back, no errors
+```
+
+Never run `talosctl bootstrap` on a reboot.
+
+**After:**
+- Dry-run each node's config against `talos/<node>.yaml`, which now says v1.12.12.
+  Grep key/crt/token lines out of the dry-run diff, because it prints decrypted
+  secrets.
+- Recheck `get oomactions`.
+- Check Grafana for talos2's memory trend (watching whether the kernel update
+  changes its leak).

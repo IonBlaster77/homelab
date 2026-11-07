@@ -101,8 +101,8 @@ machine:
         #
         # OPTIONAL, NOT APPLIED (reverted in git 2026-10-18 so git matches the
         # running node): page_owner debug schematic for the memory-leak hunt,
-        #   factory.talos.dev/installer/29ed30861180b374ed20fef0b1ebeda27c9e94e061a60bb029934378d335c5ac:v1.12.6
-        # To use it: talosctl -n 10.77.20.12 upgrade --preserve --image <that>,
+        #   factory.talos.dev/installer/29ed30861180b374ed20fef0b1ebeda27c9e94e061a60bb029934378d335c5ac:v1.12.12
+        # To use it: talosctl -n 10.77.20.12 upgrade --image <that>,
         # then set the image line below to it. A plain reboot will NOT pick it
         # up, because
         # grubUseUKICmdline below means the kernel cmdline comes from the signed
@@ -123,9 +123,10 @@ machine:
         # site directly. Costs ~64-128 MiB of page_ext on a 16 GiB node.
         #
         # WHEN APPLYING: /var/lib/longhorn lives on /dev/sda (the EPHEMERAL
-        # partition) and this node holds 22 replicas, so upgrade with --preserve
-        # or they are wiped and rebuilt from the other two copies.
-        image: factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.6
+        # partition) and this node holds 22 replicas. talosctl 1.12 has no
+        # --preserve flag any more: upgrades always keep EPHEMERAL (checked
+        # 2026-11-07), so the replicas survive and only resync.
+        image: factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.12
         # Indicates if the installation disk should be wiped at installation time.
         wipe: true
         # Indicates if legacy GRUB bootloader should use kernel cmdline from the UKI instead of building it on the host.
