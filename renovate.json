@@ -25,11 +25,6 @@
       "commitMessageTopic": "{{depName}}"
     },
     {
-      "description": "Ollama bumps stay a manual call (model-pull history, task #25), but Renovate still tracks the tag: new versions are listed on the Dependency Dashboard and a PR is only created when its box is ticked there.",
-      "matchPackageNames": ["ollama/ollama"],
-      "dependencyDashboardApproval": true
-    },
-    {
       "description": "linuxserver.io tags are <app version>-ls<build> (v1.6.0-ls356, 2.5.2.5491-ls155, v26.2-ls256). Docker versioning reads -ls356 as a suffix that must match exactly, so it never offered a rebuild (where linuxserver ships base-image security fixes) and almost never an app bump. Here the ls build number is the last version component, so every newer build is offered. The version-* alias tags don't match and are ignored.",
       "matchPackageNames": ["lscr.io/linuxserver/**"],
       "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?(?:\\.(?<build>\\d+))?-ls(?<revision>\\d+)$"
