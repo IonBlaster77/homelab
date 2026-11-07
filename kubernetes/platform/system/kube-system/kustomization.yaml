@@ -10,3 +10,5 @@ resources:
   - clusterrole-node-uncordon.yaml
   - clusterrolebinding-node-uncordon.yaml
   - daemonset-node-uncordon.yaml
+  # Pod priorities (homelab-critical, homelab-batch) for OOM protection
+  - priorityclass-homelab.yaml
