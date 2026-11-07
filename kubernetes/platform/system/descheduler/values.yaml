@@ -1,0 +1,87 @@
+# Descheduler values. Only what we change from the chart defaults; the
+# reasoning is in README.md. Chart version is pinned in kustomization.yaml.
+
+kind: CronJob
+# Nightly at 03:30 Adelaide time (the CronJob handles daylight saving).
+schedule: "30 3 * * *"
+timeZone: Australia/Adelaide
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 3
+# A run takes seconds; never let one hang into the next night.
+activeDeadlineSeconds: 600
+
+# The chart asks for 500m CPU, too much on nodes at ~85% CPU requested.
+# A run uses well under 100 MiB.
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 256Mi
+priorityClassName: homelab-critical
+# The namespace enforces Pod Security "restricted", which needs a seccomp
+# profile; the chart's container securityContext covers the rest.
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+deschedulerPolicy:
+  # At most a few evictions a night, so the cluster converges over several
+  # nights instead of churning at once.
+  maxNoOfPodsToEvictPerNode: 2
+  maxNoOfPodsToEvictTotal: 5
+  profiles:
+    - name: default
+      pluginConfig:
+        - name: DefaultEvictor
+          args:
+            # Check the pod fits on another node before evicting it.
+            nodeFit: true
+            podProtections:
+              # Allowed to move pods with emptyDir: here those are caches and
+              # temp dirs only (Argo CD repo-server, Grafana, ...).
+              defaultDisabled:
+                - PodsWithLocalStorage
+              # PodsWithPVC deliberately NOT protected: Prometheus, Harbor and
+              # CNPG standbys may move (Longhorn re-attaches the volume;
+              # PDBs still apply, and the CNPG primary PDB allows 0).
+              # System-critical pods, DaemonSet pods and bare pods stay
+              # protected by default.
+        - name: RemoveDuplicates
+          args:
+            namespaces:
+              exclude: &excluded
+                # Cluster plumbing
+                - kube-system
+                - longhorn-system
+                # DNS and DHCP: Recreate Deployments, an eviction is an outage
+                - adguard
+                - kea
+                # Scan jobs: retried by the operator anyway, no churn wanted
+                - trivy-system
+        - name: RemovePodsViolatingTopologySpreadConstraint
+          args:
+            namespaces:
+              exclude: *excluded
+        - name: LowNodeUtilization
+          args:
+            # Memory requests only: CPU requests sit at ~85% on three of the
+            # four nodes, so a CPU threshold would find nowhere to move pods.
+            # Nodes under 50% memory requested may receive pods; nodes over
+            # 70% give pods up until they are under it.
+            thresholds:
+              memory: 50
+            targetThresholds:
+              memory: 70
+            evictableNamespaces:
+              exclude: *excluded
+      plugins:
+        balance:
+          enabled:
+            - RemoveDuplicates
+            - RemovePodsViolatingTopologySpreadConstraint
+            - LowNodeUtilization
+        # The chart's deschedule plugins (too many restarts, taint/affinity
+        # violations) are left out: rebalancing only.
+        deschedule:
+          enabled: []

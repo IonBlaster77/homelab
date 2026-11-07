@@ -118,3 +118,16 @@ spec:
           for: 30m
           labels:
             severity: warning
+        # Not upstream: too many database primaries on one node. Switchovers
+        # promote whichever standby exists, so primaries drift together (six of
+        # eight landed on talos2 on 2026-11-07), and the descheduler never moves
+        # them (the primary PDB allows 0). Rebalance by hand with
+        # `kubectl cnpg promote <cluster> <standby>` (docs/projects/oom-protection.md).
+        - alert: CNPGPrimariesConcentrated
+          annotations:
+            description: "{{ $value }} CloudNativePG primaries are running on {{ $labels.node }}."
+            summary: "Database primaries are concentrated on one node; promote some standbys elsewhere."
+          expr: count by (node) ((cnpg_pg_replication_in_recovery == 0) * on(namespace, pod) group_left(node) kube_pod_info) > 3
+          for: 6h
+          labels:
+            severity: warning

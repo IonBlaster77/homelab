@@ -1,0 +1,15 @@
+# Renders the descheduler chart (helmCharts, needs the plugin's --enable-helm)
+# plus this folder's namespace. app.yaml is deliberately NOT listed: it is
+# picked up by the root app.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: descheduler
+    repo: https://kubernetes-sigs.github.io/descheduler/
+    # Descheduler minors track Kubernetes minors: 0.35.x for Kubernetes 1.35.
+    version: 0.35.1
+    releaseName: descheduler
+    namespace: descheduler
+    valuesFile: values.yaml
+resources:
+  - namespace.yaml
