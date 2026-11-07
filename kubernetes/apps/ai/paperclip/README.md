@@ -67,7 +67,7 @@ Pi's `/mcp` UI don't survive a restart.
 | File | Goes to | What it is |
 |---|---|---|
 | `pi/mcp.json` | `~/.pi/agent/mcp.json` | searxng-mcp (search tool `direct`, `web_url_read` hidden). The token is read from `/etc/pi-tools` by a header command |
-| `pi/hardware-deals-SKILL.md` | `~/.pi/agent/skills/hardware-deals/SKILL.md` | Port of Hermes' hardware-deals skill 1.6.2 (see below) |
+| `pi/hardware-deals-SKILL.md` | `~/.pi/agent/skills/hardware-deals/SKILL.md` | Port of Hermes' hardware-deals skill 1.7.0 (see below) |
 | `pi/md.sh` | `…/hardware-deals/scripts/md.sh` | Page → markdown through crawl4ai's REST `/md` |
 
 **crawl4ai** (0.9.5) offers MCP only over SSE, which Pi can't use, so the skill

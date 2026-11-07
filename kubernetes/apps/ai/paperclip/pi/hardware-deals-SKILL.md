@@ -2,8 +2,8 @@
 name: hardware-deals
 description: Daily hunt for good Australian prices on the homelab hardware the owner wants (RAM, SSD/NVMe, GPUs). Load this for the daily hardware-deals runs (one each for GPUs, RAM and storage) or when asked whether a hardware price is a good deal. Covers the watchlist with target prices, where to look, how to judge a deal, the report format, and what you must not do.
 metadata:
-  version: 1.6.2-pi1
-  ported-from: kubernetes/apps/ai/hermes/configmap-skill-hardware-deals.yaml (1.6.2)
+  version: 1.7.0-pi1
+  ported-from: kubernetes/apps/ai/hermes/configmap-skill-hardware-deals.yaml (1.7.0)
 ---
 
 # Hardware deals
@@ -88,8 +88,9 @@ PRO cards (about A$5,000), AMD/Intel GPUs (the AI software needs NVIDIA).
 
 ### RAM
 
-The owner wants good deals on all four kinds: **DDR4 and DDR5, laptop
-SODIMM and desktop UDIMM**. Judge each by its **price per GB** against
+The owner wants good deals on all four desktop kinds (**DDR4 and DDR5,
+laptop SODIMM and desktop UDIMM**) plus **DDR4 ECC server RAM**. Judge
+each by its **price per GB** against
 the normal price for that exact kind, size and speed, and always say
 which kind it is. Used pulls from Australian sellers are fine.
 
@@ -99,9 +100,10 @@ which kind it is. Used pulls from Australian sellers are fine.
 | **DDR4 UDIMM** (desktop) 16GB/32GB sticks, or 2×16 / 2×32 kits, 3200 MHz or faster | ≥ 15% below normal | ≥ 25% below normal | For a possible DDR4-based GPU node or extra worker. |
 | **DDR5 SODIMM** 16GB/32GB/48GB sticks or 2-stick kits, 4800 MHz or faster | ≥ 15% below normal | ≥ 25% below normal | For mini-PC or ITX boards that take laptop DDR5. |
 | **DDR5 UDIMM** (desktop) 2×32GB (first choice), 2×48GB or 2×16GB kits, 5600–6400 MHz | ≥ 15% below normal | ≥ 25% below normal | For the future GPU node: **64GB in two sticks** is the target, not four. |
+| **DDR4 ECC RDIMM or LRDIMM** (server) 32GB/64GB sticks, or 128GB+ lots, 2133 MHz or faster | ≤ A$6/GB landed | ≤ A$4.5/GB landed | For a possible EPYC Rome/Milan GPU node (8 channels; 128GB is the target). Reference point: a used 4×32GB 2133 LRDIMM lot at A$5.4/GB delivered (eBay AU, 2026-11-03); other 128GB lots were A$6.6–8.5/GB delivered. 2933/3200 RDIMMs are worth a little more than 2133/2400. Always say **RDIMM or LRDIMM** (the two can't be mixed in one machine), the speed and the rank (e.g. 2Rx4). |
 
-Not wanted: 8GB sticks (the owner has 10–15 spare DDR4 SODIMMs), ECC
-RDIMM/LRDIMM server RAM, DDR3.
+Not wanted: 8GB sticks (the owner has 10–15 spare DDR4 SODIMMs), 16GB
+server sticks (too many slots for 128GB), DDR5 server RAM, DDR3.
 
 ### Storage for the cluster (Longhorn data disks)
 
@@ -137,8 +139,10 @@ the watchlist; the other runs cover the rest. Each run:
    - **GPUs:** StaticICE for each new card, OzBargain search for each
      card (including used 3090/4090), and a check for any 24GB Super
      launch.
-   - **RAM:** all four kinds (DDR4 SODIMM first, then DDR5 UDIMM, DDR4
-     UDIMM, DDR5 SODIMM), on StaticICE and OzBargain.
+   - **RAM:** all four desktop kinds (DDR4 SODIMM first, then DDR5
+     UDIMM, DDR4 UDIMM, DDR5 SODIMM), on StaticICE and OzBargain, then
+     DDR4 ECC server RAM last (about 6–8 calls: StaticICE and OzBargain
+     for 32GB and 64GB RDIMM/LRDIMM).
    - **Storage:** SATA SSDs, NVMe, and ServerPartDeals enterprise SATA
      SSDs, on StaticICE, ServerPartDeals, CamelCamelCamel and OzBargain.
    Typically one StaticICE page per item, and only open a product or
@@ -206,8 +210,9 @@ never sign in anywhere.
   else, new seller account, stock photos only on a used item, "contact
   me off eBay", overseas location despite an Australian listing.
 - Check it's the exact item: GPU VRAM size (16GB, not 8GB), RAM form
-  factor (SODIMM vs UDIMM) and type (DDR4 vs DDR5), and that it is not
-  ECC/registered; SSD NAND type and DRAM cache; enterprise SSD thickness.
+  factor (SODIMM vs UDIMM) and type (DDR4 vs DDR5), and that desktop RAM
+  is not ECC/registered (server RAM must be RDIMM or LRDIMM, never
+  unbuffered); SSD NAND type and DRAM cache; enterprise SSD thickness.
 - A deal only counts if it's in stock now or the sale has a clear end
   date you can report.
 - **Sanity-check outliers before logging them.** If the lowest price for
