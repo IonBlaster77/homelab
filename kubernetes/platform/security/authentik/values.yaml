@@ -5,7 +5,12 @@ authentik:
     user: authentik
     password: ""
 
+# OOM protection (docs/projects/oom-protection.md): every login goes through
+# Authentik, so it is evicted after ordinary pods. Sized 2026-11-07: memory
+# requests from 7-day use, limits ~2x the 30-day peak, CPU requests from the
+# 7-day average, never a CPU limit.
 global:
+  priorityClassName: homelab-critical
   env:
     - name: AUTHENTIK_SECRET_KEY
       valueFrom:
@@ -26,6 +31,13 @@ server:
       labels:
         release: monitoring
   replicas: 2
+  # ~690 MiB typical, 860 MiB peak (each)
+  resources:
+    requests:
+      cpu: 40m
+      memory: 768Mi
+    limits:
+      memory: 2Gi
   affinity:
     podAntiAffinity:
       preferredDuringSchedulingIgnoredDuringExecution:
@@ -45,6 +57,13 @@ worker:
       labels:
         release: monitoring
   replicas: 1
+  # ~340 MiB typical, 685 MiB peak (blueprint runs)
+  resources:
+    requests:
+      cpu: 90m
+      memory: 384Mi
+    limits:
+      memory: 1536Mi
 
 postgresql:
   enabled: false

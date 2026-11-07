@@ -11,12 +11,24 @@
 
 argo-cd:
   global:
+    # OOM protection (docs/projects/oom-protection.md): the CD system is
+    # evicted after ordinary pods. Sized 2026-11-07: memory requests from
+    # 7-day use, limits ~2x the 30-day peak, CPU requests from the 7-day
+    # average, never a CPU limit.
+    priorityClassName: homelab-critical
     # Sets configs.cm.url (https://<domain>) — used for web-UI generated links
     # and OIDC/SSO callback URLs. Empty renders a hostless "https://". This is the
     # Cilium Gateway HTTPRoute host (argocd.jupitertech.net).
     domain: "argocd.jupitertech.net"
 
   server:
+    # ~160 MiB typical, 313 MiB peak
+    resources:
+      requests:
+        cpu: 10m
+        memory: 256Mi
+      limits:
+        memory: 768Mi
     service:
       type: LoadBalancer
       annotations:
@@ -32,6 +44,13 @@ argo-cd:
           release: monitoring
 
   controller:
+    # ~1.25 GiB typical, 1.9 GiB 30-day peak (grows with apps)
+    resources:
+      requests:
+        cpu: 90m
+        memory: 1536Mi
+      limits:
+        memory: 4Gi
     metrics:
       enabled: true
       serviceMonitor:
@@ -90,6 +109,13 @@ argo-cd:
         g, claude-code, role:claude-code
 
   repoServer:
+    # ~120 MiB typical, 178 MiB peak; generous limit: it renders charts
+    resources:
+      requests:
+        cpu: 40m
+        memory: 192Mi
+      limits:
+        memory: 512Mi
     volumes:
       - name: sops-age
         secret:
@@ -123,6 +149,13 @@ argo-cd:
 
     extraContainers:
       - name: cmp-sops
+        # plugin sidecar: ~25-100 MiB typical, 115 MiB peak; generous limit, it runs kustomize/helm
+        resources:
+          requests:
+            cpu: 10m
+            memory: 96Mi
+          limits:
+            memory: 512Mi
         image: quay.io/argoproj/argocd:v3.3.7
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
@@ -155,6 +188,13 @@ argo-cd:
       # sops binary as cmp-sops; only the plugin config differs. Apps opt in
       # with source.plugin.name: sops-kustomize-v1.0.
       - name: cmp-sops-kustomize
+        # plugin sidecar: ~25-100 MiB typical, 115 MiB peak; generous limit, it runs kustomize/helm
+        resources:
+          requests:
+            cpu: 10m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
         image: quay.io/argoproj/argocd:v3.3.7
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
@@ -182,3 +222,39 @@ argo-cd:
           - name: custom-tools
             mountPath: /usr/local/bin/sops
             subPath: sops
+
+  applicationSet:
+    # ~108 MiB typical, 127 MiB peak
+    resources:
+      requests:
+        cpu: 10m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
+  redis:
+    # ~16 MiB typical, 52 MiB peak
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+
+  dex:
+    # ~41 MiB typical, 112 MiB peak
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+
+  notifications:
+    # ~57 MiB typical, 113 MiB peak
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
