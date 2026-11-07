@@ -28,8 +28,6 @@ spec:
                 matchLabels:
                   app.kubernetes.io/name: adguard
               topologyKey: kubernetes.io/hostname
-      # Household DNS: evicted after ordinary pods (docs/projects/oom-protection.md).
-      priorityClassName: homelab-critical
       containers:
         - name: adguard
           image: adguard/adguardhome:v0.107.80
@@ -39,14 +37,6 @@ spec:
             - --work-dir
             - /opt/adguardhome/work
             - --no-check-update
-          # Sized 2026-11-07 from Prometheus: ~80 MiB typical, 119 MiB 30-day
-          # peak. Limit ~2x peak; no CPU limit (docs/projects/oom-protection.md).
-          resources:
-            requests:
-              cpu: 10m
-              memory: 128Mi
-            limits:
-              memory: 256Mi
           ports:
             - name: dns-udp
               containerPort: 53
