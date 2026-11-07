@@ -9,7 +9,7 @@ with no secrets and no way back into Hermes.
 | | |
 |---|---|
 | **URL** | None. Hermes uses `playwright-mcp.playwright-mcp.svc:8931` in-cluster; deliberately not on the Gateway |
-| **Image** | `mcr.microsoft.com/playwright`, pinned by digest; `@playwright/mcp` (pinned version) is installed from npm at start |
+| **Image** | `mcr.microsoft.com/playwright:v1.46.1-jammy`, pinned by digest (the tag lets Renovate offer newer `-jammy` releases); `@playwright/mcp` (pinned version) is installed from npm at start |
 | **Namespace** | `playwright-mcp` (PSA `restricted`) |
 | **Storage** | None (emptyDirs only; a 1Gi in-memory `/dev/shm`) |
 | **Depends on** | npm registry at pod start. Used by Hermes |
