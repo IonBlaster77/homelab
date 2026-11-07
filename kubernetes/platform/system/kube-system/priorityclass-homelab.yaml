@@ -1,0 +1,34 @@
+# Pod priorities for OOM protection (docs/projects/oom-protection.md, step 5).
+# Priority decides who the kubelet evicts first under memory pressure (among
+# pods using more than their request, lowest priority goes first) and who is
+# scheduled first when the cluster is full. Pods without a class get 0.
+#
+# Neither class preempts: a pending pod waits for free space instead of
+# killing running pods to make room. The cluster is sized to fit everything
+# with one node down, so there should always be room.
+#
+# Tier 0 (API server, Cilium, CoreDNS, Longhorn) keeps the built-in
+# system-*-critical classes and longhorn-critical (1e9). These sit below them.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: homelab-critical
+value: 100000000
+preemptionPolicy: Never
+globalDefault: false
+description: >-
+  Tier 1 household and platform services (DNS, DHCP, databases, Authentik,
+  Argo CD, monitoring, Harbor, cert-manager). Evicted after default-priority
+  pods; never preempts.
+---
+# Throwaway batch work (Trivy scan jobs and similar): first to be evicted.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: homelab-batch
+value: -1000
+preemptionPolicy: Never
+globalDefault: false
+description: >-
+  Batch and scan jobs that can be retried. Evicted before everything else;
+  never preempts.
