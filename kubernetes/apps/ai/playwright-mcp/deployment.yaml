@@ -53,7 +53,7 @@ spec:
         # `install-browser chrome-for-testing` subcommand, or the server
         # fails every browser_navigate call with "Browser not installed".
         - name: install-playwright-mcp
-          image: mcr.microsoft.com/playwright:v1.46.1-jammy@sha256:02810c978d5396bf382ab6015c25ad6bed9e39f4a41c5b9c829e9fea439274e2
+          image: mcr.microsoft.com/playwright:v1.65.0-jammy@sha256:5a8620d70618963ec6628dd77cc25ec6a4b232e26c4a41241a8c1def04e2dc04
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
@@ -108,7 +108,7 @@ spec:
 
       containers:
         - name: playwright-mcp
-          image: mcr.microsoft.com/playwright:v1.46.1-jammy@sha256:02810c978d5396bf382ab6015c25ad6bed9e39f4a41c5b9c829e9fea439274e2
+          image: mcr.microsoft.com/playwright:v1.65.0-jammy@sha256:5a8620d70618963ec6628dd77cc25ec6a4b232e26c4a41241a8c1def04e2dc04
           imagePullPolicy: IfNotPresent
           env:
             - name: HOME
