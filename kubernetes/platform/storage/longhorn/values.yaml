@@ -40,6 +40,20 @@ defaultSettings:
   # still reached ~85% I/O stall as the read source. For a planned
   # multi-node maintenance, 4 is reasonable; put it back to 2 afterwards.
   concurrentReplicaRebuildPerNodeLimit: 2
+  # Longhorn reserves space by volume SIZE, not by what is used. At the
+  # default 100% the NVMe pool had no room to reserve a second 150 GiB copy of
+  # harbor-registry (57 GB actually used) on any node, despite 108-120 GB
+  # free on each disk. 150% lets scheduling reserve beyond physical size for
+  # thinly used volumes. The real safety net is unchanged:
+  # storageMinimalAvailablePercentage (25%, Longhorn default) refuses any new
+  # replica on a disk whose ACTUAL free space would drop below 25%, and the
+  # LonghornDiskUsageHigh/Critical alerts (prometheusrule-infra.yaml) warn at
+  # 80%/90% actual use. Note: over-provisioning only governs where NEW
+  # replicas go; existing volumes can still grow, which is what the alerts are
+  # for. (replica-auto-balance-disk-pressure-percentage is NOT a fix here: it
+  # only moves replicas between disks on the same node - see
+  # setting-orphans-and-balance.yaml.)
+  storageOverProvisioningPercentage: 150
   # How long Longhorn waits for a failed replica to come back (cheap delta
   # resync) before building a new copy elsewhere (full copy). Kept at the
   # 10 min default on purpose: quick re-replication matters more than

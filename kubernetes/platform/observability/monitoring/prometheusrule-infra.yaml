@@ -39,6 +39,27 @@ spec:
 
     - name: longhorn-health
       rules:
+        # Actual (not reserved) use of each Longhorn disk. Longhorn stops
+        # placing NEW replicas on a disk below 25% free (75% used), but
+        # existing replicas keep growing. On the "ssd" pool the disk is the
+        # node's EPHEMERAL partition (containerd, logs), so a full disk there
+        # hurts the node itself. Warn at 80%, page at 90%.
+        - alert: LonghornDiskUsageHigh
+          expr: 100 * longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes > 80
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn disk {{ $labels.disk }} on {{ $labels.node }} is {{ $value | humanize }}% full"
+            description: "Longhorn already refuses new replicas here (under 25% free). Free space: delete old snapshots, move volumes to another pool, or expand the disk. With storage over-provisioning at 150%, more is reserved than physically exists."
+        - alert: LonghornDiskUsageCritical
+          expr: 100 * longhorn_disk_usage_bytes / longhorn_disk_capacity_bytes > 90
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn disk {{ $labels.disk }} on {{ $labels.node }} is {{ $value | humanize }}% full"
+            description: "Replicas on this disk will start failing writes when it fills (volume degrades onto its other copies). If it is a node's ssd/EPHEMERAL disk, containerd and the kubelet are also at risk. Act now."
         - alert: LonghornBackupFailed
           expr: longhorn_backup_state == 4
           for: 5m
