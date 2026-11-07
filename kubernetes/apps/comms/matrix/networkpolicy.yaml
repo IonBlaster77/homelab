@@ -293,3 +293,24 @@ spec:
         - ports:
             - port: "8008"
               protocol: TCP
+---
+# The weekly vulnerability-digest CronJob (monitoring namespace) posts to
+# #alerts-vulnerabilities the same way. Only pods with that exact label.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-allow-vulnerability-digest
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: haproxy
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app: vulnerability-digest
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP

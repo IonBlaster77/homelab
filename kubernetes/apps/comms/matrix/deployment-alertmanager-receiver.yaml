@@ -14,6 +14,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: alertmanager-receiver
+      annotations:
+        # The bridge reads its config (room mapping) once at startup. Bump
+        # this whenever configmap-alertmanager-receiver.yaml changes.
+        config-rev: "2026-11-07-vulnerabilities-room"
     spec:
       automountServiceAccountToken: false
       securityContext:

@@ -1,0 +1,101 @@
+# Trivy Operator values. Only the settings we change from the chart defaults;
+# see README.md for why each one is set. Chart: aquasecurity/trivy-operator,
+# version pinned in app.yaml.
+
+operator:
+  # One Trivy server in this namespace keeps the vulnerability database for
+  # every scan (downloaded once, refreshed by the server). Scan jobs run in
+  # ClientServer mode against it. Completely separate from Harbor's own Trivy.
+  builtInTrivyServer: true
+  # 4-core nodes: at most two image scans at once.
+  scanJobsConcurrentLimit: 2
+  # Big images (the Hermes agent is ~2 GB) take longer than the 5m default.
+  scanJobTimeout: 15m
+  # Reports expire after 24h, which triggers a fresh scan: the daily rescan.
+  scannerReportTTL: "24h"
+  # Talos has no kubelet/etcd config files on disk for the node-collector to
+  # read, so the node (infra) checks would be all noise. CIS compliance needs
+  # the node-collector too; NSA and Pod Security Standards specs don't.
+  infraAssessmentScannerEnabled: false
+  # Per-CVE metric (trivy_vulnerability_id) with fixed_version: the alert
+  # rules and the Patch Ops cards are built on it. The ServiceMonitor below
+  # drops unfixed Medium/Low/Unknown series at scrape time.
+  metricsVulnIdEnabled: true
+
+compliance:
+  specs:
+    - k8s-nsa-1.0
+    - k8s-pss-baseline-0.1
+    - k8s-pss-restricted-0.1
+
+serviceMonitor:
+  enabled: true
+  # kube-prometheus-stack only selects ServiceMonitors with this label.
+  labels:
+    release: monitoring
+  # Reports change at most once a day; 2m keeps every series inside
+  # Prometheus' 5m lookback so the offset queries in the alert rules see it.
+  interval: 2m
+  endpointAdditionalProperties:
+    metricRelabelings:
+      # The rule agreed for alerts, cards and the digest: a vulnerability with
+      # no fix is only kept when it is High or Critical. Unfixed Medium, Low
+      # and Unknown never reach Prometheus (they stay in the
+      # VulnerabilityReport objects and trivy_image_vulnerabilities counts).
+      - sourceLabels: [__name__, severity, fixed_version]
+        regex: "trivy_vulnerability_id;(Medium|Low|Unknown);"
+        action: drop
+
+trivyOperator:
+  # Scan jobs stay off talos4 (its BX500 is both the ephemeral disk and a
+  # Longhorn disk: heavy scratch writes push other volumes read-only) and off
+  # talos2 (16 GiB, kernel memory leak). Image layers are unpacked into the
+  # scan pod's /tmp, so this is where the disk I/O lands.
+  scanJobAffinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values: [talos2, talos4]
+
+trivy:
+  # Scan jobs pull image layers themselves (not through the node's
+  # containerd), so the Talos registry mirrors don't apply. These send the
+  # pulls through Harbor's pull-through cache instead, mirroring the Talos
+  # RegistryMirrorConfig docs. Keys are prefixes of the normalised image name,
+  # so Docker Hub is index.docker.io, not docker.io.
+  registry:
+    mirror:
+      "index.docker.io": registry.jupitertech.net/dockerhub
+      "ghcr.io": registry.jupitertech.net/ghcr
+      "quay.io": registry.jupitertech.net/quay
+      "registry.k8s.io": registry.jupitertech.net/k8s
+      "lscr.io": registry.jupitertech.net/lscr
+      "mcr.microsoft.com": registry.jupitertech.net/mcr
+      "public.ecr.aws": registry.jupitertech.net/ecr-public
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  # Accepted risks. Each entry needs a reason (statement) and an expiry
+  # (expired_at, YYYY-MM-DD); after expiry the finding comes back. Change by
+  # PR only. Example:
+  #   - id: CVE-2026-00000
+  #     statement: "Only reachable via the admin UI, which is LAN-only"
+  #     expired_at: 2027-01-31
+  ignoreFileName: .trivyignore.yaml
+  ignoreFile:
+    vulnerabilities: []
+  server:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 1Gi

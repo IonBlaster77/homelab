@@ -23,6 +23,10 @@ resources:
   - prometheusrule-authentik.yaml
   - prometheusrule-hubble.yaml
   - prometheusrule-infra.yaml
+  # Trivy Operator vulnerability alerts + the weekly outstanding digest
+  - prometheusrule-trivy.yaml
+  - configmap-vulnerability-digest.yaml
+  - cronjob-vulnerability-digest.yaml
   # blackbox exporter: active probes (DNS, Kea API, NAS NFS, Gateway)
   - configmap-blackbox-exporter.yaml
   - deployment-blackbox-exporter.yaml
