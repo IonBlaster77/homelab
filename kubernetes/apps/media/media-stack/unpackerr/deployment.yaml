@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: unpackerr
-          image: golift/unpackerr:v0.16.1
+          image: golift/unpackerr:v1.0.1
           env:
             - name: TZ
               value: Australia/Adelaide
@@ -29,6 +29,16 @@ spec:
               value: "false"
             - name: UN_FOLDER_0_MOVE_BACK
               value: "false"
+            # v1 dropped the container's built-in 1s folder polling: each watch
+            # path now defaults to fsnotify only, which never fires on NFS
+            # (media-nfs), so new archives would never be seen. Poll instead.
+            - name: UN_FOLDER_0_INTERVAL
+              value: 1s
+            # v1 starts a web UI/API on 0.0.0.0:5656 by default and logs a
+            # one-time admin password. Nothing here needs it, and without a
+            # /config mount its settings saves would be lost. Empty = off.
+            - name: UN_WEBSERVER_LISTEN_ADDR
+              value: ""
             - name: UN_SONARR_0_URL
               value: http://sonarr:8989
             - name: UN_SONARR_0_API_KEY
