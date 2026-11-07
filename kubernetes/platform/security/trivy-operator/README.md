@@ -103,5 +103,11 @@ kubectl get sbomreports -A -o json | grep -l openssh
   Keep both lists in step when Harbor gains a proxy project.
 - **Node (infra) checks and CIS compliance are off.** They read kubelet/etcd
   files from the host, which don't exist on Talos.
+- **Keep `scanJobsConcurrentLimit` at 1.** Each scan job runs a Trivy container
+  per image in the workload, all at once. With 2 jobs, talos1 hit Talos' OOM
+  controller twice on 2026-11-07: it killed kube-apiserver, the Longhorn
+  instance-manager (every volume on the node detached), Grafana and the Argo
+  controller, because it only picks pods without a memory limit. The scans
+  themselves have limits and were never touched.
 - **Invisible to the scanner:** packages installed when a container starts
   (e.g. research-worker's `apk add`). Bake them into an image to get them scanned.
