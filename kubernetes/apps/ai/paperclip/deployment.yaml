@@ -39,7 +39,7 @@ spec:
         # volume, once per version (npm from the registry; egress allows it).
         # Bump PI_VERSION by hand: Renovate doesn't see versions in scripts.
         - name: install-pi
-          image: ghcr.io/paperclipai/paperclip:2026.1023.0@sha256:40f46940c4612ead131aebe6079cd4651f8cd1434af49f7c621887f4a452a62e
+          image: ghcr.io/paperclipai/paperclip:2026.1106.0@sha256:d6584f05cf57a4b26c117eb083725f18c1fe69ddafa7d16c9f8cce83f6fa17da
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -82,7 +82,7 @@ spec:
               readOnly: true
       containers:
         - name: paperclip
-          image: ghcr.io/paperclipai/paperclip:2026.1023.0@sha256:40f46940c4612ead131aebe6079cd4651f8cd1434af49f7c621887f4a452a62e
+          image: ghcr.io/paperclipai/paperclip:2026.1106.0@sha256:d6584f05cf57a4b26c117eb083725f18c1fe69ddafa7d16c9f8cce83f6fa17da
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
