@@ -105,6 +105,11 @@ config:
         style: row
         columns: 3
         icon: mdi-tag-arrow-up
+      Node OS:
+        tab: Patch Ops
+        style: row
+        columns: 4
+        icon: mdi-server-network
       Device Firmware:
         tab: Patch Ops
         style: row
@@ -827,13 +832,10 @@ config:
     - Upstream Releases:
         - Talos OS:
             id: talos-release-card
-            # Current version is hardcoded because nothing serves it
-            # over HTTP that Homepage can reach - it lives on the Node
-            # objects (.status.nodeInfo.osImage) and reading those needs
-            # a service-account token, which customapi cannot supply.
-            # Update this line whenever the cluster is upgraded, or
-            # replace the whole card once the aggregator lands.
-            description: Running v1.12.6 — compare against latest
+            # Latest upstream only. What each node actually runs is in the
+            # Node OS group below (kube_node_info), so nothing here needs
+            # hand-editing on upgrades any more.
+            description: Latest upstream — compare with Node OS below
             href: https://github.com/siderolabs/talos/releases
             icon: mdi-server
             widget:
@@ -850,7 +852,7 @@ config:
                   format: relativeDate
         - Kubernetes:
             id: k8s-release-card
-            description: Running v1.35.0 — ships with Talos, not tracked by Renovate
+            description: Latest upstream — running kubelet per node is in Node OS below; ships with Talos, not tracked by Renovate
             href: https://github.com/kubernetes/kubernetes/releases
             icon: kubernetes.png
             widget:
@@ -865,6 +867,82 @@ config:
                 - field: published_at
                   label: Released
                   format: relativeDate
+    # What each Talos node is actually running, from kube-state-metrics'
+    # kube_node_info (labels os_image / kernel_version /
+    # container_runtime_version / kubelet_version, i.e. the Node object's
+    # .status.nodeInfo), read through Prometheus like the AP firmware cards.
+    # One card per node, selected by name so cards can't swap round.
+    # Replaces the hand-typed "Running v1.12.6" that used to sit on the
+    # Talos OS card above (it went stale mid-upgrade on 2026-11-07).
+    - Node OS:
+        - talos1:
+            id: node-os-talos1-card
+            description: Control plane — 10.77.20.11
+            icon: mdi-server
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=kube_node_info%7Bnode%3D%22talos1%22%7D"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.metric.os_image
+                  label: OS
+                - field: data.result.0.metric.kernel_version
+                  label: Kernel
+                - field: data.result.0.metric.container_runtime_version
+                  label: Runtime
+                - field: data.result.0.metric.kubelet_version
+                  label: Kubelet
+        - talos2:
+            id: node-os-talos2-card
+            description: Control plane — 10.77.20.12
+            icon: mdi-server
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=kube_node_info%7Bnode%3D%22talos2%22%7D"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.metric.os_image
+                  label: OS
+                - field: data.result.0.metric.kernel_version
+                  label: Kernel
+                - field: data.result.0.metric.container_runtime_version
+                  label: Runtime
+                - field: data.result.0.metric.kubelet_version
+                  label: Kubelet
+        - talos3:
+            id: node-os-talos3-card
+            description: Control plane — 10.77.20.13
+            icon: mdi-server
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=kube_node_info%7Bnode%3D%22talos3%22%7D"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.metric.os_image
+                  label: OS
+                - field: data.result.0.metric.kernel_version
+                  label: Kernel
+                - field: data.result.0.metric.container_runtime_version
+                  label: Runtime
+                - field: data.result.0.metric.kubelet_version
+                  label: Kubelet
+        - talos4:
+            id: node-os-talos4-card
+            description: Worker — 10.77.20.14
+            icon: mdi-server
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=kube_node_info%7Bnode%3D%22talos4%22%7D"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.metric.os_image
+                  label: OS
+                - field: data.result.0.metric.kernel_version
+                  label: Kernel
+                - field: data.result.0.metric.container_runtime_version
+                  label: Runtime
+                - field: data.result.0.metric.kubelet_version
+                  label: Kubelet
     # Per-device firmware. AP versions come from unpoller_device_info's
     # `version` label - note the metric prefix is `unpoller_`, not
     # `unifi_` (the project renamed itself from unifi-poller to
