@@ -10,7 +10,7 @@ Estimated time: **45–60 minutes** from powered-off nodes to fully synced ArgoC
 | Component | Version |
 |---|---|
 | Talos OS | v1.12.12 |
-| Kubernetes | v1.35.0 |
+| Kubernetes | v1.35.8 |
 | Cilium | v1.17.0 |
 | ArgoCD | v3.3.7 (Helm chart argo-cd-9.5.2) |
 

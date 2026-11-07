@@ -38,8 +38,8 @@ spec:
       # installer run outside Kubernetes.
       - name: extra-images
         value: >-
-          ghcr.io/siderolabs/kubelet:v1.35.0
-          factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.6
+          ghcr.io/siderolabs/kubelet:v1.35.8
+          factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.12.12
   templates:
     - name: main
       steps:
