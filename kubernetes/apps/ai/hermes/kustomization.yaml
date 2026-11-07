@@ -20,7 +20,6 @@ resources:
   - configmap-skill-research-sandbox.yaml
   - deployment.yaml
   - service-webui.yaml
-  - service-ssh.yaml
   - httproute.yaml
   - referencegrant.yaml
   - networkpolicy.yaml

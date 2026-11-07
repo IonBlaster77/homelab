@@ -311,17 +311,6 @@ spec:
         - name: mcp-servers-fragment
           configMap:
             name: hermes-mcp-servers
-        # sshd needs a writable /etc/ssh to generate host keys on first boot.
-        - name: ssh-config
-          emptyDir: {}
-        # authorized_keys injected from the Secret — key-only SSH auth.
-        - name: authorized-keys
-          secret:
-            secretName: hermes-secret
-            items:
-              - key: SSH_AUTHORIZED_KEYS
-                path: authorized_keys
-            defaultMode: 0600
         - name: research-worker-key
           secret:
             secretName: hermes-secret
@@ -546,51 +535,3 @@ spec:
             limits:
               memory: "768Mi"
               cpu: "250m"
-
-        # ------------------------------------------------------------------
-        # Container 3 — SSH Sidecar (linuxserver/openssh-server)
-        # Runs as root initially so sshd can bind and drop privileges —
-        # namespace is labeled pod-security: baseline to permit this.
-        # ------------------------------------------------------------------
-        - name: hermes-ssh
-          image: lscr.io/linuxserver/openssh-server:10.3_p1-r2-ls242
-          imagePullPolicy: Always
-          env:
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
-            - name: USER_NAME
-              value: "hermes"
-            - name: PASSWORD_ACCESS
-              value: "false"
-            - name: SUDO_ACCESS
-              value: "false"
-            # Point the image's init script at the Secret-backed key file.
-            - name: PUBLIC_KEY_FILE
-              value: /home/hermes/.ssh/authorized_keys
-          ports:
-            - containerPort: 2222
-              name: ssh
-          volumeMounts:
-            - name: hermes-data
-              mountPath: /home/hermes/.hermes
-            - name: ssh-config
-              mountPath: /etc/ssh
-            - name: authorized-keys
-              mountPath: /home/hermes/.ssh/authorized_keys
-              subPath: authorized_keys
-              readOnly: true
-          securityContext:
-            runAsNonRoot: false
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: ["ALL"]
-              add: ["SETUID", "SETGID"]
-          resources:
-            requests:
-              memory: "32Mi"
-              cpu: "10m"
-            limits:
-              memory: "128Mi"
-              cpu: "100m"
