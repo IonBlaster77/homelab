@@ -99,7 +99,10 @@ spec:
     - toCIDR:
         - 10.0.0.0/8
 ---
-# MCP ingress from Hermes (namespace+label selector — survives IP churn).
+# MCP ingress from Hermes (namespace+label selector — survives IP churn), and
+# REST ingress from Paperclip: Pi calls /md directly (the hardware-deals
+# skill's scripts/md.sh), because crawl4ai's MCP is SSE-only and Pi's MCP
+# client doesn't speak SSE.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -114,6 +117,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: hermes
             app: hermes
+        - matchLabels:
+            io.kubernetes.pod.namespace: paperclip
+            app: paperclip
       toPorts:
         - ports:
             - port: "11235"
