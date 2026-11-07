@@ -138,6 +138,18 @@ ipv4NativeRoutingCIDR: 10.0.0.0/8
 # 1 replica is enough for a homelab — no need for HA here.
 operator:
   replicas: 1
+  # OOM protection: request only (see docs/projects/oom-protection.md)
+  resources:
+    requests:
+      cpu: 20m
+      memory: 128Mi
+
+# Envoy: request only, lifts it out of BestEffort (docs/projects/oom-protection.md)
+envoy:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 128Mi
 
 # =============================================================================
 # HUBBLE  (network flow visibility)
