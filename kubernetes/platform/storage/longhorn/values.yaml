@@ -35,11 +35,14 @@ defaultSettings:
   # timed out creating containers and CNPG standbys and Prometheus could
   # not start for 10+ minutes. Slower rebuilds, but the node stays usable.
   concurrentReplicaRebuildPerNodeLimit: 2
-  # Wait 30 min (default 10) for a failed replica's node to come back
-  # before rebuilding a new copy elsewhere. A Talos upgrade reboot takes
-  # ~10 min; with the default, Longhorn started full rebuilds on other
-  # nodes instead of resyncing the rebooted node's own replicas.
-  replicaReplenishmentWaitInterval: 1800
+  # How long Longhorn waits for a failed replica to come back (cheap delta
+  # resync) before building a new copy elsewhere (full copy). Kept at the
+  # 10 min default on purpose: quick re-replication matters more than
+  # avoiding rebuild traffic. 30 min was tried on 2026-11-07 for the Talos
+  # rollout and left 9 volumes on a single live copy for ~30 min after the
+  # talos3 OOM storm, even though talos3 itself stayed up. Rebuild load is
+  # capped by concurrentReplicaRebuildPerNodeLimit above instead.
+  replicaReplenishmentWaitInterval: 600
 longhornManager:
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
