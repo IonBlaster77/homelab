@@ -14,9 +14,9 @@ hosted LLM APIs and uses the rest of `kubernetes/apps/ai/` as its tools:
 
 | | |
 |---|---|
-| **URL** | https://hermes.jupitertech.net (web UI, via the Gateway, behind Cloudflare Access); SSH sidecar on `hermes-ssh:2222` from the Trusted VLAN |
+| **URL** | https://hermes.jupitertech.net (web UI, via the Gateway, behind Cloudflare Access) |
 | **Image** | `nousresearch/hermes-agent`, pinned by tag and digest |
-| **Namespace** | `hermes` (PSA `baseline`, for the SSH sidecar) |
+| **Namespace** | `hermes` (PSA `baseline`; was needed by the SSH sidecar removed 2026-11-07) |
 | **Storage** | `hermes-data`, 10Gi Longhorn RWO: `~/.hermes` (config, memory, sessions) |
 | **Depends on** | The five tool apps above, Gateway, Longhorn, the sops-kustomize plugin, outbound internet for LLM APIs |
 
@@ -32,10 +32,10 @@ hosted LLM APIs and uses the rest of `kubernetes/apps/ai/` as its tools:
 | `pvc.yaml` | `hermes-data` |
 | `configmap.yaml` | Base Hermes settings |
 | `configmap-mcp-servers.yaml` | The MCP/terminal/approvals fragment merged into `config.yaml` at start |
-| `deployment.yaml` | Init containers (permissions, config merge) + `hermes-agent`, `hermes-webui`, `hermes-ssh` |
-| `service-webui.yaml` / `service-ssh.yaml` | Web UI on 8787, SSH on 2222 |
+| `deployment.yaml` | Init containers (permissions, config merge) + `hermes-agent`, `hermes-webui` |
+| `service-webui.yaml` | Web UI on 8787 |
 | `httproute.yaml`, `referencegrant.yaml` | `hermes.jupitertech.net` → the web UI |
-| `networkpolicy.yaml` | Default-deny; internet for LLM APIs; one egress rule per tool; Gateway, Homepage and Trusted-VLAN SSH in |
+| `networkpolicy.yaml` | Default-deny; internet for LLM APIs; one egress rule per tool; Gateway and Homepage in |
 
 ## Matrix
 

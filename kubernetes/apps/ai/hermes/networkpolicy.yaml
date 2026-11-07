@@ -166,30 +166,6 @@ spec:
     - toCIDR:
         - 10.0.0.0/8
 ---
-# Ingress to SSH sidecar (port 2222) from the Trusted VLAN (WSL desktop).
-# Used by the local hermes CLI SSH terminal backend:
-#   hermes config set terminal.backend ssh
-#   hermes config set terminal.ssh_host <cluster-node-ip-or-tailscale-ip>
-#   hermes config set terminal.ssh_port 2222
-#   hermes config set terminal.ssh_user hermes
-# Tailscale operator ingress will be added here when Tailscale is deployed.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: hermes-allow-ssh-ingress
-  namespace: hermes
-spec:
-  endpointSelector:
-    matchLabels:
-      app: hermes
-  ingress:
-    - fromCIDR:
-        - 10.77.110.0/24
-      toPorts:
-        - ports:
-            - port: "2222"
-              protocol: TCP
----
 # Egress to the Crawl4AI MCP backend. hermes-allow-internet (443/80 CIDR-only)
 # does not cover this — it's a distinct in-cluster port, allowed by
 # namespace+label selector (toEndpoints) rather than CIDR so it survives pod
