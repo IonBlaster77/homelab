@@ -55,10 +55,10 @@
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<revision>\\d+)$"
     },
     {
-      "description": "VectorChord tags are pg<postgres major>-v<extension version> (pg17-v0.4.1), which docker versioning can't parse. Stay on Postgres 17 and VectorChord 0.4.x: the extension API changed in 1.x and Streamystats' schema is written against 0.4 (see statefulset-vectorchord.yaml).",
+      "description": "VectorChord tags are pg<postgres major>-v<extension version> (pg17-v0.4.1), which docker versioning can't parse. Stay on Postgres 17 (pg18 needs a dump/restore of the data directory). Any VectorChord version is fine: Streamystats only uses the bundled pgvector, never the vchord extension (see statefulset-vectorchord.yaml).",
       "matchPackageNames": ["tensorchord/vchord-postgres"],
       "versioning": "regex:^pg(?<compatibility>\\d+)-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "allowedVersions": "/^pg17-v0\\.4\\./"
+      "allowedVersions": "/^pg17-/"
     },
     {
       "description": "SearXNG tags are <date>-<commit> (2026.7.3-747cec4c2). Docker versioning reads the commit hash as a suffix that must match, so it never offered an update. Compare the date only. Upstream ships several builds a day, so only create/update its PR overnight (Adelaide): at most one bump a day.",
