@@ -1,0 +1,45 @@
+# VPA values. Only what we change from the chart defaults; the reasoning is
+# in README.md. Chart version is pinned in kustomization.yaml.
+
+# Recommend only (decided 2026-11-07, docs/projects/oom-protection.md): the
+# admission controller (rewrites pod requests at creation) and the updater
+# (evicts pods to apply them) are off, so VPA can never change a pod.
+admissionController:
+  enabled: false
+updater:
+  enabled: false
+
+# The namespace enforces Pod Security "restricted".
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  seccompProfile:
+    type: RuntimeDefault
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+recommender:
+  # One replica: a restart only delays recommendations (history is kept in
+  # VerticalPodAutoscalerCheckpoint objects), so no need for two.
+  replicas: 1
+  # With one replica the chart's PDB (minAvailable 1) would block node drains.
+  podDisruptionBudget:
+    enabled: false
+  # The chart default (4) logs every container every minute.
+  logLevel: 2
+  extraArgs:
+    # Only keep history for pods that a VPA object selects, not every pod in
+    # the cluster.
+    - --memory-saver=true
+  # Default priority: recommendations can wait. Sized as a first guess for
+  # ~35 VPA objects; the drift dashboard shows its own use.
+  resources:
+    requests:
+      cpu: 20m
+      memory: 96Mi
+    limits:
+      memory: 384Mi

@@ -196,6 +196,26 @@ control-plane node at a time; the apiserver static pod restarts on that node
 (the other two keep serving). Check the static pod's requests, `/livez` on the
 node, and etcd 3/3 before the next node.
 
+### Keeping sizes right: drift alerts, dashboard, VPA (2026-11-08)
+
+- **Alerts** (`prometheusrule-infra.yaml`, group `resource-drift`, severity
+  warning):
+  - `CriticalPodOverMemoryRequest`: a container's 1-day average working set
+    is above its memory request, for 1 h.
+  - `CriticalPodNearMemoryLimit`: working set above 85% of the memory limit
+    for 30 min.
+  - Scope: pods in the priority classes homelab-critical, longhorn-critical
+    and system-*-critical that have a request/limit. Talos' static
+    control-plane pods are left out of the request alert: their requests are
+    Talos defaults, and kube-apiserver is deliberately under-requested (batch
+    5). Checked against live data on 2026-11-08: neither alert would fire;
+    harbor-registry reached 89% of its limit once in the previous 7 days.
+- **Dashboard**: Grafana → "Resource drift" (`configmap-dashboard-resource-drift.yaml`).
+- **VPA**: recommender only, `kubernetes/platform/system/vpa` (README there).
+  36 `updateMode: "Off"` objects for the critical workloads; their
+  recommendations reach Prometheus through kube-state-metrics'
+  custom-resource config.
+
 ## Step 1 runbook: Talos v1.12.6 → v1.12.12
 
 Installer:

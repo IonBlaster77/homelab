@@ -23,6 +23,8 @@ resources:
   - prometheusrule-authentik.yaml
   - prometheusrule-hubble.yaml
   - prometheusrule-infra.yaml
+  # "Resource drift" dashboard (pairs with the resource-drift alerts)
+  - configmap-dashboard-resource-drift.yaml
   # Trivy Operator vulnerability alerts + the weekly outstanding digest
   - prometheusrule-trivy.yaml
   - configmap-vulnerability-digest.yaml

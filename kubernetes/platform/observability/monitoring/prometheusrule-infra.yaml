@@ -226,6 +226,59 @@ spec:
             summary: "{{ $value }} containers on {{ $labels.node }} were SIGKILLed within 3 minutes"
             description: "Likely the Talos OOM controller. Confirm with `talosctl -n <node> dmesg | grep 'OOM controller'` and `talosctl -n <node> get oomactions -o yaml` (shows the victims and the PSI values that triggered it). Then find what caused the memory stall on that node."
 
+    # Resource drift: keep the 2026-11-07 requests/limits honest as usage
+    # changes (docs/projects/oom-protection.md, "Keeping sizes right").
+    # Scope: pods in the critical priority classes that have a request or
+    # limit. Talos' static control-plane pods are excluded: their requests
+    # are Talos defaults, and kube-apiserver's 2Gi is deliberately below its
+    # ~3.5 GiB use until the two new nodes join (the dashboard still shows
+    # them). Working set is what the kubelet and the kernel count.
+    # Suggested sizes: the VPA recommendations (`kubectl get vpa -A`) and the
+    # "Resource drift" Grafana dashboard.
+    - name: resource-drift
+      rules:
+        # Averaged over a whole day, so a daily peak alone doesn't fire; a
+        # pod that sits above its request makes its node look emptier to the
+        # scheduler than it is, and is first in line for kubelet eviction.
+        - alert: CriticalPodOverMemoryRequest
+          expr: |
+            (
+              max by (namespace, pod, container) (
+                avg_over_time(container_memory_working_set_bytes{container!="", container!="POD"}[1d])
+              )
+              / max by (namespace, pod, container) (kube_pod_container_resource_requests{resource="memory"})
+              > 1
+            )
+            * on (namespace, pod) group_left (priority_class)
+              group by (namespace, pod, priority_class) (
+                kube_pod_info{priority_class=~"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical",
+                              pod!~"kube-(apiserver|scheduler|controller-manager)-talos[0-9]+"}
+              )
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) averaged {{ $value | humanizePercentage }} of its memory request over the last day"
+            description: "The request no longer matches real use. Raise it in Git (see the VPA recommendation: `kubectl -n {{ $labels.namespace }} get vpa`) or find out why use grew."
+        # Close to the limit = close to a kernel OOM kill (ContainerOOMKilled).
+        - alert: CriticalPodNearMemoryLimit
+          expr: |
+            (
+              max by (namespace, pod, container) (container_memory_working_set_bytes{container!="", container!="POD"})
+              / max by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory"})
+              > 0.85
+            )
+            * on (namespace, pod) group_left (priority_class)
+              group by (namespace, pod, priority_class) (
+                kube_pod_info{priority_class=~"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical"}
+              )
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is at {{ $value | humanizePercentage }} of its memory limit"
+            description: "Above 85% of the limit for 30 minutes; at 100% the kernel OOM-kills it. Raise the limit in Git or find the leak. Check the VPA upper bound: `kubectl -n {{ $labels.namespace }} describe vpa`."
+
     - name: kernel-memory
       rules:
         # Memory the kernel holds that no counter attributes: not anon, not
