@@ -20,10 +20,10 @@ argo-cd:
     # and OIDC/SSO callback URLs. Empty renders a hostless "https://". This is the
     # Cilium Gateway HTTPRoute host (argocd.jupitertech.net).
     domain: "argocd.jupitertech.net"
-    # Patch release on the chart's own 3.3 line (chart 9.5.2 ships v3.3.7) for
-    # Trivy findings, 2026-11-08. Remove when the chart is bumped past it.
+    # Newest 3.4 patch (chart 9.7.1 ships v3.4.4), 2026-11-08. The two CMP sidecars
+    # under repoServer.extraContainers pin the same image: keep all three in step.
     image:
-      tag: v3.3.19
+      tag: v3.4.13
 
   server:
     # ~160 MiB typical, 313 MiB peak
@@ -160,7 +160,7 @@ argo-cd:
             memory: 96Mi
           limits:
             memory: 512Mi
-        image: quay.io/argoproj/argocd:v3.3.19
+        image: quay.io/argoproj/argocd:v3.4.13
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
@@ -199,7 +199,7 @@ argo-cd:
             memory: 128Mi
           limits:
             memory: 512Mi
-        image: quay.io/argoproj/argocd:v3.3.19
+        image: quay.io/argoproj/argocd:v3.4.13
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
@@ -237,7 +237,7 @@ argo-cd:
         memory: 256Mi
 
   redis:
-    # Same 8.2 line as chart 9.5.2's 8.2.3-alpine; Trivy findings, 2026-11-08.
+    # Same 8.2 line as chart 9.7.1's 8.2.3-alpine; Trivy findings, 2026-11-08.
     image:
       tag: 8.2.11-alpine
     # ~16 MiB typical, 52 MiB peak
@@ -249,7 +249,7 @@ argo-cd:
         memory: 128Mi
 
   dex:
-    # Chart 9.5.2 ships v2.45.1; v2.46.1 for Trivy findings, 2026-11-08.
+    # Chart 9.7.1 ships v2.45.1; v2.46.1 for Trivy findings, 2026-11-08.
     image:
       tag: v2.46.1
     # ~41 MiB typical, 112 MiB peak
