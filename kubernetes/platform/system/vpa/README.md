@@ -55,6 +55,9 @@ Cilium (agent, envoy, operator) and CoreDNS.
 - One recommender replica, no PDB (a single-replica PDB would block node
   drains). History survives restarts in `VerticalPodAutoscalerCheckpoint`
   objects. `--memory-saver` keeps history only for pods a VPA selects.
+- The per-pod recommendation floor is lowered to 16 MB / 5m (defaults
+  250 MB / 25m, which clamped most small pods here to exactly 250Mi/25m).
+  The floor is per pod and split across its containers.
 - The VPA objects carry `SkipDryRunOnMissingResource=true` because the CRD is
   created in the same sync.
 - New app: after merging, `argocd app sync bootstrap-apps` so the root app
