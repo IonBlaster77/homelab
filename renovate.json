@@ -19,7 +19,27 @@
   "argocd": {
     "managerFilePatterns": ["/^kubernetes/.+/app\\.yaml$/"]
   },
+  "customManagers": [
+    {
+      "description": "CloudNativePG Cluster images live in spec.imageName, which the kubernetes manager doesn't read (it only matches image:).",
+      "customType": "regex",
+      "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"],
+      "matchStrings": ["imageName:\\s*(?<depName>[^:\\s]+):(?<currentValue>[^\\s@]+)"],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "packageRules": [
+    {
+      "description": "All CNPG Postgres clusters run the same image, so they update together in one PR. Each cluster restarts its replica, then switches over (a few seconds' blip). Postgres majors (18 -> 19) need a dump/import or pg_upgrade, so Renovate only offers minors.",
+      "matchPackageNames": ["ghcr.io/cloudnative-pg/postgresql"],
+      "groupName": "cnpg postgresql",
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": ["ghcr.io/cloudnative-pg/postgresql"],
+      "groupName": "cnpg postgresql"
+    },
     {
       "matchManagers": ["kubernetes", "helm-values", "argocd"],
       "commitMessageTopic": "{{depName}}"
