@@ -25,6 +25,9 @@ resources:
   - prometheusrule-infra.yaml
   # "Resource drift" dashboard (pairs with the resource-drift alerts)
   - configmap-dashboard-resource-drift.yaml
+  # Newer-tag checks for scanned images (feeds the Homepage vulnerability cards)
+  - configmap-image-update-exporter.yaml
+  - deployment-image-update-exporter.yaml
   # Trivy Operator vulnerability alerts + the weekly outstanding digest
   - prometheusrule-trivy.yaml
   - configmap-vulnerability-digest.yaml

@@ -1,0 +1,158 @@
+# Script for deployment-image-update-exporter.yaml. For every image Trivy
+# Operator has scanned, it checks the image's registry for a newer tag "on the
+# same line", and exports the answer to Prometheus. That splits fixable
+# vulnerabilities into the ones a bump would fix (a newer tag exists) and the
+# ones waiting on upstream (we already run the newest tag), which Trivy alone
+# can't tell apart. Stdlib only.
+#
+# "Same line" = the same tag shape (digits masked: v1.17.0 ~ v1.17.18,
+# 9.18 ~ 9.19, 18.3-system-trixie ~ 18.6-system-trixie, never 3.14-slim ~
+# 3.14-alpine) and the same first number (pg17-v0.4.3 may move to
+# pg17-v1.1.1, never to pg18-...). Prereleases and other variants have a
+# different shape, so they are never offered. It is a hint, not a policy:
+# Renovate's allowedVersions (Kea's odd minors, ClickHouse LTS) can still say no.
+#
+# Metrics:
+#   image_update_available{image_registry, image_repository, image_tag, latest_tag}
+#       1 = a newer same-line tag exists, 0 = image_tag is the newest.
+#   image_update_check_success{image_registry, image_repository}
+#       0 = the registry couldn't be read (private, rate limit, tag not parseable).
+#   image_update_last_run_timestamp_seconds
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: image-update-exporter
+  namespace: monitoring
+data:
+  exporter.py: |
+    import json, re, threading, time, urllib.error, urllib.parse, urllib.request
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    PROM = "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090"
+    INTERVAL = 6 * 3600   # registries are slow-moving and Docker Hub rate-limits
+    # Trivy's registry label -> where to list tags. mirror.gcr.io and the ECR
+    # Docker Hub mirror carry Docker Hub repos; lscr.io is GHCR underneath.
+    HOSTS = {
+        "index.docker.io": "registry-1.docker.io",
+        "docker.io": "registry-1.docker.io",
+        "mirror.gcr.io": "registry-1.docker.io",
+        "lscr.io": "ghcr.io",
+    }
+    UA = {"User-Agent": "homelab-image-update-exporter"}
+    state = {"body": "# no run yet\n"}
+
+    def get(url, token=None):
+        h = dict(UA, Accept="application/json")
+        if token:
+            h["Authorization"] = "Bearer " + token
+        with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=30) as r:
+            return json.load(r), r.headers
+
+    def list_tags(registry, repo):
+        host = HOSTS.get(registry, registry)
+        if registry == "ecr-public.aws.com" and repo.startswith("docker/library/"):
+            host, repo = "registry-1.docker.io", repo[len("docker/"):]
+        if host == "registry-1.docker.io" and "/" not in repo:
+            repo = "library/" + repo
+        url = f"https://{host}/v2/{repo}/tags/list?n=1000"
+        token = None
+        try:
+            body, hdr = get(url)
+        except urllib.error.HTTPError as e:
+            if e.code != 401:
+                raise
+            m = dict(re.findall(r'(\w+)="([^"]*)"', e.headers.get("WWW-Authenticate", "")))
+            q = urllib.parse.urlencode({"service": m.get("service", ""), "scope": f"repository:{repo}:pull"})
+            t = get(m["realm"] + "?" + q)[0]
+            token = t.get("token") or t.get("access_token")
+            body, hdr = get(url, token)
+        tags = body.get("tags") or []
+        while (link := hdr.get("Link")):
+            nxt = re.search(r"<([^>]+)>", link).group(1)
+            if nxt.startswith("/"):
+                nxt = f"https://{host}{nxt}"
+            body, hdr = get(nxt, token)
+            tags += body.get("tags") or []
+        return tags
+
+    def shape(t):
+        return re.sub(r"\d+", "#", re.sub(r"[0-9a-f]{7,}", "H", t))
+
+    def nums(t):
+        # Commit hashes (searxng's 2026.11.6-ac11e14c5) aren't versions.
+        return tuple(int(x) for x in re.findall(r"\d+", re.sub(r"[0-9a-f]{7,}", "", t)))
+
+    def newest(tag, tags):
+        if not nums(tag):
+            return None
+        same = [t for t in tags if shape(t) == shape(tag) and nums(t)[0] == nums(tag)[0]]
+        return max(same, key=nums) if same else None
+
+    def esc(v):
+        return v.replace("\\", "\\\\").replace('"', '\\"')
+
+    def run():
+        url = PROM + "/api/v1/query?" + urllib.parse.urlencode(
+            {"query": "count by (image_registry, image_repository, image_tag) (trivy_image_vulnerabilities)"})
+        with urllib.request.urlopen(url, timeout=60) as r:
+            result = json.load(r)["data"]["result"]
+        images = {}
+        for s in result:
+            m = s["metric"]
+            # Some tags arrive as the full reference (docker.io/x/y:1.2.3).
+            tag = m.get("image_tag", "").rsplit(":", 1)[-1]
+            images.setdefault((m.get("image_registry", ""), m.get("image_repository", "")), set()).add(tag)
+        out = [
+            "# HELP image_update_available 1 if a newer tag on the same line exists in the registry.",
+            "# TYPE image_update_available gauge",
+        ]
+        ok = ["# HELP image_update_check_success 0 if the registry could not be read.",
+              "# TYPE image_update_check_success gauge"]
+        for (reg, repo), running in sorted(images.items()):
+            lbl = f'image_registry="{esc(reg)}",image_repository="{esc(repo)}"'
+            try:
+                tags = list_tags(reg, repo)
+            except Exception as e:
+                print(f"{reg}/{repo}: {e}", flush=True)
+                ok.append(f"image_update_check_success{{{lbl}}} 0")
+                continue
+            good = False
+            for tag in sorted(running):
+                best = newest(tag, tags)
+                if best is None:
+                    continue
+                good = True
+                val = 1 if nums(best) > nums(tag) else 0
+                out.append(f'image_update_available{{{lbl},image_tag="{esc(tag)}",latest_tag="{esc(best)}"}} {val}')
+            ok.append(f"image_update_check_success{{{lbl}}} {1 if good else 0}")
+            time.sleep(1)  # be gentle with Docker Hub
+        out += ok
+        out += ["# TYPE image_update_last_run_timestamp_seconds gauge",
+                f"image_update_last_run_timestamp_seconds {time.time():.0f}"]
+        state["body"] = "\n".join(out) + "\n"
+        print(f"checked {len(images)} images", flush=True)
+
+    def loop():
+        while True:
+            try:
+                run()
+            except Exception as e:
+                print(f"run failed: {e}", flush=True)
+                time.sleep(600)
+                continue
+            time.sleep(INTERVAL)
+
+    class H(BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = state["body"].encode()
+            self.send_response(200 if self.path == "/metrics" else 404)
+            self.send_header("Content-Type", "text/plain; version=0.0.4")
+            self.end_headers()
+            if self.path == "/metrics":
+                self.wfile.write(body)
+
+        def log_message(self, *a):
+            pass
+
+    threading.Thread(target=loop, daemon=True).start()
+    ThreadingHTTPServer(("", 9105), H).serve_forever()

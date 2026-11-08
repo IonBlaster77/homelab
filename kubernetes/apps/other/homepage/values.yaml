@@ -118,7 +118,8 @@ config:
       Vulnerabilities:
         tab: Patch Ops
         style: row
-        columns: 3
+        # 7 cards: the Critical/High row of four, then the other three.
+        columns: 4
         icon: mdi-shield-bug
 
   bookmarks:
@@ -1032,7 +1033,7 @@ config:
     - Vulnerabilities:
         - Fixable Critical + High:
             id: vuln-fixable-high-card
-            description: Fix available — bump the image
+            description: Fixed in some version — ours or upstream's
             href: https://grafana.jupitertech.net/d/ycwPj724k
             icon: mdi-shield-alert
             widget:
@@ -1045,12 +1046,27 @@ config:
                   format: number
         - Images to bump:
             id: vuln-images-card
-            description: Images with a fixable Critical or High
+            description: Fixable Critical/High and a newer tag is out — ours to do
             href: https://grafana.jupitertech.net/d/ycwPj724k
             icon: mdi-package-variant-closed
+            # Newer-tag data: image-update-exporter in monitoring (checks
+            # every 6h). Images it couldn't check are left out of both cards.
             widget:
               type: customapi
-              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(count%20by%20(image_registry%2C%20image_repository)%20(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Critical%7CHigh%22%2Cfixed_version!%3D%22%22%7D))%20or%20vector(0)"
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Aimage_fixable_high%3Acount%20and%20on%20(image_registry%2C%20image_repository)%20(image%3Aupdate_available%3Amax%20%3D%3D%201))%20or%20vector(0)"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Images
+                  format: number
+        - Waiting on upstream:
+            id: vuln-upstream-card
+            description: Fixable Critical/High but already on the newest tag
+            href: https://grafana.jupitertech.net/d/ycwPj724k
+            icon: mdi-timer-sand
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Aimage_fixable_high%3Acount%20and%20on%20(image_registry%2C%20image_repository)%20(image%3Aupdate_available%3Amax%20%3D%3D%200))%20or%20vector(0)"
               refreshInterval: 600000
               mappings:
                 - field: data.result.0.value.1
