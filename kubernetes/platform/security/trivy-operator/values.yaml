@@ -68,6 +68,14 @@ serviceMonitor:
         action: drop
 
 trivyOperator:
+  # Skip Longhorn's recurring-job CronJobs (and the Jobs/Pods they spawn).
+  # longhorn-manager rewrites these CronJobs constantly (generation ~128k by
+  # 2026-11-08), and every rewrite made Trivy rescan the same image: ~44 scan
+  # jobs an hour, starving the one-at-a-time scan queue. No coverage is lost:
+  # they run longhorn-manager, which the longhorn-manager DaemonSet still gets
+  # scanned for. Keyed on recurring-job.longhorn.io, NOT longhorn.io/managed-by
+  # (that one is also on the instance-manager pods).
+  skipResourceByLabels: recurring-job.longhorn.io
   # Scan jobs are the first thing the kubelet evicts under memory pressure
   # (scan bursts set off the 2026-11-07 OOM storms). They are retried by the
   # operator. See docs/projects/oom-protection.md.
