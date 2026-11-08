@@ -1,5 +1,12 @@
 defaultSettings:
   defaultReplicaCount: 3
+  # Pinned (both already the live values, Longhorn defaults) so a chart change
+  # can't quietly loosen them. false = HARD anti-affinity: two replicas of a
+  # volume never share a node; if no separate node is free the volume runs
+  # degraded instead of doubling up. best-effort = spread replicas back out
+  # when nodes return.
+  replicaSoftAntiAffinity: false
+  replicaAutoBalance: best-effort
   taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule;node-role.kubernetes.io/master:NoSchedule"
   # When Longhorn detects a node down (via k8s node conditions), force-
   # delete its pods (Deployments and StatefulSets) so k8s reschedules
