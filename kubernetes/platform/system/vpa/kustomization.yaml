@@ -1,0 +1,17 @@
+# Renders the VPA chart (helmCharts, needs the plugin's --enable-helm) plus
+# this folder's namespace and VPA objects. app.yaml is deliberately NOT
+# listed: it is picked up by the root app.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+helmCharts:
+  - name: vertical-pod-autoscaler
+    repo: https://kubernetes.github.io/autoscaler
+    # Official chart from kubernetes/autoscaler; 0.15.0 = VPA 1.8.1.
+    version: 0.15.0
+    releaseName: vpa
+    namespace: vpa
+    valuesFile: values.yaml
+    includeCRDs: true
+resources:
+  - namespace.yaml
+  - verticalpodautoscalers.yaml

@@ -1,0 +1,85 @@
+# "Resource drift" Grafana dashboard: real use of the critical pods against
+# their requests and limits, plus the VPA recommendations
+# (kubernetes/platform/system/vpa). Pairs with the resource-drift alerts in
+# prometheusrule-infra.yaml. Generated; edit the JSON in Grafana and paste
+# it back here if it grows.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dashboard-resource-drift
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  resource-drift.json: |
+    {
+      "uid": "resource-drift",
+      "title": "Resource drift",
+      "tags": ["oom-protection", "capacity"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "5m",
+      "time": {"from": "now-7d", "to": "now"},
+      "panels": [
+        {
+          "id": 1, "type": "table", "title": "Critical containers: memory and CPU vs requests, limits and VPA",
+          "description": "One row per namespace/container (max across replicas). Critical = priority class homelab-critical, longhorn-critical or system-*-critical. VPA columns are empty for workloads without a VPA object (e.g. the Talos static control-plane pods) and for the first minutes after a VPA object is created.",
+          "gridPos": {"h": 18, "w": 24, "x": 0, "y": 0},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "B", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (avg_over_time(container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}[1d]) * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "C", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (max_over_time(container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}[7d]) * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "D", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (kube_pod_container_resource_requests{resource=\"memory\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "E", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (kube_pod_container_resource_limits{resource=\"memory\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "F", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (avg_over_time(container_memory_working_set_bytes{container!=\"\", container!=\"POD\"}[1d]) * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"})) / max by (namespace, container) (kube_pod_container_resource_requests{resource=\"memory\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "G", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"})) / max by (namespace, container) (kube_pod_container_resource_limits{resource=\"memory\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "H", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (kube_vpa_recommendation_target_memory_bytes)", "format": "table", "instant": true, "range": false},{"refId": "I", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (kube_vpa_recommendation_upper_bound_memory_bytes)", "format": "table", "instant": true, "range": false},{"refId": "J", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (kube_pod_container_resource_requests{resource=\"cpu\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "K", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (avg_over_time(rate(container_cpu_usage_seconds_total{container!=\"\", container!=\"POD\"}[5m])[1d:5m]) * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"}))", "format": "table", "instant": true, "range": false},{"refId": "L", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "max by (namespace, container) (kube_vpa_recommendation_target_cpu_cores)", "format": "table", "instant": true, "range": false}],
+          "transformations": [
+            {"id": "merge", "options": {}},
+            {"id": "organize", "options": {
+              "excludeByName": {"Time": true},
+              "renameByName": {
+                "Value #A": "Mem now", "Value #B": "Mem 1d avg", "Value #C": "Mem 7d max",
+                "Value #D": "Mem request", "Value #E": "Mem limit",
+                "Value #F": "1d avg / request", "Value #G": "Now / limit",
+                "Value #H": "VPA mem target", "Value #I": "VPA mem upper",
+                "Value #J": "CPU request", "Value #K": "CPU 1d avg", "Value #L": "VPA CPU target"
+              }
+            }},
+            {"id": "sortBy", "options": {"sort": [{"field": "1d avg / request", "desc": true}]}}
+          ],
+          "fieldConfig": {
+            "defaults": {"unit": "bytes", "decimals": 0},
+            "overrides": [
+              {"matcher": {"id": "byRegexp", "options": "^(1d avg / request|Now / limit)$"},
+               "properties": [
+                 {"id": "unit", "value": "percentunit"},
+                 {"id": "decimals", "value": 0},
+                 {"id": "custom.cellOptions", "value": {"type": "color-background", "mode": "basic"}},
+                 {"id": "thresholds", "value": {"mode": "absolute", "steps": [
+                   {"color": "transparent", "value": null},
+                   {"color": "yellow", "value": 0.85},
+                   {"color": "red", "value": 1}
+                 ]}}
+               ]},
+              {"matcher": {"id": "byRegexp", "options": "^(CPU request|CPU 1d avg|VPA CPU target)$"},
+               "properties": [{"id": "unit", "value": "none"}, {"id": "decimals", "value": 3}]}
+            ]
+          },
+          "options": {"showHeader": true, "cellHeight": "sm"}
+        },
+        {
+          "id": 2, "type": "timeseries", "title": "Memory use / request (top 15 critical containers)",
+          "description": "Above 100% for a whole day fires CriticalPodOverMemoryRequest (Talos static pods excluded from the alert).",
+          "gridPos": {"h": 10, "w": 12, "x": 0, "y": 18},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "topk(15, max by (namespace, container) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"})) / max by (namespace, container) (kube_pod_container_resource_requests{resource=\"memory\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"})))", "legendFormat": "{{namespace}}/{{container}}", "range": true}],
+          "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"thresholdsStyle": {"mode": "line"}},
+            "thresholds": {"mode": "absolute", "steps": [{"color": "transparent", "value": null}, {"color": "red", "value": 1}]}}, "overrides": []},
+          "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+        },
+        {
+          "id": 3, "type": "timeseries", "title": "Memory use / limit (top 15 critical containers)",
+          "description": "Above 85% for 30 minutes fires CriticalPodNearMemoryLimit; 100% is a kernel OOM kill.",
+          "gridPos": {"h": 10, "w": 12, "x": 12, "y": 18},
+          "datasource": {"type": "prometheus", "uid": "prometheus"},
+          "targets": [{"refId": "A", "datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "topk(15, max by (namespace, container) (container_memory_working_set_bytes{container!=\"\", container!=\"POD\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"})) / max by (namespace, container) (kube_pod_container_resource_limits{resource=\"memory\"} * on (namespace, pod) group_left () group by (namespace, pod) (kube_pod_info{priority_class=~\"homelab-critical|longhorn-critical|system-cluster-critical|system-node-critical\"})))", "legendFormat": "{{namespace}}/{{container}}", "range": true}],
+          "fieldConfig": {"defaults": {"unit": "percentunit", "custom": {"thresholdsStyle": {"mode": "line"}},
+            "thresholds": {"mode": "absolute", "steps": [{"color": "transparent", "value": null}, {"color": "yellow", "value": 0.85}, {"color": "red", "value": 1}]}}, "overrides": []},
+          "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["lastNotNull", "max"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+        }
+      ]
+    }

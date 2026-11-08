@@ -37,6 +37,61 @@ kube-state-metrics:
       memory: 64Mi
     limits:
       memory: 192Mi
+  # VPA recommendations as metrics, for the "Resource drift" dashboard.
+  # kube-state-metrics dropped its built-in VPA metrics in v2.9, so they come
+  # from a custom-resource config instead. Produces
+  # kube_vpa_recommendation_{target,upper_bound}_{memory_bytes,cpu_cores}
+  # labelled namespace, verticalpodautoscaler, target_kind, target_name,
+  # container. The VPA objects live in kubernetes/platform/system/vpa.
+  rbac:
+    extraRules:
+      - apiGroups: ["autoscaling.k8s.io"]
+        resources: ["verticalpodautoscalers"]
+        verbs: ["list", "watch"]
+  customResourceState:
+    enabled: true
+    config:
+      kind: CustomResourceStateMetrics
+      spec:
+        resources:
+          - groupVersionKind:
+              group: autoscaling.k8s.io
+              kind: VerticalPodAutoscaler
+              version: v1
+            metricNamePrefix: kube_vpa
+            labelsFromPath:
+              verticalpodautoscaler: [metadata, name]
+              namespace: [metadata, namespace]
+              target_kind: [spec, targetRef, kind]
+              target_name: [spec, targetRef, name]
+            metrics:
+              - name: recommendation_target_memory_bytes
+                help: VPA recommended memory request per container
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, recommendation, containerRecommendations]
+                    labelsFromPath:
+                      container: [containerName]
+                    valueFrom: [target, memory]
+              - name: recommendation_upper_bound_memory_bytes
+                help: VPA upper bound for memory per container
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, recommendation, containerRecommendations]
+                    labelsFromPath:
+                      container: [containerName]
+                    valueFrom: [upperBound, memory]
+              - name: recommendation_target_cpu_cores
+                help: VPA recommended CPU request per container
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, recommendation, containerRecommendations]
+                    labelsFromPath:
+                      container: [containerName]
+                    valueFrom: [target, cpu]
 
 # ~43 MiB typical, 79 MiB peak
 prometheusOperator:
