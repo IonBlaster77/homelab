@@ -35,6 +35,12 @@ recommender:
     # Only keep history for pods that a VPA object selects, not every pod in
     # the cluster.
     - --memory-saver=true
+    # VPA never recommends less than 250 MB / 25m per pod by default, split
+    # across the pod's containers. Most critical pods here use 20-100 MiB,
+    # so on 2026-11-08 27 of 36 memory targets sat at the floor (250Mi, or
+    # 125Mi for two-container pods). Lower floors let them follow real use.
+    - --pod-recommendation-min-memory-mb=16
+    - --pod-recommendation-min-cpu-millicores=5
   # Default priority: recommendations can wait. Sized as a first guess for
   # ~35 VPA objects; the drift dashboard shows its own use.
   resources:
