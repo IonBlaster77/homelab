@@ -22,6 +22,15 @@ spec:
   # Promote the running standby for primary updates (seconds of downtime)
   # instead of restarting the primary pod in place.
   primaryUpdateMethod: switchover
+  # Point-in-time recovery: the Barman Cloud plugin archives every WAL segment
+  # and stores base backups in RustFS (s3://cnpg/nextcloud-db/, see
+  # objectstore-nextcloud-db.yaml). Adding this restarts both pods once.
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: nextcloud-db-backup
+        serverName: nextcloud-db
   storage:
     # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
     storageClass: longhorn-nvme

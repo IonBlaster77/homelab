@@ -110,8 +110,13 @@ Only while "Authentik is the only sign-in" above holds (it does since
   added with files_external ("Local" backend), soft-mounted so a NAS outage
   only breaks that folder. Waits on the DSM share; not in this folder yet
   (a missing share would stop the whole pod starting).
-- Metrics (nextcloud-exporter + ServiceMonitor) and point-in-time recovery
-  for `nextcloud-db` (Barman Cloud to RustFS, as `grafana-db` does).
+- Metrics (nextcloud-exporter + ServiceMonitor).
+
+`nextcloud-db` has point-in-time recovery since 2026-11-08: WAL archiving
+and a daily base backup (16:10 UTC) to RustFS via the Barman Cloud plugin
+(`objectstore-nextcloud-db.yaml`, `scheduledbackup-nextcloud-db.yaml`,
+`secret-nextcloud-db-backup.sops.yaml`). Restore with
+`docs/runbooks/cnpg-point-in-time-restore.md`.
 
 ## Gotchas
 

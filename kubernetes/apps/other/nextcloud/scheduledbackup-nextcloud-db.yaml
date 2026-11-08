@@ -1,0 +1,18 @@
+# Daily base backup of nextcloud-db to RustFS via the Barman Cloud plugin.
+# 16:10 UTC = 02:40 Adelaide (03:40 in winter), the next free 10-minute slot
+# after paperclip-db's 16:00. CNPG cron has a seconds field. No `immediate`:
+# it would fire before the pods restart with the sidecar and fail; the first
+# base backup is taken by hand (see the cnpg-barman-cloud README).
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: nextcloud-db-daily
+  namespace: nextcloud
+spec:
+  schedule: "0 10 16 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: nextcloud-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

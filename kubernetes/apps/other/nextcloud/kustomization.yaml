@@ -17,6 +17,10 @@ resources:
   - secret-nextcloud-redis.sops.yaml
   - cluster-nextcloud-db.yaml
   - podmonitor-nextcloud-db.yaml
+  # Its point-in-time-recovery backups to RustFS (Barman Cloud plugin)
+  - secret-nextcloud-db-backup.sops.yaml
+  - objectstore-nextcloud-db.yaml
+  - scheduledbackup-nextcloud-db.yaml
   - deployment-redis.yaml
   - service-redis.yaml
   - httproute.yaml

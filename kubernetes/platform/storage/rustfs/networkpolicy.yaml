@@ -70,6 +70,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: paperclip
             cnpg.io/cluster: paperclip-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: nextcloud
+            cnpg.io/cluster: nextcloud-db
       toPorts:
         - ports:
             - port: "9000"

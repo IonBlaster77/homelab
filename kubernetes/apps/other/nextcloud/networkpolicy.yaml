@@ -125,6 +125,15 @@ spec:
   egress:
     - toEntities:
         - kube-apiserver
+    # The Barman Cloud sidecar uploads WAL and base backups to RustFS.
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
   ingress:
     - fromEndpoints:
         - matchLabels:
