@@ -94,6 +94,11 @@ trivyOperator:
                 values: [talos2, talos4]
 
 trivy:
+  # Scanner image, pinned ahead of chart 0.38.1 (newest, ships 0.76.1).
+  image:
+    registry: mirror.gcr.io
+    repository: aquasec/trivy
+    tag: 0.76.2
   # Scan jobs pull image layers themselves (not through the node's
   # containerd), so the Talos registry mirrors don't apply. These send the
   # pulls through Harbor's pull-through cache instead, mirroring the Talos
