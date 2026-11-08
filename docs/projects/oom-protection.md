@@ -168,6 +168,34 @@ Decided with the user on 2026-11-07:
   4. Cilium (manual sync; agent and envoy together) and longhorn-manager.
   5. kube-apiserver request (2Gi) in the Talos config, via sops.
 
+### Batch 5: kube-apiserver (2026-11-08)
+
+`cluster.apiServer.resources.requests` in talos/controlplane.yaml and
+talos1-3.yaml: **cpu 250m, memory 2Gi**, no limit (was the Talos default
+200m / 512Mi).
+
+Measured before the change (Prometheus, working set):
+
+| | talos1 | talos2 | talos3 |
+|---|---|---|---|
+| now | 4.20 GiB | 4.25 GiB | 4.19 GiB |
+| 7-day average | 3.61 GiB | 3.69 GiB | 3.11 GiB |
+| 7-day minimum | 2.11 GiB | 2.30 GiB | 1.49 GiB |
+| 30-day peak | 4.72 GiB | 5.07 GiB | 4.26 GiB |
+| CPU, 7-day average | 267m | 255m | 241m |
+
+2Gi is deliberately below real use. talos3 was already 84% memory-requested,
+so 2Gi takes it to about 91%; 3.5Gi (the 7-day average) would take it to about
+99%, leaving no room to schedule there and making the kubelet evict pods to
+admit the static pod if requests grow. Raise it to about 3.5Gi once the two
+new nodes join. The request mainly fixes scheduler accounting: since Talos
+1.12.9 the OOM controller already ranks Burstable pods after BestEffort ones.
+
+Apply: dry-run shows only the `resources` block, "without a reboot". Apply one
+control-plane node at a time; the apiserver static pod restarts on that node
+(the other two keep serving). Check the static pod's requests, `/livez` on the
+node, and etcd 3/3 before the next node.
+
 ## Step 1 runbook: Talos v1.12.6 → v1.12.12
 
 Installer:
