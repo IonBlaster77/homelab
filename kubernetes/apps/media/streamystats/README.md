@@ -32,8 +32,11 @@ the internet). `app.yaml` and `kustomization.yaml` as usual.
 - **The database is a plain StatefulSet, not CNPG.** CNPG needs images built
   on its own base; the VectorChord image is upstream Postgres. So it gets
   none of CNPG's backups: it relies on the Longhorn NAS backups.
-- **VectorChord is pinned to `pg17-v0.4.1`** on purpose. The extension API
-  changed in 1.x and Streamystats' schema targets 0.4.x.
+- **The VectorChord image tracks upstream's compose (`pg17-v1.1.1`).**
+  Streamystats only uses the bundled pgvector, never the vchord extension, so
+  vchord versions don't matter to it. The Postgres major does: Renovate stays
+  on `pg17-*`, since pg18 needs a dump/restore. After a bump, run
+  `ALTER EXTENSION vector UPDATE;`.
 - **`DATABASE_URL` embeds `POSTGRES_PASSWORD`.** Rotate them together.
 - **Don't rotate `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`** casually; it logs
   every user out.

@@ -7,9 +7,13 @@
 # VectorChord extension layered on. Running it as a normal StatefulSet is what
 # upstream ships and avoids fighting the operator.
 #
-# Version is pinned to the tag upstream's docker-compose pins (pg17-v0.4.1)
-# rather than the newest pg17-v1.1.1 — the VectorChord extension API changed
-# between them and Streamystats' schema is written against 0.4.x.
+# Version follows upstream's docker-compose (pg17-v1.1.1 since Streamystats
+# #570, 2026-09). Streamystats never installs the vchord extension itself:
+# its migrations create only pgvector (`vector`), uuid-ossp and pg_trgm, and
+# its indexes are pgvector HNSW. So VectorChord's own 0.x -> 1.x API change
+# doesn't touch it; what matters is the Postgres major (17, same data dir)
+# and the bundled pgvector. After an image bump, run
+# `ALTER EXTENSION vector UPDATE;` to move the catalog to the new pgvector.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -33,7 +37,7 @@ spec:
         fsGroup: 999
       containers:
         - name: postgres
-          image: tensorchord/vchord-postgres:pg17-v0.4.3
+          image: tensorchord/vchord-postgres:pg17-v1.1.1
           # args, NOT command: upstream's compose sets `command:`, which in
           # Compose overrides CMD and leaves docker-entrypoint.sh (ENTRYPOINT)
           # in place. In Kubernetes `command:` overrides ENTRYPOINT instead,
