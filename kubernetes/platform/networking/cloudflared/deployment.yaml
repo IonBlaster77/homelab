@@ -23,6 +23,16 @@ spec:
     spec:
       serviceAccountName: cloudflared
       terminationGracePeriodSeconds: 60
+      # Keep the two tunnel replicas on different nodes, so losing one node
+      # never drops all public access. Soft (ScheduleAnyway): if only one node
+      # is available the pod still starts there instead of staying Pending.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: cloudflared
       containers:
         - name: cloudflared
           # Pinned by tag and digest (the version that was running when
