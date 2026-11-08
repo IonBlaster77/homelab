@@ -12,7 +12,7 @@ Estimated time: **45–60 minutes** from powered-off nodes to fully synced ArgoC
 | Talos OS | v1.12.12 |
 | Kubernetes | v1.35.8 |
 | Cilium | v1.17.0 |
-| ArgoCD | v3.3.7 (Helm chart argo-cd-9.5.2) |
+| ArgoCD | v3.3.19 (Helm chart argo-cd-9.5.2, image tag pinned) |
 
 4 nodes: talos1–3 (control-plane), talos4 (worker)  
 Storage: Longhorn on SSD (`/var/lib/longhorn`) + NVMe (`/var/lib/longhorn-nvme`) per node
@@ -210,7 +210,7 @@ kubectl get nodes
 
 ## Phase 6 — Install ArgoCD
 
-ArgoCD chart version: **argo-cd-9.5.2** (app version v3.3.7).
+ArgoCD chart version: **argo-cd-9.5.2** (app version v3.3.7; images pinned to v3.3.19).
 
 The `argocd-values.yaml` includes the full SOPS CMP integration — the sops binary
 is installed via an init container, and a CMP sidecar handles decryption. No manual
