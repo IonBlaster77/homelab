@@ -113,13 +113,16 @@ argo-cd:
         g, claude-code, role:claude-code
 
   repoServer:
-    # ~120 MiB typical, 178 MiB peak; generous limit: it renders charts
+    # ~120 MiB typical, 356 MiB sampled 7-day peak (2026-11-08). Limit raised
+    # 512Mi -> 1Gi: bursts while rendering many apps at once (e.g. a cold cache
+    # right after an Argo CD restart) OOM-killed it ~4 times in 30 days, which
+    # turns every app's sync status "Unknown" until it restarts.
     resources:
       requests:
         cpu: 40m
         memory: 192Mi
       limits:
-        memory: 512Mi
+        memory: 1Gi
     volumes:
       - name: sops-age
         secret:
