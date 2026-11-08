@@ -1,0 +1,97 @@
+# Says which scanned images have a newer tag upstream, so the Homepage
+# vulnerability cards can split "bump it" from "waiting on upstream".
+# Script and metric docs: configmap-image-update-exporter.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-update-exporter
+  namespace: monitoring
+  labels:
+    app: image-update-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-update-exporter
+  template:
+    metadata:
+      labels:
+        app: image-update-exporter
+      annotations:
+        # The script is read once at start; bump this when the ConfigMap
+        # changes so the pod rolls.
+        monitoring/image-update-exporter-rev: "2026-11-08"
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: exporter
+          image: python:3.14-slim@sha256:9aaa474097d094040649f2162a627c0049b408f52138d980916788d80f04802f
+          command: ["python", "-I", "-u", "/script/exporter.py"]
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+          ports:
+            - containerPort: 9105
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+          # Memory request = limit (OOM protection, docs/projects/oom-protection.md).
+          # The biggest tag lists (library/python, nextcloud) are a few MB of JSON.
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: script
+              mountPath: /script
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: image-update-exporter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-update-exporter
+  namespace: monitoring
+  labels:
+    app: image-update-exporter
+spec:
+  selector:
+    app: image-update-exporter
+  ports:
+    - port: 9105
+      targetPort: 9105
+      name: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: image-update-exporter
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: image-update-exporter
+  endpoints:
+    - port: metrics
+      # Under Prometheus' 5m lookback, so the series never goes stale between
+      # scrapes (the values only change every 6h anyway).
+      interval: 2m

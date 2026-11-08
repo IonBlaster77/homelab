@@ -36,6 +36,15 @@ spec:
             trivy:vulnerability:present
               unless on (image_registry, image_repository, vuln_id, resource, severity, fixed_version)
             (trivy:vulnerability:present offset 6h or trivy:vulnerability:present offset 1d)
+        # Per image: fixable Critical/High findings, and whether a newer tag
+        # exists upstream (image-update-exporter; 1 if ANY running tag of the
+        # image is behind). The Homepage cards join the two: "bump it" vs
+        # "waiting on upstream". Images the exporter couldn't check are in
+        # neither.
+        - record: trivy:image_fixable_high:count
+          expr: count by (image_registry, image_repository) (trivy:vulnerability:present{severity=~"Critical|High", fixed_version!=""})
+        - record: image:update_available:max
+          expr: max by (image_registry, image_repository) (image_update_available)
         - record: trivy:exposedsecrets:present
           expr: max by (image_registry, image_repository, severity) (trivy_image_exposedsecrets) > 0
 
