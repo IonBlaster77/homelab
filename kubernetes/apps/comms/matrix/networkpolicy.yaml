@@ -107,6 +107,14 @@ spec:
               protocol: TCP
             - port: "5432"
               protocol: TCP
+    # `kubectl cnpg status` reads each instance's /pg/status (8000) through
+    # the kube-apiserver pod proxy; without this it times out.
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
     # Prometheus scrapes CNPG metrics (podmonitor-matrix-db.yaml).
     - fromEndpoints:
         - matchLabels:
