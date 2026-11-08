@@ -88,3 +88,9 @@ test:
   enabled: false
 gateway:
   enabled: false
+# The rules sidecar in the loki pod. Chart 7.5.0 (newest) ships k8s-sidecar
+# 2.5.0, which carried ~30 fixable Critical/High Trivy findings (2026-11-08).
+sidecar:
+  image:
+    repository: kiwigrid/k8s-sidecar
+    tag: 2.14.3

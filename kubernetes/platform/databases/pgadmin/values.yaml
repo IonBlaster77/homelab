@@ -1,4 +1,12 @@
 existingSecret: pgadmin-credentials
+
+# Pinned ahead of the chart: 1.70.4 is the newest chart and still ships 9.18.
+# Bumped for Trivy's 47 fixable Critical/High findings in 9.18 (2026-11-08).
+# Drop this once a chart ships >= 9.19. Renovate's helm-values manager
+# tracks it here.
+image:
+  repository: dpage/pgadmin4
+  tag: "9.19"
 env:
   email: admin@jupitertech.net
 
