@@ -11,7 +11,7 @@ If Cilium breaks, *everything* breaks at once: pod networking, AdGuard DNS
 | | |
 |---|---|
 | **URL** | Hubble UI at https://hubble.jupitertech.net (via the Gateway) |
-| **Chart** | Upstream `cilium` **1.17.18**, vendored in `chart/charts/` inside an umbrella chart |
+| **Chart** | Upstream `cilium` **1.18.16**, vendored in `chart/charts/` inside an umbrella chart |
 | **Namespace** | `kube-system` (Helm release `cilium`, installed at bootstrap and adopted by Argo CD) |
 | **Sync** | **Manual.** Nothing here changes the cluster until someone syncs this app |
 | **Depends on** | Talos (KubePrism on localhost:7445), Gateway API CRDs |
@@ -21,7 +21,7 @@ If Cilium breaks, *everything* breaks at once: pod networking, AdGuard DNS
 | File | What it is |
 |---|---|
 | `app.yaml` | Argo CD Application, **manual sync**, two sources: `chart/` and this folder. Server-Side Apply plus a long, deliberate `ignoreDifferences` list |
-| `chart/` | Umbrella chart: `Chart.yaml`/`Chart.lock` (cilium 1.17.18), the vendored `charts/cilium-1.17.18.tgz`, and `values.yaml` (all settings under `cilium:`) |
+| `chart/` | Umbrella chart: `Chart.yaml`/`Chart.lock` (cilium 1.18.16), the vendored `charts/cilium-1.18.16.tgz`, and `values.yaml` (all settings under `cilium:`) |
 | `kustomization.yaml` | Lists this folder's own manifests (not `chart/`) |
 | `ciliumloadbalancerippool.yaml` | `homelab-pool`: 10.77.20.50–99 for LoadBalancer Services (with the VLAN 20 address map) |
 | `ciliuml2announcementpolicy.yaml` | How those IPs are announced on the LAN (ARP from one node per IP) |
