@@ -1,7 +1,25 @@
 # Vendored upstream CRDs, kept byte-for-byte as released so upgrades are a
 # file swap. app.yaml is deliberately NOT listed: the root app picks it up.
+#
+# From v1.6 the per-CRD files from the release tag's config/crd/ are vendored
+# instead of the single standard-install.yaml, because TLSRoute has to come
+# from the EXPERIMENTAL channel while everything else stays standard (see
+# README.md "Why TLSRoute is experimental"). The standard-install bundle
+# contains the standard TLSRoute, and kustomize rejects the same CRD twice.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - crds-standard-v1.4.1.yaml
-  - crd-tlsroutes-experimental-v1.4.1.yaml
+  # standard channel (= upstream standard-install.yaml minus TLSRoute)
+  - v1.6.3/standard/gateway.networking.k8s.io_backendtlspolicies.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_gatewayclasses.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_gateways.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_grpcroutes.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_httproutes.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_listenersets.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_referencegrants.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_tcproutes.yaml
+  - v1.6.3/standard/gateway.networking.k8s.io_udproutes.yaml
+  # safe-upgrades ValidatingAdmissionPolicy (+ binding), new in v1.5
+  - v1.6.3/standard/gateway.networking.k8s.io_vap_safeupgrades.yaml
+  # experimental channel
+  - v1.6.3/experimental/gateway.networking.k8s.io_tlsroutes.yaml
