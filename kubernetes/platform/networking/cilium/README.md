@@ -25,7 +25,7 @@ If Cilium breaks, *everything* breaks at once: pod networking, AdGuard DNS
 | `kustomization.yaml` | Lists this folder's own manifests (not `chart/`) |
 | `ciliumloadbalancerippool.yaml` | `homelab-pool`: 10.77.20.50–99 for LoadBalancer Services (with the VLAN 20 address map) |
 | `ciliuml2announcementpolicy.yaml` | How those IPs are announced on the LAN (ARP from one node per IP) |
-| `ciliumbgppeeringpolicy.yaml` | BGP peering (control plane enabled; see its comments) |
+| `ciliumbgp.yaml` | BGP peering to the MikroTik (BGP control plane v2: ClusterConfig, PeerConfig, Advertisement; see its comments) |
 | `httproute-hubble.yaml`, `referencegrant-hubble.yaml` | `hubble.jupitertech.net` → Hubble UI |
 
 ## Why an umbrella chart in git

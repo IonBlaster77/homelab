@@ -1,0 +1,91 @@
+# BGP peering with the MikroTik (BGP control plane v2, cilium.io/v2)
+#
+# Every node runs its own BGP session to the MikroTik (10.77.20.1, AS 65530)
+# from AS 65531. It advertises each node's pod CIDR, plus a /32 for every
+# LoadBalancer IP (10.77.20.50 ArgoCD, .51 Longhorn, .53 AdGuard, .60 Gateway,
+# ...). On failover Cilium withdraws the route from the dead node and a
+# surviving node announces it; the MikroTik updates in under a second.
+# L2 announcements (ciliuml2announcementpolicy.yaml) answer ARP for the same
+# IPs, so the VIPs stay reachable even with BGP down.
+#
+# These three resources replace the old single CiliumBGPPeeringPolicy
+# (BGPv1), which Cilium 1.18 deprecated and 1.19 removed. Mapping:
+#   virtualRouters[].localASN            -> ClusterConfig bgpInstances[].localASN
+#   nodeSelector matchLabels {}          -> ClusterConfig with no nodeSelector (= all nodes)
+#   neighbors[] peerAddress "x/32"       -> ClusterConfig peers[].peerAddress (plain IP)
+#   neighbors[] timers, gracefulRestart  -> PeerConfig
+#   exportPodCIDR: true                  -> Advertisement PodCIDR
+#   serviceSelector {} + LoadBalancerIP  -> Advertisement Service/LoadBalancerIP with a
+#                                           match-everything selector (see below)
+#
+# Gotchas:
+# - An Advertisement selector that is EMPTY selects NO Services (in v1 an empty
+#   selector selected all). The NotIn-a-dummy-value expression below is the
+#   upstream idiom for "every Service".
+# - No localPort: the instances only dial out to the MikroTik, as BGPv1 did.
+#   Setting one (e.g. 179) would also need NET_BIND_SERVICE in the agent's
+#   capability list.
+# - If a CiliumBGPPeeringPolicy and these both exist, the v1 policy wins. So
+#   the cut-over happens when the old policy is pruned, which resets the
+#   session once.
+# - Argo CD "Synced" proves nothing for BGP. Check
+#   `cilium-dbg bgp peers` and `cilium-dbg bgp routes advertised ipv4 unicast`.
+apiVersion: cilium.io/v2
+kind: CiliumBGPClusterConfig
+metadata:
+  name: homelab-bgp
+spec:
+  # No nodeSelector: applies to every node, like the v1 policy's empty one.
+  bgpInstances:
+    - name: homelab-65531
+      localASN: 65531
+      peers:
+        - name: mikrotik
+          peerAddress: 10.77.20.1
+          peerASN: 65530
+          peerConfigRef:
+            name: mikrotik
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPPeerConfig
+metadata:
+  name: mikrotik
+spec:
+  # Aggressive timers, same as before: a dead peer is detected in 30s rather
+  # than the default 90s (keepalive every 10s = hold / 3).
+  timers:
+    holdTimeSeconds: 30
+    keepAliveTimeSeconds: 10
+  gracefulRestart:
+    enabled: true
+    restartTimeSeconds: 15
+  families:
+    # IPv4 only. v1 also negotiated an (empty) IPv6 family; nothing here uses IPv6.
+    - afi: ipv4
+      safi: unicast
+      advertisements:
+        matchLabels:
+          advertise: homelab-bgp
+---
+apiVersion: cilium.io/v2
+kind: CiliumBGPAdvertisement
+metadata:
+  name: homelab-bgp
+  labels:
+    advertise: homelab-bgp
+spec:
+  advertisements:
+    # Each node's own pod CIDR (10.0.N.0/24), as exportPodCIDR did.
+    - advertisementType: PodCIDR
+    # A /32 per LoadBalancer IP. externalTrafficPolicy: Local Services (AdGuard,
+    # Home Assistant, alloy-syslog) are only announced from nodes running a
+    # backend, same as under v1.
+    - advertisementType: Service
+      service:
+        addresses:
+          - LoadBalancerIP
+      selector:
+        matchExpressions:
+          - key: homelab.jupitertech.net/bgp-never-matches
+            operator: NotIn
+            values: ["never-used-value"]
