@@ -4,7 +4,7 @@
 #   helm repo add cilium https://helm.cilium.io/
 #   helm install cilium cilium/cilium \
 #     --namespace kube-system \
-#     --version 1.19.10 \
+#     --version 1.20.4 \
 #     --values bootstrap/cilium-values.yaml
 #
 # After ArgoCD is up, the cilium ArgoCD Application (kubernetes/platform/networking/cilium/app.yaml)
