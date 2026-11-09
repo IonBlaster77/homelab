@@ -6,10 +6,10 @@ global:
   # average, never a CPU limit.
   priorityClassName: homelab-critical
   domain: "argocd.jupitertech.net"  # sets configs.cm.url; empty renders a hostless https://
-  # Argo CD 3.5.7 (= chart 10.11.7 appVersion), 2026-11-08. The two CMP sidecars
+  # Argo CD 3.6.1 (= chart 10.17.0 appVersion), 2026-11-09. The two CMP sidecars
   # under repoServer.extraContainers pin the same image: keep all three in step.
   image:
-    tag: v3.5.7
+    tag: v3.6.1
   # Chart 10's default, set explicitly: ingress-only NetworkPolicies per
   # component. See kubernetes/platform/system/argocd/chart/values.yaml.
   networkPolicy:
@@ -163,7 +163,7 @@ repoServer:
           memory: 96Mi
         limits:
           memory: 512Mi
-      image: quay.io/argoproj/argocd:v3.5.7
+      image: quay.io/argoproj/argocd:v3.6.1
       command: [/var/run/argocd/argocd-cmp-server]
       securityContext:
         runAsNonRoot: true
@@ -207,7 +207,7 @@ repoServer:
           memory: 128Mi
         limits:
           memory: 512Mi
-      image: quay.io/argoproj/argocd:v3.5.7
+      image: quay.io/argoproj/argocd:v3.6.1
       command: [/var/run/argocd/argocd-cmp-server]
       securityContext:
         runAsNonRoot: true
