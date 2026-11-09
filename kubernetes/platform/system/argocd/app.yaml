@@ -1,4 +1,4 @@
-# Argo CD managing itself: umbrella chart (argo-cd 10.2.2, vendored in
+# Argo CD managing itself: umbrella chart (argo-cd 10.11.7, vendored in
 # chart/charts/) plus this folder (the argocd.jupitertech.net route).
 # MANUAL sync: a failed self-sync can take down the whole CD system.
 # See README.md.
