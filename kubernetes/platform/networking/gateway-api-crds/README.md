@@ -9,7 +9,7 @@ attached to the one `Gateway`.
 
 | | |
 |---|---|
-| **Version** | Gateway API v1.2.1, vendored from the upstream release |
+| **Version** | Gateway API v1.3.0, vendored from the upstream release |
 | **Namespace** | None (CRDs are cluster-scoped; the destination is just `kube-system`) |
 | **Depends on** | Nothing. Cilium (Gateway API support) and the gateway app depend on *it* |
 
@@ -19,8 +19,8 @@ attached to the one `Gateway`.
 |---|---|
 | `app.yaml` | Argo CD Application: `prune: false`, Server-Side Apply |
 | `kustomization.yaml` | Lists the two vendored files |
-| `crds-standard-v1.2.1.yaml` | Upstream `standard-install.yaml`, unmodified (5 CRDs) |
-| `crd-tlsroutes-experimental-v1.2.1.yaml` | Upstream `TLSRoute` CRD from the experimental channel |
+| `crds-standard-v1.3.0.yaml` | Upstream `standard-install.yaml`, unmodified (5 CRDs) |
+| `crd-tlsroutes-experimental-v1.3.0.yaml` | Upstream `TLSRoute` CRD from the experimental channel |
 
 ## Fresh-cluster sync order
 
