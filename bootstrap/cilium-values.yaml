@@ -4,7 +4,7 @@
 #   helm repo add cilium https://helm.cilium.io/
 #   helm install cilium cilium/cilium \
 #     --namespace kube-system \
-#     --version 1.17.0 \
+#     --version 1.17.18 \
 #     --values bootstrap/cilium-values.yaml
 #
 # After ArgoCD is up, the cilium ArgoCD Application (kubernetes/platform/networking/cilium/app.yaml)
@@ -143,6 +143,12 @@ operator:
     requests:
       cpu: 20m
       memory: 128Mi
+
+# cilium-agent: request only, no limit (docs/projects/oom-protection.md)
+resources:
+  requests:
+    cpu: 100m
+    memory: 384Mi
 
 # Envoy: request only, lifts it out of BestEffort (docs/projects/oom-protection.md)
 envoy:
