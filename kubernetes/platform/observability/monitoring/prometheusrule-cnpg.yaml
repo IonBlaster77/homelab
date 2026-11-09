@@ -127,7 +127,12 @@ spec:
           annotations:
             description: "{{ $value }} CloudNativePG primaries are running on {{ $labels.node }}."
             summary: "Database primaries are concentrated on one node; promote some standbys elsewhere."
-          expr: count by (node) ((cnpg_pg_replication_in_recovery == 0) * on(namespace, pod) group_left(node) kube_pod_info) > 3
+          # topk keeps one kube_pod_info series per pod: group_left errors if ANY
+          # pod (CNPG or not) has two. kube-state-metrics briefly exports a new pod
+          # with and without pod_ip (seen 2026-11-09 on the prometheus-operator
+          # rollout), and a rescheduled StatefulSet pod can show on two nodes until
+          # the old series goes stale.
+          expr: count by (node) ((cnpg_pg_replication_in_recovery == 0) * on(namespace, pod) group_left(node) topk by (namespace, pod) (1, kube_pod_info)) > 3
           for: 6h
           labels:
             severity: warning
