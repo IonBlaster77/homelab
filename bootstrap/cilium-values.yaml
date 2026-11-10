@@ -4,7 +4,7 @@
 #   helm repo add cilium https://helm.cilium.io/
 #   helm install cilium cilium/cilium \
 #     --namespace kube-system \
-#     --version 1.18.16 \
+#     --version 1.19.10 \
 #     --values bootstrap/cilium-values.yaml
 #
 # After ArgoCD is up, the cilium ArgoCD Application (kubernetes/platform/networking/cilium/app.yaml)
@@ -226,6 +226,7 @@ cgroup:
 # CHOWN/FOWNER/SETGID/SETUID — file ownership for Cilium's runtime files
 # DAC_OVERRIDE — bypass file permission checks for the BPF filesystem
 # KILL         — send signals to processes in other network namespaces
+# SYSLOG       — read dmesg / kernel pointers (kptr_restrict=1 on Talos); chart default since 1.19
 securityContext:
   capabilities:
     ciliumAgent:
@@ -240,6 +241,7 @@ securityContext:
       - FOWNER
       - SETGID
       - SETUID
+      - SYSLOG
     cleanCiliumState:
       - NET_ADMIN
       - SYS_ADMIN

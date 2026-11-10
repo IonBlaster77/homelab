@@ -109,6 +109,9 @@ cilium:
         - FOWNER
         - SETGID
         - SETUID
+        # Added with 1.19 (upstream default since then): read dmesg and kernel
+        # pointers, which Talos hides with kernel.kptr_restrict=1.
+        - SYSLOG
       cleanCiliumState:
         - NET_ADMIN
         - SYS_ADMIN
