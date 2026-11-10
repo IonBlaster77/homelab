@@ -6,7 +6,7 @@ resources:
   # LoadBalancer IPs: which addresses, and how they're announced on the LAN
   - ciliumloadbalancerippool.yaml
   - ciliuml2announcementpolicy.yaml
-  - ciliumbgppeeringpolicy.yaml
+  - ciliumbgp.yaml  # BGP v2: ClusterConfig, PeerConfig, Advertisement
   # Hubble UI behind the shared Gateway
   - httproute-hubble.yaml
   - referencegrant-hubble.yaml
