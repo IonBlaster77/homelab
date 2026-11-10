@@ -4,7 +4,7 @@
 #   helm repo add cilium https://helm.cilium.io/
 #   helm install cilium cilium/cilium \
 #     --namespace kube-system \
-#     --version 1.17.0 \
+#     --version 1.17.18 \
 #     --values bootstrap/cilium-values.yaml
 #
 # After ArgoCD is up, the cilium ArgoCD Application (kubernetes/platform/networking/cilium/app.yaml)
@@ -144,12 +144,30 @@ operator:
       cpu: 20m
       memory: 128Mi
 
+# cilium-agent: request only, no limit (docs/projects/oom-protection.md)
+resources:
+  requests:
+    cpu: 100m
+    memory: 384Mi
+
+# Upgrade one node at a time (chart default 2 = half the cluster), so a bad
+# version breaks one node and the rollout stalls there instead of spreading.
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
 # Envoy: request only, lifts it out of BestEffort (docs/projects/oom-protection.md)
 envoy:
   resources:
     requests:
       cpu: 20m
       memory: 128Mi
+  # One node at a time, as for the agent above
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
 
 # =============================================================================
 # HUBBLE  (network flow visibility)
