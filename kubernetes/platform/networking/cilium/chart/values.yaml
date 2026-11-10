@@ -10,6 +10,10 @@
 #   4. Manually sync the "cilium" ArgoCD Application
 
 cilium:
+  # The Cilium minor this cluster was first installed with (April 2026). The
+  # upgrade guide asks for it on every upgrade so the chart keeps that
+  # release's datapath defaults. Never bump it.
+  upgradeCompatibility: "1.17"
   kubeProxyReplacement: true
   socketLB:
     hostNamespaceOnly: true

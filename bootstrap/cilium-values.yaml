@@ -4,12 +4,17 @@
 #   helm repo add cilium https://helm.cilium.io/
 #   helm install cilium cilium/cilium \
 #     --namespace kube-system \
-#     --version 1.17.18 \
+#     --version 1.18.16 \
 #     --values bootstrap/cilium-values.yaml
 #
 # After ArgoCD is up, the cilium ArgoCD Application (kubernetes/platform/networking/cilium/app.yaml)
 # takes over management of this release using the same values.
 # Check latest version: helm search repo cilium/cilium
+
+# The Cilium minor the cluster was first installed with. Keeps that release's
+# datapath defaults across upgrades; never bump it. (Omit it on a brand-new
+# cluster bootstrapped straight onto a newer Cilium.)
+upgradeCompatibility: "1.17"
 
 # =============================================================================
 # KUBE-PROXY REPLACEMENT

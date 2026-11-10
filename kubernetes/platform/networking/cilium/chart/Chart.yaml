@@ -6,10 +6,10 @@ description: >
   the ArgoCD v3 semver bug ("improper constraint: HEAD") that fires
   on GenerateManifest when the repoURL is a Helm HTTP index.
   ArgoCD runs `helm dependency build` against Chart.lock, which fetches
-  the exact cilium-1.17.18.tgz — no version resolution, no HEAD lookup.
+  the exact cilium-1.18.16.tgz — no version resolution, no HEAD lookup.
 type: application
 version: 0.1.0
 dependencies:
   - name: cilium
-    version: 1.17.18
+    version: 1.18.16
     repository: https://helm.cilium.io/
