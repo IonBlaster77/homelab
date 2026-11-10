@@ -155,12 +155,24 @@ resources:
     cpu: 100m
     memory: 384Mi
 
+# Upgrade one node at a time (chart default 2 = half the cluster), so a bad
+# version breaks one node and the rollout stalls there instead of spreading.
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+
 # Envoy: request only, lifts it out of BestEffort (docs/projects/oom-protection.md)
 envoy:
   resources:
     requests:
       cpu: 20m
       memory: 128Mi
+  # One node at a time, as for the agent above
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
 
 # =============================================================================
 # HUBBLE  (network flow visibility)
