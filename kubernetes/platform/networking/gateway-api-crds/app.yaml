@@ -1,4 +1,4 @@
-# Gateway API CRDs (upstream v1.4.1, vendored). Must exist before Cilium's
+# Gateway API CRDs (upstream v1.6.3, vendored). Must exist before Cilium's
 # Gateway API support and before the gateway app; see README.md for the
 # fresh-cluster sync order.
 apiVersion: argoproj.io/v1alpha1
