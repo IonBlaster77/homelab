@@ -53,13 +53,19 @@ cilium:
     requests:
       cpu: 100m
       memory: 384Mi
-  # Roll the agent one node at a time (chart default is 2 = half this 4-node
-  # cluster). A bad version then breaks one node, the rollout stalls on its
-  # failing readiness, and the other three keep serving while it's undone.
+  # TEMPORARY for the 1.20.4 hop: OnDelete, so a sync restarts nothing and
+  # each node's agent (and Envoy) is upgraded by hand, talos4 first as the
+  # canary. Restore the RollingUpdate block below once all 4 nodes run 1.20.4.
+  #
+  # Normally: roll the agent one node at a time (chart default is 2 = half
+  # this 4-node cluster). A bad version then breaks one node, the rollout
+  # stalls on its failing readiness, and the other three keep serving.
+  #   updateStrategy:
+  #     type: RollingUpdate
+  #     rollingUpdate:
+  #       maxUnavailable: 1
   updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
+    type: OnDelete
   # Envoy (the Gateway's L7 proxy, one per node): ~97 MiB typical, 301 MiB
   # peak. Request only, no limit; the request lifts it out of BestEffort, the
   # class Talos' OOM controller kills first.
@@ -68,11 +74,10 @@ cilium:
       requests:
         cpu: 20m
         memory: 128Mi
-    # One node at a time, same reason as the agent's updateStrategy above.
+    # TEMPORARY OnDelete for the 1.20.4 hop, as for the agent above; normally
+    # RollingUpdate with maxUnavailable: 1.
     updateStrategy:
-      type: RollingUpdate
-      rollingUpdate:
-        maxUnavailable: 1
+      type: OnDelete
   hubble:
     relay:
       enabled: true
