@@ -56,8 +56,24 @@ render_path() { # dir app ns release valuefiles(newline list) inline-values-file
     local args=()
     while IFS= read -r v; do [ -n "$v" ] && args+=(-f "$dir/$v"); done <<< "$vfs"
     [ -s "$inline" ] && args+=(-f "$inline")
-    helm dependency build "$dir" >/dev/null 2>&1 || helm dependency update "$dir" >/dev/null
-    helm template "$rel" "$dir" -n "$ns" --kube-version "$KUBE_VERSION" "${args[@]}"
+    # Do what Argo CD's repo-server does: render the archives committed in
+    # charts/ as they are, and only run `helm dependency build` when a
+    # dependency is missing from charts/ entirely. Building first (as this
+    # script used to) fetches whatever Chart.lock asks for, so a Renovate PR
+    # that bumped Chart.yaml/Chart.lock but left the old vendored .tgz showed
+    # a clean upgrade here while Argo kept rendering the old chart (#441).
+    # repo-lint's `vendored` check flags that mismatch.
+    local tmpl
+    if ! tmpl=$(helm template "$rel" "$dir" -n "$ns" --kube-version "$KUBE_VERSION" "${args[@]}" 2>&1); then
+      if grep -q 'missing in charts/ directory' <<< "$tmpl"; then
+        helm dependency build "$dir" >/dev/null 2>&1 || helm dependency update "$dir" >/dev/null
+        tmpl=$(helm template "$rel" "$dir" -n "$ns" --kube-version "$KUBE_VERSION" "${args[@]}") || return 1
+      else
+        echo "$tmpl" >&2
+        return 1
+      fi
+    fi
+    printf '%s\n' "$tmpl"
   elif [ -f "$dir/kustomization.yaml" ] || [ -f "$dir/kustomization.yml" ]; then
     (cd "$dir" && kustomize build --enable-helm .)
   else

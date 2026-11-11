@@ -104,6 +104,15 @@
       "schedule": ["* 0-5 * * *"]
     },
     {
+      "description": "cilium and argocd are umbrella charts that vendor the upstream chart as chart/charts/<name>-<version>.tgz, and Argo CD renders that archive as committed. Without this, Renovate bumped only Chart.yaml and Chart.lock and left the old .tgz, so merging deployed nothing while Argo showed Synced (#441). With it, Renovate runs helm dependency update and commits the new archive and the deletion of the old one.",
+      "matchManagers": ["helmv3"],
+      "matchFileNames": [
+        "kubernetes/platform/networking/cilium/chart/**",
+        "kubernetes/platform/system/argocd/chart/**"
+      ],
+      "postUpdateOptions": ["helmUpdateSubChartArchives"]
+    },
+    {
       "description": "cilium and argocd are manual-sync: merging does nothing until someone syncs them, and a full sync is the risky part.",
       "matchFileNames": [
         "kubernetes/platform/networking/cilium/**",
