@@ -12,7 +12,7 @@ Estimated time: **45–60 minutes** from powered-off nodes to fully synced ArgoC
 | Talos OS | v1.12.12 |
 | Kubernetes | v1.35.8 |
 | Cilium | v1.20.4 |
-| ArgoCD | v3.6.1 (Helm chart argo-cd-10.17.0, image tag pinned) |
+| ArgoCD | v3.6.1 (Helm chart argo-cd-10.17.2, image tag pinned) |
 
 4 nodes: talos1–3 (control-plane), talos4 (worker)  
 Storage: Longhorn on SSD (`/var/lib/longhorn`) + NVMe (`/var/lib/longhorn-nvme`) per node
@@ -210,7 +210,7 @@ kubectl get nodes
 
 ## Phase 6 — Install ArgoCD
 
-ArgoCD chart version: **argo-cd-10.17.0** (app version v3.6.1; images pinned to v3.6.1).
+ArgoCD chart version: **argo-cd-10.17.2** (app version v3.6.1; images pinned to v3.6.1).
 Chart 10 creates ingress NetworkPolicies for every Argo CD component; the values
 set `global.networkPolicy.create: true` explicitly.
 
@@ -225,7 +225,7 @@ helm repo update
 helm install argocd argo/argo-cd \
   --namespace argocd \
   --create-namespace \
-  --version 10.17.0 \
+  --version 10.17.2 \
   --values bootstrap/argocd-values.yaml
 ```
 

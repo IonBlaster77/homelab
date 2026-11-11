@@ -20,7 +20,7 @@ argo-cd:
     # and OIDC/SSO callback URLs. Empty renders a hostless "https://". This is the
     # Cilium Gateway HTTPRoute host (argocd.jupitertech.net).
     domain: "argocd.jupitertech.net"
-    # Argo CD 3.6.1 (= chart 10.17.0 appVersion), 2026-11-09. The two CMP sidecars
+    # Argo CD 3.6.1 (= chart 10.17.2 appVersion), 2026-11-09. The two CMP sidecars
     # under repoServer.extraContainers pin the same image: keep all three in step.
     image:
       tag: v3.6.1
@@ -249,7 +249,7 @@ argo-cd:
         memory: 256Mi
 
   redis:
-    # Kept on the 8.2 line (Trivy findings, 2026-11-08) although chart 10.17.0
+    # Kept on the 8.2 line (Trivy findings, 2026-11-08) although chart 10.17.2
     # defaults to 8.6.4-alpine: a Redis minor bump is its own change.
     image:
       tag: 8.2.11-alpine
@@ -262,7 +262,7 @@ argo-cd:
         memory: 128Mi
 
   dex:
-    # Same as chart 10.17.0's default (v2.46.1); pinned since the 2026-11-08 Trivy findings.
+    # Same as chart 10.17.2's default (v2.46.1); pinned since the 2026-11-08 Trivy findings.
     image:
       tag: v2.46.1
     # ~41 MiB typical, 112 MiB peak
