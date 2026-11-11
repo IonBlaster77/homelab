@@ -24,6 +24,12 @@
 #   hermes-rev  Hermes skill / MCP config ConfigMap changed without bumping
 #               its pod annotation (subPath mounts and the initContainer merge
 #               never reach a running pod) [PR only]
+#   vendored    umbrella chart (a Chart.yaml with charts/*.tgz committed, e.g.
+#               cilium, argocd) whose archives don't match its dependencies:
+#               Argo CD renders the committed .tgz as is, so a Chart.yaml /
+#               Chart.lock bump without the new archive deploys nothing and
+#               still shows Synced (#441, 2026-11-11). Fix: helm dependency
+#               update, commit the new .tgz, delete the old one.
 #   reminders   manual-sync apps (cilium, argocd) and Application YAML edits
 #               (sync bootstrap-apps first) [PR only, notices]
 #
@@ -107,6 +113,30 @@ while IFS= read -r f; do
   case $f in *.sops.yaml) continue ;; esac
   warn sops-name "$f" "" "SOPS-encrypted but not named *.sops.yaml; the sops-kustomize plugin refuses to render it"
 done < <(git grep -l -E '^sops:' -- 'kubernetes/*.yaml' 'kubernetes/*.yml' 2>/dev/null)
+
+# --- vendored -------------------------------------------------------------
+while IFS= read -r chartfile; do
+  cdir=$(dirname "$chartfile")
+  # Only charts that vendor their dependencies (archives committed in charts/).
+  git ls-files -- "$cdir/charts/*.tgz" | grep -q . || continue
+  while IFS=$'\t' read -r name want; do
+    [ -z "$name" ] && continue
+    lock=""
+    [ -f "$cdir/Chart.lock" ] &&
+      lock=$(yq -N ".dependencies[] | select(.name == \"$name\") | .version" "$cdir/Chart.lock" 2>/dev/null)
+    if [ -n "$lock" ] && [ "$lock" != "$want" ]; then
+      warn vendored "$cdir/Chart.lock" "" "\`$name\` is $want in Chart.yaml but $lock in Chart.lock; run \`helm dependency update $cdir\`"
+    fi
+    have=$(git ls-files -- "$cdir/charts/$name-*.tgz" | sed "s|^$cdir/charts/$name-||; s|\.tgz\$||" | grep -E '^[0-9]' | sort -V)
+    if ! grep -qxF "$want" <<< "$have"; then
+      warn vendored "$cdir/Chart.yaml" "" "\`$name\` $want is not vendored (charts/ has: ${have:-nothing}); Argo CD will render the old archive and show Synced. Run \`helm dependency update $cdir\`, commit the new .tgz and delete the old one"
+    fi
+    for v in $have; do
+      [ "$v" = "$want" ] && continue
+      warn vendored "$cdir/charts/$name-$v.tgz" "" "stale archive: Chart.yaml wants \`$name\` $want; delete \`$name-$v.tgz\`"
+    done
+  done < <(yq -N '.dependencies[] | [.name, .version] | @tsv' "$chartfile" 2>/dev/null)
+done < <(git ls-files -- 'kubernetes/*Chart.yaml')
 
 # --- PR-only checks -------------------------------------------------------
 if [ -n "$BASE" ]; then
