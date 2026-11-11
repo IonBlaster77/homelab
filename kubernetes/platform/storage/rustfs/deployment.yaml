@@ -82,12 +82,15 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
+          # Steady-state working set is ~850-950Mi; the nightly CNPG base
+          # backups + bucket listings + scanner cycle spike it past 1Gi
+          # (OOMKilled 2026-11-08, -10, -11 between 01:30-02:30 ACDT).
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
-            limits:
               memory: 1Gi
+            limits:
+              memory: 2Gi
           readinessProbe:
             httpGet:
               path: /health
