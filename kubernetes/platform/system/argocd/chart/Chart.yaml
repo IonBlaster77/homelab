@@ -5,8 +5,10 @@ description: >
   Using a git-path source instead of a direct Helm repo source avoids
   the ArgoCD v3 semver bug ("improper constraint: HEAD") that fires
   on GenerateManifest when the repoURL is a Helm HTTP index.
-  ArgoCD runs `helm dependency build` against Chart.lock, which fetches
-  the exact argo-cd-10.17.0.tgz — no version resolution, no HEAD lookup.
+  ArgoCD renders the archive committed in charts/ as is (it only runs
+  `helm dependency build` when the dependency is missing there), so
+  the .tgz must match the version below: bump them together with
+  `helm dependency update` (repo-lint's `vendored` check enforces it).
 type: application
 version: 0.1.0
 dependencies:

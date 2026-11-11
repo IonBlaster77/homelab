@@ -1,4 +1,4 @@
-# Argo CD managing itself: umbrella chart (argo-cd 10.17.0, vendored in
+# Argo CD managing itself: umbrella chart (argo-cd 10.17.2, vendored in
 # chart/charts/) plus this folder (the argocd.jupitertech.net route).
 # MANUAL sync: a failed self-sync can take down the whole CD system.
 # See README.md.
@@ -59,8 +59,10 @@ spec:
       jqPathExpressions:
         - .spec.ports[].nodePort
 
-    # helm.sh/chart label: umbrella chart renders "argocd-wrapper-0.1.0" but
-    # live resources show "argo-cd-9.5.2" (set at bootstrap time).
+    # helm.sh/chart label: live resources still carry "argo-cd-9.5.2" from the
+    # bootstrap install. With RespectIgnoreDifferences a sync never updates
+    # it, so the live label does NOT show the deployed chart version. To check
+    # what Argo renders, use `argocd app manifests argocd | grep helm.sh/chart`.
     - group: apps
       kind: Deployment
       jsonPointers:

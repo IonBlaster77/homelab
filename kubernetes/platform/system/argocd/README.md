@@ -8,7 +8,7 @@ finds every other app's `app.yaml`.
 | | |
 |---|---|
 | **URL** | https://argocd.jupitertech.net (via the Gateway) and http://10.77.20.50 (LAN LoadBalancer) |
-| **Chart** | Upstream `argo-cd` **10.17.0** (Argo CD v3.6.1, Helm 4; chart NetworkPolicies on), vendored in `chart/charts/` inside an umbrella chart |
+| **Chart** | Upstream `argo-cd` **10.17.2** (Argo CD v3.6.1, Helm 4; chart NetworkPolicies on), vendored in `chart/charts/` inside an umbrella chart |
 | **Namespace** | `argocd` (Helm release `argocd`, installed at bootstrap and adopted) |
 | **Sync** | **Manual.** Nothing here changes until someone syncs this app |
 | **Depends on** | Cilium, the Gateway; the SOPS plugin sidecar is configured in `bootstrap/` |
@@ -18,7 +18,7 @@ finds every other app's `app.yaml`.
 | File | What it is |
 |---|---|
 | `app.yaml` | Argo CD Application, **manual sync**, two sources: `chart/` and this folder. Server-Side Apply plus `ignoreDifferences` |
-| `chart/` | Umbrella chart: `Chart.yaml`/`Chart.lock` (argo-cd 10.17.0), the vendored `.tgz`, and `values.yaml` (all settings under `argo-cd:`) |
+| `chart/` | Umbrella chart: `Chart.yaml`/`Chart.lock` (argo-cd 10.17.2), the vendored `.tgz`, and `values.yaml` (all settings under `argo-cd:`) |
 | `kustomization.yaml` | Lists this folder's own manifests (not `chart/`) |
 | `httproute.yaml`, `referencegrant.yaml` | `argocd.jupitertech.net` → `argocd-server:80` |
 
