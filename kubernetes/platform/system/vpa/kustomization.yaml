@@ -6,7 +6,7 @@ kind: Kustomization
 helmCharts:
   - name: vertical-pod-autoscaler
     repo: https://kubernetes.github.io/autoscaler
-    # Official chart from kubernetes/autoscaler; 0.15.0 = VPA 1.8.1.
+    # Official chart from kubernetes/autoscaler; 0.16.0 = VPA 1.8.1.
     version: 0.16.0
     releaseName: vpa
     namespace: vpa
