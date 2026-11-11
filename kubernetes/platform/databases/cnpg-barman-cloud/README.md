@@ -9,7 +9,7 @@ retention window, not just the last volume backup. Plan and decisions:
 
 | | |
 |---|---|
-| **Chart** | [`plugin-barman-cloud`](https://github.com/cloudnative-pg/charts) from `cloudnative-pg.github.io/charts`; chart 0.8.1 = plugin v0.15.1 |
+| **Chart** | [`plugin-barman-cloud`](https://github.com/cloudnative-pg/charts) from `cloudnative-pg.github.io/charts`; chart 0.9.0 = plugin v0.16.0 |
 | **Namespace** | `cnpg-system` (must be the operator's namespace) |
 | **Needs** | CNPG ≥ 1.26 (running 1.30.1) and cert-manager (the chart makes its own Issuer and certificates for operator↔plugin gRPC) |
 | **Storage** | None. Backups go to `s3://cnpg/<cluster>/` in RustFS |

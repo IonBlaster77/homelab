@@ -14,7 +14,7 @@ spec:
   sources:
     - repoURL: https://cloudnative-pg.github.io/charts
       chart: plugin-barman-cloud
-      # Chart 0.8.1 = plugin v0.15.1 (needs CNPG >= 1.26 and cert-manager).
+      # Chart 0.9.0 = plugin v0.16.0 (needs CNPG >= 1.26 and cert-manager).
       targetRevision: 0.9.0
       helm:
         releaseName: barman-cloud
