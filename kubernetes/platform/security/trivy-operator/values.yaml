@@ -20,8 +20,10 @@ operator:
   # limit, so the scans survived and kube-apiserver, the Longhorn
   # instance-manager, Grafana and the Argo controller were killed instead.
   scanJobsConcurrentLimit: 1
-  # Big images (the Hermes agent is ~2 GB) take longer than the 5m default.
-  scanJobTimeout: 15m
+  # Big images (the Hermes agent is ~2 GB) take longer than the 5m default,
+  # and scans run CPU-throttled (500m limit). Must be >= trivy.timeout below,
+  # or the job is killed before Trivy gives up.
+  scanJobTimeout: 30m
   # Reports expire after 24h, which triggers a fresh scan: the daily rescan.
   scannerReportTTL: "24h"
   # Talos has no kubelet/etcd config files on disk for the node-collector to
@@ -113,12 +115,21 @@ trivy:
       "lscr.io": registry.jupitertech.net/lscr
       "mcr.microsoft.com": registry.jupitertech.net/mcr
       "public.ecr.aws": registry.jupitertech.net/ecr-public
+  # Trivy's own --timeout per scan (chart default 5m0s). Throttled scans of
+  # big images hit 5m and failed: on 2026-11-11 only 7 VulnerabilityReports
+  # existed across 3 of 34 namespaces.
+  timeout: 30m0s
   # Per scan container (a job has one per image). Measured 2026-11-07: peaks
-  # of 200-500 MiB working set. The request matches that peak so the
+  # of 200-500 MiB working set. The memory request matches that peak so the
   # scheduler counts the real load instead of stacking big jobs on one node.
+  # CPU request is small on purpose: all of a job's containers ask at once,
+  # so 100m each made the 9-image hermes job ask for 900m, more than talos1
+  # or talos3 had unrequested (82-85% requested), and with preemption off it
+  # sat Pending ~2 h a day (2026-11-11). Scans are throttled by the 500m
+  # limit anyway; 25m x 9 = 225m fits.
   resources:
     requests:
-      cpu: 100m
+      cpu: 25m
       memory: 512Mi
     limits:
       cpu: 500m
