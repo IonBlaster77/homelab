@@ -63,6 +63,13 @@ spec:
 ---
 # Image pulls through Harbor's pull-through cache at the Gateway VIP
 # (registry.jupitertech.net -> 10.77.20.60). See the mirrors in values.yaml.
+#
+# Two rules, because the Gateway's Envoy enforces this pod's egress policy
+# itself, against the backend the HTTPRoute picks (Harbor's nginx pod,
+# container port 8080), not against the VIP (cilium/cilium#47617). With only
+# the VIP rule, every request got "403 Access denied" from Envoy
+# (2026-11-12): Hubble shows "http-request DROPPED", and Harbor never sees it.
+# The VIP rule still lets the connection reach Envoy.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -76,6 +83,15 @@ spec:
       toPorts:
         - ports:
             - port: "443"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: harbor
+            app: harbor
+            component: nginx
+      toPorts:
+        - ports:
+            - port: "8080"
               protocol: TCP
 ---
 # Outbound HTTPS: the Trivy server downloads its vulnerability databases and
