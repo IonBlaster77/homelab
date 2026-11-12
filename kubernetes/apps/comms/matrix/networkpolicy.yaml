@@ -155,9 +155,9 @@ spec:
 ---
 # Reply traffic to cross-node Envoy (Gateway) connections, as in the hermes
 # and crawl4ai policies (native routing evaluates replies against egress
-# policy), EXCEPT the Kubernetes API VIP. This also covers MAS reaching
-# Authentik through the Gateway VIP (10.77.20.60): pods resolve
-# auth.jupitertech.net there via AdGuard.
+# policy), EXCEPT the Kubernetes API VIP. This alone does NOT let MAS reach
+# Authentik through the Gateway VIP (pods resolve auth.jupitertech.net to
+# 10.77.20.60 via AdGuard): see matrix-mas-allow-egress-authentik.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -177,6 +177,32 @@ spec:
         - cidr: 10.77.20.0/24
           except:
             - 10.77.20.10/32
+---
+# MAS's upstream OIDC provider is Authentik: MAS calls auth.jupitertech.net
+# (discovery, token, userinfo, JWKS) through the Gateway VIP. The Gateway's
+# Envoy checks this pod's egress against the backend the route picks
+# (Authentik server pods, container port 9000), not the VIP, so the VIP rule
+# above isn't enough. Without this rule, Envoy answers "403 Access denied"
+# (since Cilium 1.19/1.20, 2026-11-10; cilium/cilium#47617).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: matrix-mas-allow-egress-authentik
+  namespace: matrix
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: matrix-authentication-service
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
+            app.kubernetes.io/name: authentik
+            app.kubernetes.io/component: server
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
 ---
 # Synapse sends push notifications (no message content) to Element's push
 # gateway on the internet. Public addresses on 443 only.

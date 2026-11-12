@@ -153,8 +153,8 @@ spec:
 ---
 # Reply traffic to cross-node Envoy (Gateway) connections, as in the other
 # apps (native routing evaluates replies against egress policy), EXCEPT the
-# Kubernetes API VIP. Also how web will reach Authentik for OIDC
-# (auth.jupitertech.net resolves to the Gateway VIP).
+# Kubernetes API VIP. This alone does NOT let web reach Authentik through
+# the Gateway: see langfuse-web-allow-egress-authentik below.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -170,6 +170,33 @@ spec:
         - cidr: 10.77.20.0/24
           except:
             - 10.77.20.10/32
+---
+# OIDC sign-in: web calls auth.jupitertech.net (token, userinfo, JWKS)
+# through the Gateway VIP. The Gateway's Envoy checks this pod's egress
+# against the backend the route picks (Authentik server pods, container port
+# 9000), not the VIP, so the VIP rule above isn't enough. Without this rule,
+# Envoy answers "403 Access denied" (since Cilium 1.19/1.20, 2026-11-10;
+# cilium/cilium#47617).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: langfuse-web-allow-egress-authentik
+  namespace: langfuse
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
+            app.kubernetes.io/name: authentik
+            app.kubernetes.io/component: server
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
 ---
 # Hermes (kubernetes/apps/ai/hermes): its Langfuse plugin exports traces over
 # OTLP straight to web's API, in-cluster. The hermes namespace allows this

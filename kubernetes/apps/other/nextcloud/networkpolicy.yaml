@@ -68,8 +68,8 @@ spec:
               protocol: TCP
 ---
 # Reply traffic to cross-node Envoy (Gateway) connections, as in the other
-# apps, EXCEPT the Kubernetes API VIP. Also how Nextcloud reaches Authentik
-# (auth.jupitertech.net resolves to the Gateway VIP) for OIDC sign-in.
+# apps, EXCEPT the Kubernetes API VIP. This alone does NOT let Nextcloud
+# reach Authentik through the Gateway: see nextcloud-allow-egress-authentik.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -84,6 +84,33 @@ spec:
         - cidr: 10.77.20.0/24
           except:
             - 10.77.20.10/32
+---
+# OIDC sign-in (user_oidc): Nextcloud calls auth.jupitertech.net (discovery,
+# token, userinfo, JWKS) through the Gateway VIP. The Gateway's Envoy checks
+# this pod's egress against the backend the route picks (Authentik server
+# pods, container port 9000), not the VIP, so the VIP rule above isn't
+# enough. Without this rule, Envoy answers "403 Access denied" (since Cilium
+# 1.19/1.20, 2026-11-10; cilium/cilium#47617).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: nextcloud-allow-egress-authentik
+  namespace: nextcloud
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: nextcloud
+      app.kubernetes.io/component: app
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
+            app.kubernetes.io/name: authentik
+            app.kubernetes.io/component: server
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
 ---
 # The app store (installing user_oidc, files_external's dependencies, app
 # updates) and Nextcloud's update and well-known checks. Public addresses
