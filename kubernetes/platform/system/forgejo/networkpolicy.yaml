@@ -1,0 +1,222 @@
+---
+# Default deny all ingress and egress for every pod in the forgejo namespace.
+# (One empty rule = deny-all; an empty list is rejected by Cilium.)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-default-deny
+  namespace: forgejo
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# Forgejo and its database talk to each other freely.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-intra-namespace
+  namespace: forgejo
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-dns
+  namespace: forgejo
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The Gateway reaches only Forgejo's HTTP port. Container port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-gateway-ingress
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+---
+# Git over SSH from the LAN via the 10.77.20.66 LoadBalancer
+# (externalTrafficPolicy: Local keeps the client IP). This does not arrive
+# with the `ingress` identity, so it needs its own rule. Container port.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-lan-ssh
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo
+  ingress:
+    - fromCIDR:
+        - 10.77.0.0/16
+      toPorts:
+        - ports:
+            - port: "2222"
+              protocol: TCP
+---
+# Reply traffic to cross-node Envoy (Gateway) connections, as in the other
+# apps, EXCEPT the Kubernetes API VIP.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-node-egress
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo
+  egress:
+    - toCIDRSet:
+        - cidr: 10.77.20.0/24
+          except:
+            - 10.77.20.10/32
+---
+# OIDC sign-in: Forgejo calls auth.jupitertech.net (discovery, token,
+# userinfo, JWKS) through the Gateway VIP. The Gateway's Envoy checks this
+# pod's egress against the backend the route picks (Authentik server pods,
+# container port 9000), not the VIP (cilium/cilium#47617; see Nextcloud's
+# policy).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-egress-authentik
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: authentik
+            app.kubernetes.io/name: authentik
+            app.kubernetes.io/component: server
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# Attachments, LFS, avatars and Actions logs live in RustFS.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-egress-rustfs
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+---
+# GitHub migrations and mirrors (HTTPS), later the mirror push to GitHub.
+# Public addresses only.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-allow-internet
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/name: forgejo
+  egress:
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 10.0.0.0/8
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
+# Database pods: the CloudNativePG operator manages them, and they talk to
+# the Kubernetes API (instance manager).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: forgejo-db-allow-apiserver-and-operator
+  namespace: forgejo
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: forgejo-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+    # The Barman Cloud sidecar uploads WAL and base backups to RustFS.
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # `kubectl cnpg status` reads each instance's /pg/status (8000) through
+    # the kube-apiserver pod proxy.
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    # Prometheus scrapes the CNPG exporter (podmonitor-forgejo-db.yaml).
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP

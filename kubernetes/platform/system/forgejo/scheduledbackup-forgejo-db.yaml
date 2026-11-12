@@ -1,0 +1,18 @@
+# Daily base backup of forgejo-db to RustFS via the Barman Cloud plugin.
+# 16:20 UTC = 02:50 Adelaide (03:50 in winter), the next free 10-minute slot
+# after nextcloud-db's 16:10. CNPG cron has a seconds field. No `immediate`:
+# it would fire before the pods restart with the sidecar and fail; the first
+# base backup is taken by hand (see the cnpg-barman-cloud README).
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: forgejo-db-daily
+  namespace: forgejo
+spec:
+  schedule: "0 20 16 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: forgejo-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

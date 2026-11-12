@@ -65,6 +65,7 @@ The root Application (`bootstrap/bootstrap-apps.yaml`) picks up every
 - [CNPG point-in-time restore](docs/runbooks/cnpg-point-in-time-restore.md)
 - [Whole-home zoned audio](docs/projects/zoned-audio.md)
 - [Agent observability, object storage and lightweight agents](docs/projects/agent-observability.md)
+- [Forgejo: self-hosted forge and source of truth](docs/projects/forgejo.md)
 
 ## Licence
 
