@@ -150,6 +150,12 @@ spec:
 ---
 # harbor-preload pulls images through Harbor at the Gateway VIP
 # (registry.jupitertech.net -> 10.77.20.60). Port 443 only.
+#
+# Two rules, because the Gateway's Envoy checks this pod's egress against
+# the backend the route picks (Harbor's nginx pod, container port 8080), not
+# the VIP. The VIP rule only gets the connection to Envoy. Without the
+# second rule, Envoy answers "403 Access denied" (since Cilium 1.19/1.20,
+# 2026-11-10; cilium/cilium#47617). Same fix as Trivy's in #488.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -163,4 +169,13 @@ spec:
       toPorts:
         - ports:
             - port: "443"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: harbor
+            app: harbor
+            component: nginx
+      toPorts:
+        - ports:
+            - port: "8080"
               protocol: TCP
