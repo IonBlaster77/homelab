@@ -70,13 +70,115 @@ spec:
             - port: "9000"
               protocol: TCP
 
-    # Cilium Gateway — wildcard route for all other *.jupitertech.net traffic
+    # Cilium Gateway — wildcard route for all other *.jupitertech.net traffic.
+    # This only gets the connection to the Gateway's Envoy. What Envoy then
+    # forwards needs cloudflared-allow-egress-public-backends below.
     - toEndpoints:
         - matchLabels:
             io.kubernetes.pod.namespace: networking
       toPorts:
         - ports:
             - port: "443"
+              protocol: TCP
+---
+# The backends of the PUBLIC hostnames only. The Gateway's Envoy checks
+# cloudflared's egress against the pod and container port each HTTPRoute
+# forwards to, not the Gateway address (since Cilium 1.19/1.20;
+# cilium/cilium#47617). Without these rules, every public site except auth
+# returned Envoy's "403 Access denied" from 2026-11-10 to 2026-11-12.
+#
+# Public = has a record in public DNS (proxied by Cloudflare), checked
+# 2026-11-12 against 1.1.1.1. There is no wildcard record, so LAN-only
+# hostnames (grafana, sonarr, ...) are NOT listed and stay unreachable through
+# the tunnel even if someone adds a public record. When publishing a new
+# hostname, add its backend here: Service selector + container (target) port.
+# auth.jupitertech.net doesn't go through the Gateway (direct rule above).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: cloudflared-allow-egress-public-backends
+  namespace: cloudflared
+spec:
+  endpointSelector:
+    matchLabels:
+      app: cloudflared
+  egress:
+    # account.jupitertech.net, and the MAS paths of matrix.jupitertech.net:
+    # Matrix Authentication Service
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: matrix
+            app.kubernetes.io/instance: matrix-matrix-authentication-service
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # matrix.jupitertech.net: Synapse (8008) and .well-known (8010) via haproxy
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: matrix
+            app.kubernetes.io/instance: matrix-haproxy
+      toPorts:
+        - ports:
+            - port: "8008"
+              protocol: TCP
+            - port: "8010"
+              protocol: TCP
+    # chat.jupitertech.net: Element web
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: matrix
+            app.kubernetes.io/instance: matrix-element-web
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # hermes.jupitertech.net: Hermes web UI
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: hermes
+            app: hermes
+      toPorts:
+        - ports:
+            - port: "8787"
+              protocol: TCP
+    # home.jupitertech.net: Homepage
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: homepage
+            app.kubernetes.io/instance: homepage
+            app.kubernetes.io/name: homepage
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+    # argocd.jupitertech.net: Argo CD server
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: argocd
+            app.kubernetes.io/instance: argocd
+            app.kubernetes.io/name: argocd-server
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    # arrdashboard.jupitertech.net: arr-dashboard
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            app: arr-dashboard
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+    # seerr.jupitertech.net: Seerr
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            app: seerr
+      toPorts:
+        - ports:
+            - port: "5055"
               protocol: TCP
 ---
 # Prometheus scraping the :2000 metrics endpoint (see service-metrics.yaml).
