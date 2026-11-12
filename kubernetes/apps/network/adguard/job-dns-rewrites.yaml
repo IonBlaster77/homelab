@@ -108,6 +108,11 @@ spec:
               # Paperclip (kubernetes/apps/ai/paperclip): agent control plane. LAN-only
               # until Cloudflare Access + Authentik sign-in.
               add_rewrite "paperclip.jupitertech.net" "10.77.20.60"
+              # Forgejo (kubernetes/platform/system/forgejo): web UI, HTTPS git
+              # and API via the Gateway; git over SSH on its own LoadBalancer IP.
+              # LAN-only until Cloudflare Access + Authentik sign-in.
+              add_rewrite "forge.jupitertech.net"     "10.77.20.60"
+              add_rewrite "forge-ssh.jupitertech.net" "10.77.20.66"
               # Whole-home audio hub (ZONED-AUDIO.md). Both go via the Gateway
               # like everything else. Note Home Assistant ALSO has a direct LAN
               # address on 10.77.20.65 for device callbacks that should not

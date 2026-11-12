@@ -1,0 +1,188 @@
+# Forgejo chart values (code.forgejo.org/forgejo-helm/forgejo). Design and
+# decisions: docs/projects/forgejo.md. Every app.ini key here can also be set
+# by a FORGEJO__<SECTION>__<KEY> env var, which wins over gitea.config.
+
+image:
+  registry: code.forgejo.org
+  repository: forgejo/forgejo
+  # Latest stable, not the chart's default (the 15.x LTS line): decided
+  # 2026-11-12. The chart appends -rootless.
+  tag: "17.0.1"
+  rootless: true
+
+# One replica on an RWO volume. The chart's default is Recreate, which is
+# fine for a Deployment created with it (see feedback on RWO strategies).
+# Everything else below (Postgres, S3 storage, the database issue indexer)
+# is chosen so two replicas later is a config change: docs/projects/forgejo.md, "HA".
+replicaCount: 1
+strategy:
+  type: Recreate
+
+# Restricted PSA: rootless image, uid/gid 1000.
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+priorityClassName: homelab-critical
+# Memory request = limit (docs/projects/oom-protection.md); first sizing,
+# revisit after a month of real use. A CPU request but no CPU limit.
+resources:
+  requests:
+    cpu: 100m
+    memory: 768Mi
+  limits:
+    memory: 768Mi
+initContainers:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+service:
+  http:
+    type: ClusterIP
+    port: 3000
+  # Git over SSH, LAN only (no Cloudflare path): forge-ssh.jupitertech.net
+  # (AdGuard rewrite) -> this fixed LoadBalancer IP -> the pod's 2222.
+  ssh:
+    type: LoadBalancer
+    port: 22
+    externalTrafficPolicy: Local
+    annotations:
+      lbipam.cilium.io/ips: "10.77.20.66"
+
+# Repos (git data) and Forgejo's own files. Everything bulky goes to S3.
+# 3 Longhorn replicas: once Forgejo is the source of truth this is the most
+# important volume in the cluster.
+persistence:
+  enabled: true
+  create: true
+  claimName: forgejo-data
+  size: 20Gi
+  storageClass: longhorn-nvme
+  accessModes: [ReadWriteOnce]
+  annotations:
+    # Never let an Argo prune delete the repositories.
+    argocd.argoproj.io/sync-options: Prune=false
+
+test:
+  enabled: false
+
+gitea:
+  # Break-glass local admin (Authentik down). Username and password from the
+  # SOPS secret. The chart's default password mode (keepUpdated) re-applies
+  # the password in git on every restart, so rotating it is a commit. Turn
+  # on 2FA for it after the first sign-in.
+  admin:
+    existingSecret: forgejo-admin
+    email: forge-admin@forge.jupitertech.net
+
+  # Authentik (OIDC) is added once its application exists: see README.md,
+  # "Setup after the first sync".
+  oauth: []
+
+  # Prometheus metrics: later, with a ServiceMonitor and a scrape token.
+  metrics:
+    enabled: false
+
+  # Secrets as env vars (highest priority over gitea.config).
+  additionalConfigFromEnvs:
+    # CloudNativePG generates forgejo-db-app (cluster-forgejo-db.yaml).
+    - name: FORGEJO__DATABASE__PASSWD
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-db-app
+          key: password
+    - name: FORGEJO__STORAGE__MINIO_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-s3
+          key: ACCESS_KEY_ID
+    - name: FORGEJO__STORAGE__MINIO_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: forgejo-s3
+          key: ACCESS_SECRET_KEY
+
+  config:
+    APP_NAME: "Forge"
+    server:
+      DOMAIN: forge.jupitertech.net
+      ROOT_URL: https://forge.jupitertech.net/
+      # SSH has its own name and IP: the Gateway only carries HTTP(S).
+      SSH_DOMAIN: forge-ssh.jupitertech.net
+      SSH_PORT: 22
+      SSH_LISTEN_PORT: 2222
+      LFS_START_SERVER: true
+      OFFLINE_MODE: true
+    database:
+      DB_TYPE: postgres
+      HOST: forgejo-db-rw.forgejo.svc.cluster.local:5432
+      NAME: forgejo
+      USER: forgejo
+      SSL_MODE: disable
+    # One S3 store for every non-git storage type (attachments, LFS, avatars,
+    # repo avatars, Actions logs and artifacts). Git repositories stay on the
+    # volume.
+    storage:
+      STORAGE_TYPE: minio
+      MINIO_ENDPOINT: rustfs.rustfs.svc.cluster.local:9000
+      MINIO_BUCKET: forgejo
+      MINIO_LOCATION: us-east-1
+      MINIO_USE_SSL: false
+      MINIO_BUCKET_LOOKUP_TYPE: path
+    # Session/cache/queue: Forgejo's built-ins for one replica. Switching to
+    # the shared Redis later needs no data migration (chart README).
+    indexer:
+      # The database, not bleve files on the volume, so a second replica
+      # can share it.
+      ISSUE_INDEXER_TYPE: db
+      REPO_INDEXER_ENABLED: false
+    service:
+      # Accounts are created only by an external login source (Authentik)
+      # or the admin. With no source configured yet, nobody can register.
+      DISABLE_REGISTRATION: false
+      ALLOW_ONLY_EXTERNAL_REGISTRATION: true
+      DEFAULT_KEEP_EMAIL_PRIVATE: true
+      DEFAULT_ALLOW_CREATE_ORGANIZATION: false
+      ENABLE_NOTIFY_MAIL: false
+    openid:
+      ENABLE_OPENID_SIGNIN: false
+      ENABLE_OPENID_SIGNUP: false
+    security:
+      MIN_PASSWORD_LENGTH: 12
+    session:
+      COOKIE_SECURE: true
+    repository:
+      DEFAULT_BRANCH: main
+      ENABLE_PUSH_CREATE_USER: false
+      ENABLE_PUSH_CREATE_ORG: false
+    # Migrations (the GitHub import at cutover) may only reach GitHub, never
+    # the LAN or cluster.
+    migrations:
+      ALLOWED_DOMAINS: github.com,*.github.com,*.githubusercontent.com
+      ALLOW_LOCALNETWORKS: false
+    # Harbor is the registry: no second one here.
+    packages:
+      ENABLED: false
+    mailer:
+      ENABLED: false
+    cron.update_checker:
+      ENABLED: false
+    time:
+      DEFAULT_UI_LOCATION: Australia/Adelaide
+    log:
+      LEVEL: Info
