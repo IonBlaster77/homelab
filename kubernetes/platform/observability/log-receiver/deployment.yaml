@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-receiver
+  namespace: logging
+  labels:
+    app: log-receiver
+spec:
+  # Two replicas on different nodes: when a node is shutting down, it can send
+  # its last log lines to a receiver on another node.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: log-receiver
+  template:
+    metadata:
+      labels:
+        app: log-receiver
+      annotations:
+        # Bump to roll the pods after a configmap.yaml change (Vector has no
+        # config watch enabled here).
+        homelab/config-rev: "1"
+    spec:
+      priorityClassName: homelab-critical
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: log-receiver
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: vector
+          image: timberio/vector:0.61.0-distroless-libc@sha256:1a3451978644d5cd4b99a0b28c990791e2f7e1efbea4184122f1c59a56448143
+          args: ["--config", "/etc/vector/vector.yaml"]
+          ports:
+            - name: talos
+              containerPort: 6050
+              protocol: TCP
+            - name: syslog-udp
+              containerPort: 5514
+              protocol: UDP
+            - name: syslog-tcp
+              containerPort: 5514
+              protocol: TCP
+            - name: api
+              containerPort: 8686
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: api
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: api
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              # Headroom for the in-memory buffers while Loki is down.
+              memory: 512Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/vector
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/vector
+      volumes:
+        - name: config
+          configMap:
+            name: log-receiver
+        - name: data
+          emptyDir: {}

@@ -1,0 +1,35 @@
+---
+# The LAN address for logs pushed at the cluster (moved here from the alloy
+# app's alloy-syslog Service on 2026-11-13; it was never wired to a device).
+#   - Talos nodes:      tcp://10.77.20.64:6050  (machine.logging + KmsgLogConfig)
+#   - Network devices:  10.77.20.64:514, UDP or TCP, RFC3164 or RFC5424
+# externalTrafficPolicy Local keeps the device's source IP. Talos nodes reach
+# the IP from the host network, where Cilium's socket LB picks any backend, so
+# a node that is shutting down can still reach a receiver on another node.
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-receiver
+  namespace: logging
+  labels:
+    app: log-receiver
+  annotations:
+    lbipam.cilium.io/ips: "10.77.20.64"
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  selector:
+    app: log-receiver
+  ports:
+    - name: talos
+      port: 6050
+      targetPort: talos
+      protocol: TCP
+    - name: syslog-udp
+      port: 514
+      targetPort: syslog-udp
+      protocol: UDP
+    - name: syslog-tcp
+      port: 514
+      targetPort: syslog-tcp
+      protocol: TCP

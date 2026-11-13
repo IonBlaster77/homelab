@@ -14,11 +14,6 @@ alloy:
           fieldPath: spec.nodeName
   mounts:
     varlog: true
-  extraPorts:
-    - name: syslog
-      port: 1514
-      targetPort: 1514
-      protocol: TCP
   resources:
     requests:
       cpu: 50m
@@ -95,15 +90,8 @@ alloy:
         forward_to = [loki.write.default.receiver]
       }
 
-      // ================= syslog from network devices (RFC5424 over TCP) =================
-      loki.source.syslog "network" {
-        listener {
-          address  = "0.0.0.0:1514"
-          protocol = "tcp"
-          labels   = { job = "syslog", source = "network" }
-        }
-        forward_to = [loki.write.default.receiver]
-      }
+      // Syslog from network devices and Talos machine/kernel logs are received
+      // by the log-receiver app (Vector, 10.77.20.64), not here.
 
       // ================= write to Loki =================
       loki.write "default" {
