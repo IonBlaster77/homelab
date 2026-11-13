@@ -11,7 +11,7 @@ container (which holds its API keys).
 | **URL** | None. Hermes connects over SSH to `research-worker.research-worker.svc:22` |
 | **Image** | `alpine` (stock; tools are installed at every start by `configmap.yaml`'s entrypoint) |
 | **Namespace** | `research-worker` (PSA `baseline`; see Gotchas) |
-| **Storage** | `research-worker-workspace`, 10Gi Longhorn RWO: workspace, SSH host keys, apk cache, Python venv, npm prefix |
+| **Storage** | `research-worker-workspace`, 20Gi Longhorn RWO (was 10Gi until 2026-11-13: hit 98.6%, mostly /workspace/opt-data): workspace, SSH host keys, apk cache, Python venv, npm prefix |
 | **Depends on** | Longhorn, the sops-kustomize plugin. Used by Hermes |
 
 ## Files
