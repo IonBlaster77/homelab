@@ -42,7 +42,12 @@ Lines are stored as the full JSON event, so `| json` exposes every Talos field
   Cilium's socket LB picks any backend, so its last lines can land on a
   receiver on another node.
 - **Kernel lines carry no node name.** The node label comes from the sender's
-  IP (`talos_shape` in `configmap.yaml`). Add new nodes to that map.
+  IP (`talos_shape` in `configmap.yaml`): the node's LAN IP, or its
+  CiliumInternalIP when the connection lands on a receiver on another node.
+  Add both for new nodes (`kubectl get ciliumnodes`).
+- **First connection replays the node's in-RAM log back to boot.** Loki
+  rejects lines more than ~1 h older than the newest in their stream, so part
+  of that backlog is dropped once (Vector logs a 400). Live lines are fine.
 - **Config changes need a pod roll:** bump `homelab/config-rev` in
   `deployment.yaml` alongside any `configmap.yaml` change.
 - **Network devices are not configured yet.** Point each at `10.77.20.64:514`
