@@ -19,7 +19,7 @@ spec:
       annotations:
         # Bump to roll the pods after a configmap.yaml change (Vector has no
         # config watch enabled here).
-        homelab/config-rev: "1"
+        homelab/config-rev: "2"
     spec:
       priorityClassName: homelab-critical
       affinity:
