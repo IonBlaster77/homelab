@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: streamystats
-          image: ghcr.io/fredrikburmester/streamystats-nextjs:v2.22.2
+          image: ghcr.io/fredrikburmester/streamystats-nextjs:v2.22.3
           ports:
             - name: http
               containerPort: 3000
