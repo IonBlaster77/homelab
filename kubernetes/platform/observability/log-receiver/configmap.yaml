@@ -65,6 +65,13 @@ data:
           .level = string(."talos-level") ?? "unknown"
           .timestamp = parse_timestamp(string(."talos-time") ?? "", format: "%+") ?? now()
 
+      # Talos' auditd streams every audited syscall (mostly cilium-agent):
+      # ~3k lines/min on talos1 alone, and not what this pipeline is for.
+      talos_filter:
+        type: filter
+        inputs: [talos_shape]
+        condition: .service != "auditd"
+
       syslog_shape:
         type: remap
         inputs: [syslog_udp, syslog_tcp]
@@ -81,7 +88,7 @@ data:
     sinks:
       loki_talos:
         type: loki
-        inputs: [talos_shape]
+        inputs: [talos_filter]
         endpoint: http://loki.logging.svc.cluster.local:3100
         encoding:
           codec: json
