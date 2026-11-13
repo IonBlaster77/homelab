@@ -1,8 +1,8 @@
 # Grafana Alloy: the log collector. A DaemonSet that tails every node's pod
-# logs (CRI format), ships Kubernetes events, and listens for RFC5424 syslog
-# on :1514 (exposed on standard :514 by service-syslog.yaml). All -> Loki.
-# The upstream chart plus this folder (logging namespace, syslog
-# LoadBalancer) in one app. See README.md.
+# logs (CRI format) and ships Kubernetes events. All -> Loki. Pushed logs
+# (syslog, Talos) go to the log-receiver app instead.
+# The upstream chart plus this folder (logging namespace) in one app.
+# See README.md.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

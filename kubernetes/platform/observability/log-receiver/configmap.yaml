@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-receiver
+  namespace: logging
+  labels:
+    app: log-receiver
+data:
+  vector.yaml: |
+    # Vector config. Validate locally with:
+    #   vector validate --no-environment vector.yaml
+    data_dir: /var/lib/vector
+
+    api:
+      enabled: true
+      address: 0.0.0.0:8686
+
+    sources:
+      # Talos machine logs (machine.logging.destinations, json_lines) and kernel
+      # logs (KmsgLogConfig), both over TCP, one JSON object per line.
+      # Vector puts the sender's IP in .host (the default), which is how kernel
+      # lines (they carry no node name) get their node label.
+      talos:
+        type: socket
+        mode: tcp
+        address: 0.0.0.0:6050
+        framing:
+          method: newline_delimited
+          newline_delimited:
+            max_length: 1048576
+        decoding:
+          codec: json
+
+      # Network devices (MikroTik, Dell, UniFi): RFC3164 or RFC5424, UDP or TCP.
+      # The Service exposes these on the standard port 514.
+      syslog_udp:
+        type: syslog
+        mode: udp
+        address: 0.0.0.0:5514
+      syslog_tcp:
+        type: syslog
+        mode: tcp
+        address: 0.0.0.0:5514
+
+    transforms:
+      talos_shape:
+        type: remap
+        inputs: [talos]
+        source: |
+          ip = string(.host) ?? ""
+          by_ip = if ip == "10.77.20.11" {
+            "talos1"
+          } else if ip == "10.77.20.12" {
+            "talos2"
+          } else if ip == "10.77.20.13" {
+            "talos3"
+          } else if ip == "10.77.20.14" {
+            "talos4"
+          } else {
+            ip
+          }
+          # Service logs carry node via extraTags; kernel lines don't.
+          .node = string(.node) ?? by_ip
+          # Kernel (kmsg) lines have no talos-service field.
+          .service = string(."talos-service") ?? "kernel"
+          .level = string(."talos-level") ?? "unknown"
+          .timestamp = parse_timestamp(string(."talos-time") ?? "", format: "%+") ?? now()
+
+      syslog_shape:
+        type: remap
+        inputs: [syslog_udp, syslog_tcp]
+        source: |
+          .hostname = string(.hostname) ?? string(.host) ?? "unknown"
+          .appname = string(.appname) ?? "unknown"
+          .severity = string(.severity) ?? "unknown"
+
+    sinks:
+      loki_talos:
+        type: loki
+        inputs: [talos_shape]
+        endpoint: http://loki.logging.svc.cluster.local:3100
+        encoding:
+          codec: json
+        labels:
+          job: talos
+          node: "{{ node }}"
+          service: "{{ service }}"
+        # Loki may be the thing that just died with a node: hold up to 100k
+        # events in memory and keep retrying until it is back.
+        buffer:
+          type: memory
+          max_events: 100000
+          when_full: drop_newest
+        request:
+          retry_attempts: 1000000
+
+      loki_syslog:
+        type: loki
+        inputs: [syslog_shape]
+        endpoint: http://loki.logging.svc.cluster.local:3100
+        encoding:
+          codec: json
+        labels:
+          job: syslog
+          source: network
+          hostname: "{{ hostname }}"
+          appname: "{{ appname }}"
+        buffer:
+          type: memory
+          max_events: 100000
+          when_full: drop_newest
+        request:
+          retry_attempts: 1000000
