@@ -11,7 +11,7 @@ metadata:
 spec:
   instances: 2
   # Pinned here so Renovate tracks it, same image as the other clusters.
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-system-trixie
   # OOM protection (docs/projects/oom-protection.md): memory request = limit,
   # a CPU request and no CPU limit. First sizing; revisit after real use.
   priorityClassName: homelab-critical
