@@ -73,6 +73,11 @@ data:
           .hostname = string(.hostname) ?? string(.host) ?? "unknown"
           .appname = string(.appname) ?? "unknown"
           .severity = string(.severity) ?? "unknown"
+          # RFC3164 (what MikroTik and most switches send) has no timezone or
+          # year, so a device on ACDT reads as 10.5 h in the future and Loki
+          # rejects it (400). Index by receive time; keep the device's own.
+          .device_timestamp = .timestamp
+          .timestamp = now()
 
     sinks:
       loki_talos:
