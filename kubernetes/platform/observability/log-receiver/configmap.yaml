@@ -47,18 +47,17 @@ data:
         type: remap
         inputs: [talos]
         source: |
-          ip = string(.host) ?? ""
-          by_ip = if ip == "10.77.20.11" {
-            "talos1"
-          } else if ip == "10.77.20.12" {
-            "talos2"
-          } else if ip == "10.77.20.13" {
-            "talos3"
-          } else if ip == "10.77.20.14" {
-            "talos4"
-          } else {
-            ip
+          # Sender IP -> node. A node reaching a receiver on its own node shows
+          # its LAN IP; one routed to a receiver on another node shows its
+          # CiliumInternalIP (kubectl get ciliumnodes). Add both for new nodes.
+          nodes = {
+            "10.77.20.11": "talos1", "10.0.11.149": "talos1",
+            "10.77.20.12": "talos2", "10.0.9.13": "talos2",
+            "10.77.20.13": "talos3", "10.0.8.215": "talos3",
+            "10.77.20.14": "talos4", "10.0.10.37": "talos4"
           }
+          ip = string(.host) ?? ""
+          by_ip = string(get(nodes, [ip]) ?? null) ?? ip
           # Service logs carry node via extraTags; kernel lines don't.
           .node = string(.node) ?? by_ip
           # Kernel (kmsg) lines have no talos-service field.

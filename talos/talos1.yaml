@@ -5,6 +5,16 @@ debug: false
 persist: true
 # Provides machine specific configuration options.
 machine:
+    # Ship Talos service logs (machined, apid, kubelet, etcd, ...) off-node
+    # as they happen, to the log-receiver app (Vector) in the cluster. Added
+    # 2026-11-13 after talos3+talos4 shut down and the trigger was lost with
+    # the in-RAM logs. Kernel logs: the KmsgLogConfig document at the end.
+    logging:
+        destinations:
+            - endpoint: tcp://10.77.20.64:6050/
+              format: json_lines
+              extraTags:
+                node: talos1
     # Defines the role of the machine within the cluster.
     type: controlplane
     # The `token` is used by a machine to join the PKI of the cluster.
@@ -440,8 +450,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -462,8 +472,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -483,8 +493,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -505,8 +515,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -527,8 +537,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -549,8 +559,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -571,8 +581,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -593,8 +603,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -615,8 +625,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -637,8 +647,8 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -659,7 +669,28 @@ sops:
             bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
             iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-08T04:49:56Z"
-    mac: ENC[AES256_GCM,data:pwRNbnjlzIfkpurkIkjDicsdFjop0DupPdO2TllcSdjYsDTjcSCghlx9/1UwiyVCXGMffTLvw/+l/cpkVVgjOk5DqmtZEc2VQjFxEQBJE691ONNlHbcUctxyVA9yJmEzckq6Y6O4cJ6MNLeG3BlHSIILXelpG2m1HqGLocX2gAA=,iv:KT6HXDkSAigJjhA20+k6RgVJq6SH61pLMVuV2Cq0YF8=,tag:Mm1QBi98OwtPKSEAYVWhQA==,type:str]
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
+    encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
+    version: 3.12.1
+---
+# Kernel log (kmsg) to the same receiver; it maps the sender IP to the node.
+apiVersion: v1alpha1
+kind: KmsgLogConfig
+name: remote-log
+url: tcp://10.77.20.64:6050/
+sops:
+    age:
+        - recipient: age1kutgmk5ml0lwf4u53h9um8nfdtjdzgftalpxwlwt2zt63h5l450qeyp7zm
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSArRWk2WnBDRmtvSG5XVUF1
+            OCtFaWg1NmFIY1liZFIyRmJJWEh2dnZRL0h3Cm5wOFFQSlVBRE5EcENnRGhac2h1
+            KzFURmV3YlkzSnhPUy9ENkhNZkRaR3cKLS0tIHFDZ2ZTVTUyTFNDZjUxTWtIWHR0
+            bk04ODhlN1JRUUtMNll4cmQ2TDZQRHcKQIY5VThGJ+bf9ZOx5kkz+nNSgbE/elxH
+            iVlb2TtsPT1Bjcp8+rCK6se20/jP/7X74hMTb60Ghyx2LeHVBR+NFg==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-11-13T12:14:18Z"
+    mac: ENC[AES256_GCM,data:Vhex7PtNjBGM8qx5rV75pxSGLnO58xBLu3uyuR4NSW6WT8q+XrN6lAOYyyVeI5nP3cgRVNlaJJ+cEXyTLTQYiVUqEjCwAj1ZQyVoHDHsomNWjvMLPIS4qcurzHlhxvrYaYswlp+89iOCh3j4u4WyzitzadJccYa6tkgzEMinr80=,iv:KG6o7qXSIaXhKWTjW0rwAKr7WUMHwvR66atAnVhFeqY=,tag:OdAiFAQ2SJusytXA5jylVA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
