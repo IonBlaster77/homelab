@@ -38,6 +38,17 @@ Web.
 | `secret-matrix-alertbot.sops.yaml` | `@alertbot`'s access token and the bridge's webhook password (SOPS/age) |
 | `configmap-alertmanager-receiver.yaml` | Alert bridge config: room mapping (`alerts-critical`, `alerts-warning`) |
 | `deployment-alertmanager-receiver.yaml`, `service-alertmanager-receiver.yaml` | The alert bridge ([matrix-alertmanager-receiver](https://github.com/metio/matrix-alertmanager-receiver)), posting as `@alertbot` |
+| `podmonitor-alertmanager-receiver.yaml` | Scrapes the bridge's send counters for `MatrixAlertDeliveryFailing` / `MatrixAlertBridgeDown` |
+
+**The bridge loses alerts silently.** It posts one Matrix message per alert,
+logs and drops any failed send, and still answers Alertmanager 200, so
+Alertmanager never retries and never counts a failure. Synapse's default
+per-user rate limit (0.2 msg/s, burst 10) used to drop everything past the
+10th alert of a webhook (2026-11-12..14, mostly Trivy bursts). Two guards:
+a raised `rc_message` in `values.yaml`, and `MatrixAlertDeliveryFailing`
+on `matrix_alertmanager_receiver_send_failure_total`. Keep Alertmanager
+routes that can carry many alerts on `group_by: ["..."]` so a group change
+doesn't re-send all of them.
 
 ## Rooms
 

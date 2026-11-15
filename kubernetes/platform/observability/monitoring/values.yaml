@@ -314,17 +314,22 @@ alertmanager:
         # to #alerts-critical; every vulnerability alert, Criticals included,
         # goes to #alerts-vulnerabilities. They resolve by themselves within
         # 6h, so repeat_interval 24h means one message each.
+        # group_by "..." = every alert is its own group. With ["alertname"]
+        # any new finding re-sent the WHOLE group (up to ~265 alerts, one
+        # Matrix message each) every 15m, which blew Synapse's rate limit and
+        # lost alerts (the bridge drops 429s silently). Now each finding is
+        # sent once, when it first fires.
         - matchers:
             - alertname="TrivyNewCriticalFixable"
           receiver: matrix-critical-vulnerabilities
-          group_by: ["alertname"]
+          group_by: ["..."]
           group_wait: 2m
           group_interval: 15m
           repeat_interval: 24h
         - matchers:
             - category="vulnerability"
           receiver: matrix-vulnerabilities
-          group_by: ["alertname"]
+          group_by: ["..."]
           group_wait: 2m
           group_interval: 15m
           repeat_interval: 24h
