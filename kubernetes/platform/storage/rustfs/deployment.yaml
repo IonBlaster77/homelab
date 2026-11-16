@@ -38,7 +38,7 @@ spec:
           # Pinned by digest (the MinIO lesson: an upstream image that stops
           # being published must not strand the backups). Pulled through
           # Harbor's dockerhub proxy cache by the Talos registry mirror.
-          image: docker.io/rustfs/rustfs:1.0.5@sha256:ecbf4480ae142703b50e5fe7e73c2c3472a270fa73d26ff62419bbc8929679c4
+          image: docker.io/rustfs/rustfs:1.0.6@sha256:0dff1515b3c52b5ce8c5df2263420c7f93ae1c5d07cca79e19e57cff86b84c85
           args: ["/data"]
           env:
             - name: RUSTFS_ADDRESS
