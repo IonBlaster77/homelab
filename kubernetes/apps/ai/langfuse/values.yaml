@@ -8,7 +8,7 @@ langfuse:
   web:
     image:
       repository: docker.io/langfuse/langfuse
-      tag: "4.80.0@sha256:8e39640475efebf85e7d19f8e036046049a800fb0dd7fe826c216fe0cbe5c7cb"
+      tag: "4.83.0@sha256:8e9bfe41c20fedcdcafb92599fdef4e7d4c3e6722e9f58238f41b66721150b1e"
     resources:
       requests:
         cpu: 150m
@@ -50,7 +50,7 @@ langfuse:
   worker:
     image:
       repository: docker.io/langfuse/langfuse-worker
-      tag: "4.80.0@sha256:86c2d68fee500b4e6a1f788cde37a5aceb48eb490aef4d3ca57266093d796d51"
+      tag: "4.83.0@sha256:53f0d57e865855753018bee97362e96294cdcfd5e2330031df6cb377528b6370"
     resources:
       requests:
         cpu: 150m
