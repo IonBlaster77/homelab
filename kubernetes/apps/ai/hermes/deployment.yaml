@@ -214,7 +214,7 @@ spec:
         # simply no-ops (it fails open without its SDK or keys).
         # Bump LANGFUSE_SDK with the plugin's pyproject pin.
         - name: install-langfuse-plugin
-          image: nousresearch/hermes-agent:v0.23.1@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08
+          image: nousresearch/hermes-agent:v0.23.3@sha256:3e9fe4c6ef36490f43aa0d0d80f9df64e9c92a576eee3042f1a97c8813c05355
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -293,7 +293,7 @@ spec:
         # reads this copy (checked 2026-11-07). Copying them cost ~1 min per
         # start, twice: here and in the webui's own staging rsync.
         - name: share-agent-src
-          image: nousresearch/hermes-agent:v0.23.1@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08
+          image: nousresearch/hermes-agent:v0.23.3@sha256:3e9fe4c6ef36490f43aa0d0d80f9df64e9c92a576eee3042f1a97c8813c05355
           command:
             - sh
             - -c
@@ -308,7 +308,7 @@ spec:
         # with every webui/agent bump; past 3 GiB (of 4Gi) start it clean
         # rather than let a full disk fail the install and the webui.
         - name: trim-webui-uv-cache
-          image: nousresearch/hermes-agent:v0.23.1@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08
+          image: nousresearch/hermes-agent:v0.23.3@sha256:3e9fe4c6ef36490f43aa0d0d80f9df64e9c92a576eee3042f1a97c8813c05355
           command:
             - sh
             - -c
@@ -367,7 +367,7 @@ spec:
 
       containers:
         - name: hermes-agent
-          image: nousresearch/hermes-agent:v0.23.1@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08
+          image: nousresearch/hermes-agent:v0.23.3@sha256:3e9fe4c6ef36490f43aa0d0d80f9df64e9c92a576eee3042f1a97c8813c05355
           imagePullPolicy: IfNotPresent
           args: ["gateway", "run"]
           envFrom:
