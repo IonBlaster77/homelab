@@ -32,7 +32,7 @@ spec:
       priorityClassName: homelab-critical
       containers:
         - name: adguard
-          image: adguard/adguardhome:v0.107.80
+          image: adguard/adguardhome:v1.0.0
           args:
             - --config
             - /opt/adguardhome/conf/AdGuardHome.yaml
