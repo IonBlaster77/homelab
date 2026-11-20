@@ -8,7 +8,7 @@ finds every other app's `app.yaml`.
 | | |
 |---|---|
 | **URL** | https://argocd.jupitertech.net (via the Gateway) and http://10.77.20.50 (LAN LoadBalancer) |
-| **Chart** | Upstream `argo-cd` **10.17.2** (Argo CD v3.6.1, Helm 4; chart NetworkPolicies on), vendored in `chart/charts/` inside an umbrella chart |
+| **Chart** | Upstream `argo-cd` **10.18.2** (Argo CD v3.6.2, Helm 4; chart NetworkPolicies on), vendored in `chart/charts/` inside an umbrella chart |
 | **Namespace** | `argocd` (Helm release `argocd`, installed at bootstrap and adopted) |
 | **Sync** | **Manual.** Nothing here changes until someone syncs this app |
 | **Depends on** | Cilium, the Gateway; the SOPS plugin sidecar is configured in `bootstrap/` |
