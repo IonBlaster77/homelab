@@ -42,6 +42,8 @@ resources:
   - deployment-mikrotik-exporter.yaml
   - service-mikrotik-exporter.yaml
   - servicemonitor-mikrotik-exporter.yaml
+  # RouterOS patch tracker for the router + aggregation switch (Patch Ops cards)
+  - routeros-patch-check
   # UniFi poller
   - secret-unifi-poller.sops.yaml
   - deployment-unifi-poller.yaml

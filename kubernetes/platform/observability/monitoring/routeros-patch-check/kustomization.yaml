@@ -1,0 +1,28 @@
+# RouterOS patch tracker: installed vs latest RouterOS, RouterBOARD firmware
+# drift and pending security fixes for the MikroTik router (Juno, 10.77.10.1)
+# and the CRS317 aggregation switch (10.77.10.2). Feeds the "Device Firmware"
+# cards on Homepage's Patch Ops tab and the RouterOS alerts. See check.py's
+# docstring for the metrics.
+#
+# Logins (both read-only RouterOS API users):
+#   router: reuses the mikrotik-exporter's config (secret-mikrotik-exporter.sops.yaml)
+#   switch: patchops-monitor in group "monitor" (read,api only, address-limited
+#           to the pod network and the server VLAN) - secret-switch-api.sops.yaml
+#
+# No CiliumNetworkPolicy, matching the rest of the monitoring namespace (the
+# image-update-exporter also calls out to the internet without one). Needs:
+# DNS, upgrade.mikrotik.com:443, and TCP 8728 to both devices. The router's
+# forward rule that lets 10.77.20.x / pods reach 10.77.10.2:8728 is today's
+# broad 10.0.0.0/8 rule - narrowing that later needs an explicit allow for it.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - secret-switch-api.sops.yaml
+  - deployment.yaml
+  - prometheusrule.yaml
+configMapGenerator:
+  # The hash suffix rolls the pod whenever check.py changes.
+  - name: routeros-patch-check
+    namespace: monitoring
+    files:
+      - check.py

@@ -321,6 +321,15 @@ alertmanager:
           group_wait: 2m
           group_interval: 15m
           repeat_interval: 24h
+        # Pending RouterOS security updates (routeros-patch-check/) stay firing
+        # until the device is patched, so remind weekly rather than daily.
+        - matchers:
+            - alertname="RouterOSSecurityUpdatePending"
+          receiver: matrix-vulnerabilities
+          group_by: ["alertname", "device"]
+          group_wait: 2m
+          group_interval: 15m
+          repeat_interval: 168h
         - matchers:
             - category="vulnerability"
           receiver: matrix-vulnerabilities
