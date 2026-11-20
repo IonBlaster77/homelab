@@ -29,8 +29,19 @@ spec:
         # pod, tag and digest are dropped on purpose: a rollout or a tag bump
         # that doesn't fix a CVE must not make it "new" again. A changed
         # fixed_version (an unfixed High gaining a fix) does count as new.
+        #
+        # Reports of ReplicaSets scaled to 0 are left out. After a rollout the
+        # old ReplicaSet (kept for rollback history) keeps its report until
+        # scannerReportTTL (24h) expires, so CVEs the update fixed stayed on
+        # the Homepage cards for a day. Workloads you scale to 0 on purpose
+        # drop out too: they aren't running anything.
         - record: trivy:vulnerability:present
-          expr: max by (image_registry, image_repository, vuln_id, resource, severity, fixed_version) (trivy_vulnerability_id)
+          expr: |
+            max by (image_registry, image_repository, vuln_id, resource, severity, fixed_version) (
+              trivy_vulnerability_id
+                unless on (namespace, resource_name)
+              label_replace(kube_replicaset_spec_replicas == 0, "resource_name", "$1", "replicaset", "(.*)")
+            )
         - record: trivy:vulnerability:new
           expr: |
             trivy:vulnerability:present
@@ -43,10 +54,31 @@ spec:
         # neither.
         - record: trivy:image_fixable_high:count
           expr: count by (image_registry, image_repository) (trivy:vulnerability:present{severity=~"Critical|High", fixed_version!=""})
+        # Only tags still running count (same ReplicaSet rule as above), so a
+        # bumped-away tag stops marking its image "behind" right away instead
+        # of at the exporter's next registry check. Trivy sometimes sends the
+        # tag as a full reference (docker.io/x/y:1.2.3); the exporter strips
+        # it to 1.2.3, so strip it here too before matching.
         - record: image:update_available:max
-          expr: max by (image_registry, image_repository) (image_update_available)
+          expr: |
+            max by (image_registry, image_repository) (
+              image_update_available
+                and on (image_registry, image_repository, image_tag)
+              group by (image_registry, image_repository, image_tag) (
+                label_replace(
+                  trivy_image_vulnerabilities
+                    unless on (namespace, resource_name)
+                  label_replace(kube_replicaset_spec_replicas == 0, "resource_name", "$1", "replicaset", "(.*)"),
+                  "image_tag", "$1", "image_tag", ".*:(.*)")
+              )
+            )
         - record: trivy:exposedsecrets:present
-          expr: max by (image_registry, image_repository, severity) (trivy_image_exposedsecrets) > 0
+          expr: |
+            max by (image_registry, image_repository, severity) (
+              trivy_image_exposedsecrets
+                unless on (namespace, resource_name)
+              label_replace(kube_replicaset_spec_replicas == 0, "resource_name", "$1", "replicaset", "(.*)")
+            ) > 0
 
     - name: trivy-alerts
       interval: 2m

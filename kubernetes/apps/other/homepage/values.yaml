@@ -1072,7 +1072,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Critical%7CHigh%22%2Cfixed_version!%3D%22%22%7D)%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Findings
@@ -1087,7 +1087,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Aimage_fixable_high%3Acount%20and%20on%20(image_registry%2C%20image_repository)%20(image%3Aupdate_available%3Amax%20%3D%3D%201))%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Images
@@ -1100,7 +1100,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Aimage_fixable_high%3Acount%20and%20on%20(image_registry%2C%20image_repository)%20(image%3Aupdate_available%3Amax%20%3D%3D%200))%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Images
@@ -1113,7 +1113,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Critical%7CHigh%22%2Cfixed_version%3D%22%22%7D)%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Findings
@@ -1126,7 +1126,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%7Bseverity%3D~%22Medium%7CLow%7CUnknown%22%7D)%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Findings
@@ -1139,7 +1139,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(trivy%3Avulnerability%3Apresent%20unless%20on%20(image_registry%2C%20image_repository%2C%20vuln_id%2C%20resource%2C%20severity%2C%20fixed_version)%20trivy%3Avulnerability%3Apresent%20offset%207d)%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Findings
@@ -1152,7 +1152,7 @@ config:
             widget:
               type: customapi
               url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=count(count%20by%20(image_registry%2C%20image_repository)%20(trivy%3Aexposedsecrets%3Apresent))%20or%20vector(0)"
-              refreshInterval: 600000
+              refreshInterval: 120000
               mappings:
                 - field: data.result.0.value.1
                   label: Images

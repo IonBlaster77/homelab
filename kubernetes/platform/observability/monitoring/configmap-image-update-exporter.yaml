@@ -29,7 +29,20 @@ data:
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
     PROM = "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090"
-    INTERVAL = 6 * 3600   # registries are slow-moving and Docker Hub rate-limits
+    # Every INTERVAL the running images are re-read from Prometheus, so a
+    # rollout shows up within minutes. A registry's tag list is only fetched
+    # again after TAGS_TTL (registries are slow-moving and Docker Hub
+    # rate-limits), or sooner when a running tag isn't in the cached list
+    # (just deployed, so the list predates it).
+    INTERVAL = 10 * 60
+    TAGS_TTL = 6 * 3600
+    MISS_RETRY = 3600
+    # Same rule as the trivy:vulnerability:present recording rule: skip
+    # reports of ReplicaSets scaled to 0 (old rollout revisions).
+    RUNNING = ('count by (image_registry, image_repository, image_tag) ('
+               'trivy_image_vulnerabilities unless on (namespace, resource_name) '
+               'label_replace(kube_replicaset_spec_replicas == 0, "resource_name", "$1", "replicaset", "(.*)"))')
+    tag_cache = {}   # (registry, repo) -> (fetched_at, tags)
     # Trivy's registry label -> where to list tags. mirror.gcr.io and the ECR
     # Docker Hub mirror carry Docker Hub repos; lscr.io is GHCR underneath.
     HOSTS = {
@@ -93,7 +106,7 @@ data:
 
     def run():
         url = PROM + "/api/v1/query?" + urllib.parse.urlencode(
-            {"query": "count by (image_registry, image_repository, image_tag) (trivy_image_vulnerabilities)"})
+            {"query": RUNNING})
         with urllib.request.urlopen(url, timeout=60) as r:
             result = json.load(r)["data"]["result"]
         images = {}
@@ -110,12 +123,25 @@ data:
               "# TYPE image_update_check_success gauge"]
         for (reg, repo), running in sorted(images.items()):
             lbl = f'image_registry="{esc(reg)}",image_repository="{esc(repo)}"'
-            try:
-                tags = list_tags(reg, repo)
-            except Exception as e:
-                print(f"{reg}/{repo}: {e}", flush=True)
-                ok.append(f"image_update_check_success{{{lbl}}} 0")
-                continue
+            now = time.time()
+            cached = tag_cache.get((reg, repo))
+            age = now - cached[0] if cached else None
+            # A tag that never shows up in the list (an odd tag format) must
+            # not refetch every 10 minutes, so a miss refetches at most hourly.
+            missing = cached and any(t not in cached[1] for t in running)
+            if cached is None or age >= TAGS_TTL or (missing and age >= MISS_RETRY):
+                try:
+                    tags = list_tags(reg, repo)
+                    tag_cache[(reg, repo)] = (now, tags)
+                    time.sleep(1)  # be gentle with Docker Hub
+                except Exception as e:
+                    print(f"{reg}/{repo}: {e}", flush=True)
+                    if cached is None:
+                        ok.append(f"image_update_check_success{{{lbl}}} 0")
+                        continue
+                    tags = cached[1]  # keep answering from the last good list
+            else:
+                tags = cached[1]
             good = False
             for tag in sorted(running):
                 best = newest(tag, tags)
@@ -125,7 +151,6 @@ data:
                 val = 1 if nums(best) > nums(tag) else 0
                 out.append(f'image_update_available{{{lbl},image_tag="{esc(tag)}",latest_tag="{esc(best)}"}} {val}')
             ok.append(f"image_update_check_success{{{lbl}}} {1 if good else 0}")
-            time.sleep(1)  # be gentle with Docker Hub
         out += ok
         out += ["# TYPE image_update_last_run_timestamp_seconds gauge",
                 f"image_update_last_run_timestamp_seconds {time.time():.0f}"]

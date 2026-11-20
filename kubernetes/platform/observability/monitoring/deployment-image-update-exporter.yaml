@@ -20,7 +20,7 @@ spec:
       annotations:
         # The script is read once at start; bump this when the ConfigMap
         # changes so the pod rolls.
-        monitoring/image-update-exporter-rev: "2026-11-08"
+        monitoring/image-update-exporter-rev: "2026-11-21"
     spec:
       automountServiceAccountToken: false
       securityContext:
