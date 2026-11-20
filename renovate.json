@@ -9,7 +9,9 @@
     "bootstrap/**",
     "kubernetes/**/chart/charts/**"
   ],
-  "prConcurrentLimit": 15,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "branchConcurrentLimit": 0,
   "kubernetes": {
     "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
   },
