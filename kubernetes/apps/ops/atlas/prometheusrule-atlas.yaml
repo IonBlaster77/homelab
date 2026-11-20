@@ -1,0 +1,33 @@
+# Atlas' own health. A stopped collector leaves a gap in the findings history
+# that can't be filled later, so say so within the hour.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: atlas
+  namespace: atlas
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: atlas
+      rules:
+        - alert: AtlasCollectorStale
+          # Runs every 10 min; 45 min = several missed runs in a row.
+          expr: time() - atlas_collector_last_success_timestamp_seconds > 2700
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Atlas collector: no successful run for {{ $value | humanizeDuration }}"
+            description: >-
+              The vulnerability history in atlas-db isn't being updated. Check
+              `kubectl -n atlas logs deploy/atlas-collector` and the last rows
+              of the collector_runs table (error column).
+        - alert: AtlasCollectorDown
+          expr: absent(up{job="atlas/atlas-collector"} == 1)
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Atlas collector is not running or not scraped"
+            description: "No healthy atlas-collector target for 15 minutes. Check the atlas Argo CD app and the pod."

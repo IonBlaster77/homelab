@@ -1,0 +1,45 @@
+# Atlas' Postgres: vulnerability findings, their history and raw Trivy
+# reports now; the asset inventory and risk register later. CloudNativePG
+# generates the app credentials into atlas-db-app (username, password, uri);
+# the collector reads `uri` as DATABASE_URL and applies its own migrations
+# (services/atlas/src/db/migrations).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: atlas-db
+  namespace: atlas
+spec:
+  instances: 2
+  # Pinned here so Renovate tracks it (see cluster-paperclip-db.yaml).
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-system-trixie
+  # OOM protection (docs/projects/oom-protection.md): memory request = limit
+  # so the kubelet and the Talos OOM controller leave it alone; a CPU request
+  # but no CPU limit. Not sized from history yet (new cluster): the working
+  # set is ~60 MB of data. Revisit after 30 days.
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 512Mi
+  primaryUpdateMethod: switchover
+  storage:
+    # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
+    storageClass: longhorn-nvme
+    # ~60 MB at the start (measured on a copy of the live reports,
+    # 2026-11-21); raw reports grow only when a rescan finds something new.
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: atlas
+      owner: atlas
+  # Point-in-time recovery from day one: the Barman Cloud plugin archives every
+  # WAL segment and stores base backups in RustFS (s3://cnpg/atlas-db/, see
+  # objectstore-atlas-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: atlas-db-backup
+        serverName: atlas-db

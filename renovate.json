@@ -32,6 +32,11 @@
   ],
   "packageRules": [
     {
+      "description": "Images we build ourselves (services/*, pushed to Harbor by the build-image workflow) are tagged with the git commit that built them. Harbor is LAN-only, so Renovate can't look them up; whoever builds a new image updates the tag.",
+      "matchPackageNames": ["registry.jupitertech.net/**"],
+      "enabled": false
+    },
+    {
       "description": "All CNPG Postgres clusters run the same image, so they update together in one PR. Each cluster restarts its replica, then switches over (a few seconds' blip). Postgres majors (18 -> 19) need a dump/import or pg_upgrade, so Renovate only offers minors.",
       "matchPackageNames": ["ghcr.io/cloudnative-pg/postgresql"],
       "groupName": "cnpg postgresql",

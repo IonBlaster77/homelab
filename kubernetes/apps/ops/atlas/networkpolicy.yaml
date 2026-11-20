@@ -1,0 +1,134 @@
+---
+# Default deny all ingress and egress for the atlas namespace. (One empty
+# rule = deny-all; an empty list is rejected by Cilium. See
+# kubernetes/apps/ai/crawl4ai/networkpolicy.yaml.)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-default-deny
+  namespace: atlas
+spec:
+  endpointSelector: {}
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+# The collector to its Postgres, and Postgres replication.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-allow-intra-namespace
+  namespace: atlas
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-allow-dns
+  namespace: atlas
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# The collector reads Trivy's VulnerabilityReports and the ReplicaSets from
+# the API server, and image-update-exporter's results from Prometheus (plus
+# trivy:vulnerability:present once, for the history backfill). Prometheus'
+# container port (post-DNAT), not the Service port; they're both 9090 here.
+# Prometheus scrapes the collector's /metrics (8080).
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-collector
+  namespace: atlas
+spec:
+  endpointSelector:
+    matchLabels:
+      app: atlas-collector
+  egress:
+    - toEntities:
+        - kube-apiserver
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9090"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+---
+# atlas-db: the CloudNativePG operator manages it; its instance manager talks
+# to the Kubernetes API; the Barman Cloud sidecar uploads to RustFS;
+# Prometheus scrapes CNPG metrics.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-db-allow-cnpg
+  namespace: atlas
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: atlas-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # `kubectl cnpg status` reads each instance's /pg/status (8000) through
+    # the kube-apiserver pod proxy; without this it times out.
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP

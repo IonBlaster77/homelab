@@ -1,0 +1,16 @@
+# The collector's own metrics: last successful run, run counts, open findings
+# by severity. The AtlasCollector* alerts in prometheusrule-atlas.yaml use them.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: atlas-collector
+  namespace: atlas
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: atlas-collector
+  podMetricsEndpoints:
+    - port: http
+      interval: 60s

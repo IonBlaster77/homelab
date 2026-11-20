@@ -1,0 +1,80 @@
+# The vulnerability collector (services/atlas/src/collector). One replica:
+# every 10 minutes it records what Trivy currently reports into atlas-db.
+# On its very first start it imports two weeks of history from Prometheus.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-collector
+  namespace: atlas
+spec:
+  replicas: 1
+  # Never two at once: each run diffs against the database, and two runners
+  # would only repeat each other's work.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: atlas-collector
+  template:
+    metadata:
+      labels:
+        app: atlas-collector
+    spec:
+      serviceAccountName: atlas-collector
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: collector
+          # Built by the build-image WorkflowTemplate from services/atlas at
+          # this git commit. Harbor runs in this cluster (see the
+          # argo-workflows README for the cold-start caveat).
+          image: registry.jupitertech.net/homelab/atlas:BUILD_PENDING
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-db-app
+                  key: uri
+            - name: INTERVAL_SECONDS
+              value: "600"
+            # Trust the API server's CA for in-cluster HTTPS (k8s.ts).
+            - name: NODE_EXTRA_CA_CERTS
+              value: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            # The full report list is ~70 MB of JSON; leave headroom below
+            # the container limit so V8 collects before the kernel kills.
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=640
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            # The first start imports history, then each run takes ~30 s.
+            initialDelaySeconds: 120
+            periodSeconds: 60
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

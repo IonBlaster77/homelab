@@ -1,0 +1,26 @@
+{
+  "name": "atlas",
+  "private": true,
+  "type": "module",
+  "description": "Atlas: homelab ops, security and governance. See docs and README.md.",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "collector": "node src/collector/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.17",
+    "@types/node": "26.6.6",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
+    "typescript": "7.0.2"
+  }
+}
