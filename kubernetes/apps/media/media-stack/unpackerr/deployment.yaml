@@ -6,7 +6,7 @@ metadata:
   labels:
     app: unpackerr
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: unpackerr
