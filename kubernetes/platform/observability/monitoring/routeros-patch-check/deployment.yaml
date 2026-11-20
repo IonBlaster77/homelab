@@ -1,0 +1,110 @@
+# Same shape as image-update-exporter: stock Python, stdlib-only script from a
+# ConfigMap, metrics on /metrics, scraped by Prometheus.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: routeros-patch-check
+  namespace: monitoring
+  labels:
+    app: routeros-patch-check
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: routeros-patch-check
+  template:
+    metadata:
+      labels:
+        app: routeros-patch-check
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: check
+          image: python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928
+          command: ["python", "-I", "-u", "/script/check.py"]
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            # Device reads are cheap and MikroTik's version feeds are tiny text
+            # files; hourly means a patch shows on the card within the hour.
+            - name: INTERVAL_SECONDS
+              value: "3600"
+          ports:
+            - containerPort: 9106
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: metrics
+          # Memory request = limit (OOM protection, docs/projects/oom-protection.md).
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: script
+              mountPath: /script
+              readOnly: true
+            - name: router
+              mountPath: /secrets/router
+              readOnly: true
+            - name: switch
+              mountPath: /secrets/switch
+              readOnly: true
+      volumes:
+        - name: script
+          configMap:
+            name: routeros-patch-check
+        - name: router
+          secret:
+            secretName: mikrotik-exporter-config
+            items:
+              - key: config.yaml
+                path: config.yaml
+        - name: switch
+          secret:
+            secretName: routeros-patch-check-switch
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: routeros-patch-check
+  namespace: monitoring
+  labels:
+    app: routeros-patch-check
+spec:
+  selector:
+    app: routeros-patch-check
+  ports:
+    - port: 9106
+      targetPort: 9106
+      name: metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: routeros-patch-check
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: routeros-patch-check
+  endpoints:
+    - port: metrics
+      # Under Prometheus' 5m lookback so the series never go stale between
+      # scrapes (values only change hourly).
+      interval: 2m

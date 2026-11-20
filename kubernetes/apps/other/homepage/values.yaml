@@ -1012,15 +1012,48 @@ config:
             # round-trip. Needs the aggregator (task #21/#31).
             description: Firmware needs authenticated API — see task #21
             icon: mdi-alert-circle-outline
-        - MikroTik RouterOS:
-            id: routeros-pending-card
-            # Placeholder, not a live card. RouterOS versions need
-            # either SSH (blocked - task #26, the router key import has
-            # never worked) or the REST API; the mikrotik exporter
-            # feeding Prometheus has no version collector (confirmed
-            # 2026-08-15: only cpu/memory/interface/route/uptime).
-            description: Version check blocked — see task #26
-            icon: mdi-alert-circle-outline
+        # MikroTik router + aggregation switch, from routeros-patch-check
+        # (kubernetes/platform/observability/monitoring/routeros-patch-check):
+        # installed vs newest RouterOS on the device's channel, whether the
+        # releases in between announce CVEs/security fixes, and RouterBOARD
+        # firmware drift (RouterOS upgraded but the firmware reboot skipped).
+        # All display strings are labels on routeros_patch_info.
+        - Juno router (CCR1036):
+            id: routeros-router-card
+            description: RouterOS v6 long-term — TILE CPU, can't run v7
+            href: https://mikrotik.com/download/changelogs
+            icon: mikrotik.png
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=routeros_patch_info%7Bdevice%3D%22router%22%7D"
+              refreshInterval: 3600000
+              mappings:
+                - field: data.result.0.metric.status
+                  label: Status
+                - field: data.result.0.metric.version
+                  label: RouterOS
+                - field: data.result.0.metric.security
+                  label: Security
+                - field: data.result.0.metric.firmware
+                  label: Firmware
+        - Aggregation switch (CRS317):
+            id: routeros-switch-card
+            description: RouterOS v7 long-term — NAS behind it, scale media down first
+            href: https://mikrotik.com/download/changelogs
+            icon: mikrotik.png
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=routeros_patch_info%7Bdevice%3D%22switch%22%7D"
+              refreshInterval: 3600000
+              mappings:
+                - field: data.result.0.metric.status
+                  label: Status
+                - field: data.result.0.metric.version
+                  label: RouterOS
+                - field: data.result.0.metric.security
+                  label: Security
+                - field: data.result.0.metric.firmware
+                  label: Firmware
 
     # Running-image vulnerabilities from Trivy Operator
     # (kubernetes/platform/security/trivy-operator), read from the
