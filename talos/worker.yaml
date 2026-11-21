@@ -22,7 +22,7 @@ machine:
     # Used to provide additional options to the kubelet.
     kubelet:
         # The `image` field is an optional reference to an alternative kubelet image.
-        image: ghcr.io/siderolabs/kubelet:v1.35.8
+        image: ghcr.io/siderolabs/kubelet:v1.35.10
         # Enable container runtime default Seccomp profile.
         defaultRuntimeSeccompProfileEnabled: true
         # OOM protection layer 4 (docs/projects/oom-protection.md): reserve
@@ -431,8 +431,8 @@ sops:
             THhqZmpvN2czR3NNQXNscEFETG1uNWMKDAkR6J0Qwih9AiLTee1Clx/UIWxuwzpd
             N2m4LUkVU4+v3buDVbYB5mo5iRsrH5UOQyYNEtw5DqVYpBHlmKfF8g==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-07T12:16:41Z"
-    mac: ENC[AES256_GCM,data:67RWfClEVgHUt+Ifpd3+fL7jDdVdSrKvKOC4xcZexfWM5sTd+zKGkMurA2eQE7J/qoUfW5wzjC7g74358eb5/ES91zslG59j6PY3bU9y4HEG2DHfJxXHlQo2dZi/A62METTZWCI4IrmOhpNinUz4SdJ9IRZSrvPFn/J1uh2kjGg=,iv:1Do2VVBYaaGnJgIE23c0sH7u6br5bJgqpcnPH0T76mQ=,tag:ny2t/EF/ouijNR5D9khPlQ==,type:str]
+    lastmodified: "2026-11-21T14:18:49Z"
+    mac: ENC[AES256_GCM,data:v4a2ufxGa4qGbvHV/G4YMrZfSIPnLXzBs59QTo4W+0QOnub1kSNpcf+7t2uhEX7pdMZgge6SPaF8W+2iJsKrL4ZNmFKirU1scsL5sWE3/KL6VrXTK593mX9CDpxkTqg0ESKAW2rN5Ys3ZFuP1ouW4cft1gXqpyP6CU89zHScJHM=,iv:6L0i/vXNQL31A+inYlit1QPGEAa6cYEDLvOg+r3mK94=,tag:pW4bqqmkVDdx7e3c9UtZ6Q==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -454,7 +454,7 @@ sops:
             THhqZmpvN2czR3NNQXNscEFETG1uNWMKDAkR6J0Qwih9AiLTee1Clx/UIWxuwzpd
             N2m4LUkVU4+v3buDVbYB5mo5iRsrH5UOQyYNEtw5DqVYpBHlmKfF8g==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-07T12:16:41Z"
-    mac: ENC[AES256_GCM,data:67RWfClEVgHUt+Ifpd3+fL7jDdVdSrKvKOC4xcZexfWM5sTd+zKGkMurA2eQE7J/qoUfW5wzjC7g74358eb5/ES91zslG59j6PY3bU9y4HEG2DHfJxXHlQo2dZi/A62METTZWCI4IrmOhpNinUz4SdJ9IRZSrvPFn/J1uh2kjGg=,iv:1Do2VVBYaaGnJgIE23c0sH7u6br5bJgqpcnPH0T76mQ=,tag:ny2t/EF/ouijNR5D9khPlQ==,type:str]
+    lastmodified: "2026-11-21T14:18:49Z"
+    mac: ENC[AES256_GCM,data:v4a2ufxGa4qGbvHV/G4YMrZfSIPnLXzBs59QTo4W+0QOnub1kSNpcf+7t2uhEX7pdMZgge6SPaF8W+2iJsKrL4ZNmFKirU1scsL5sWE3/KL6VrXTK593mX9CDpxkTqg0ESKAW2rN5Ys3ZFuP1ouW4cft1gXqpyP6CU89zHScJHM=,iv:6L0i/vXNQL31A+inYlit1QPGEAa6cYEDLvOg+r3mK94=,tag:pW4bqqmkVDdx7e3c9UtZ6Q==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1

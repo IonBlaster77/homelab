@@ -32,7 +32,7 @@ machine:
     # Used to provide additional options to the kubelet.
     kubelet:
         # The `image` field is an optional reference to an alternative kubelet image.
-        image: ghcr.io/siderolabs/kubelet:v1.35.8
+        image: ghcr.io/siderolabs/kubelet:v1.35.10
         # Enable container runtime default Seccomp profile.
         defaultRuntimeSeccompProfileEnabled: true
         # OOM protection layer 4 (docs/projects/oom-protection.md): reserve
@@ -468,8 +468,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -488,8 +488,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -509,8 +509,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -531,8 +531,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -553,8 +553,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -575,8 +575,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -597,8 +597,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -619,8 +619,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -641,8 +641,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -663,8 +663,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -685,8 +685,8 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -706,7 +706,7 @@ sops:
             MDFENGRhc3gwbDlTbno5Rkdid2JVSDgKJZ2LRxLTcq/RVTgybI6PS2XqDEollMH8
             dZk9/jXjhQ3mKHzdrYzt9HsNiXLb/WxhOwtFJtRLMKXmteiXs/Icnw==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T09:32:27Z"
-    mac: ENC[AES256_GCM,data:e8JLoV76WX1G7qF+rxfV8tyOMwGxZmkPqw2dZ7Oz7HLx2GrDdZUsA+9zt9rY1aF8co1T3RqKuZxRJU11HcBQBUGKGLBHhv4J1B8HdUJozTa4GWZNOFSbrTLGHPQu6iuTJKLIF8ncl5j+XOwJWUCJcCfh/ZLJSfjM09ZNYL+3c2A=,iv:LodxaM3/I19rFp5WllW9fklUfETabyacibXGGN7HY/0=,tag:mIWmQJFwfAbcyQ6zRUWPRw==,type:str]
+    lastmodified: "2026-11-21T14:18:48Z"
+    mac: ENC[AES256_GCM,data:v+gKsrVGz34+AubXtOYmxBp0vFvECpHdvEGGLeXpA5leoZPme+WrGKMsgf2xIDfLGhjgtoEKJNUQ4LsbqiVORj8IeBV0LA4k2+N0YZGQB8IJ1keHWhQSlQBOLXNzNLCRGsPZHXr5l5TUtr3eEdyh8zae/zxAxHhA2P1IdFHWsmI=,iv:mQixxbl5nmfUy8l8ntlgwPtGgwOyapYSKTrDom3MWN4=,tag:nehLAtgxRQP1m5u1/TnQbA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
