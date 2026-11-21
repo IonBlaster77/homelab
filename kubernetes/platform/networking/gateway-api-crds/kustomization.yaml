@@ -10,16 +10,16 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   # standard channel (= upstream standard-install.yaml minus TLSRoute)
-  - v1.6.3/standard/gateway.networking.k8s.io_backendtlspolicies.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_gatewayclasses.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_gateways.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_grpcroutes.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_httproutes.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_listenersets.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_referencegrants.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_tcproutes.yaml
-  - v1.6.3/standard/gateway.networking.k8s.io_udproutes.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_backendtlspolicies.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_gatewayclasses.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_gateways.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_grpcroutes.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_httproutes.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_listenersets.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_referencegrants.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_tcproutes.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_udproutes.yaml
   # safe-upgrades ValidatingAdmissionPolicy (+ binding), new in v1.5
-  - v1.6.3/standard/gateway.networking.k8s.io_vap_safeupgrades.yaml
+  - v1.7.0/standard/gateway.networking.k8s.io_vap_safeupgrades.yaml
   # experimental channel
-  - v1.6.3/experimental/gateway.networking.k8s.io_tlsroutes.yaml
+  - v1.7.0/experimental/gateway.networking.k8s.io_tlsroutes.yaml
