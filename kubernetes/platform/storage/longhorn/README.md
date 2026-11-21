@@ -21,13 +21,13 @@ schedule, and serves the Kubernetes snapshot API.
 | `app.yaml` | Argo CD Application with two sources: the chart, and this folder. Not Server-Side Apply; has `ignoreDifferences` |
 | `values.yaml` | 3 replicas, control-plane tolerations, node-down pod deletion, disk pools from node labels, automatic engine upgrades, the NAS backup target (`defaultBackupStore`, no credentials for NFS), UI LoadBalancer IP, metrics |
 | `kustomization.yaml` | Lists this folder's own manifests |
-| `recurringjob.yaml` | `hourly-backup` and `daily-backup`, both for the `default` group |
+| `recurringjob.yaml` | one backup per hour: `hourly-backup` every hour except 16:00 UTC (kept 23), `daily-backup` at 16:00 (kept 30) |
 | `storageclass-ssd.yaml` | `longhorn-ssd`, the **cluster default** class (SSD pool) |
 | `storageclass-nvme.yaml` | `longhorn-nvme`, opt-in fast class (NVMe pool) for databases |
 | `storageclass-nvme-single.yaml` | `longhorn-nvme-single`: NVMe pool, **one replica**, for big re-creatable data (Harbor's image store). No failover if its node is down |
 | `storageclass-nvme-double.yaml` | `longhorn-nvme-double`: NVMe pool, **two replicas**, for data that matters but doesn't need three copies (Nextcloud's documents). Survives one node or disk failure |
 | `volumesnapshotclass.yaml` | `longhorn-backup-vsc`: CSI snapshots that become NAS backups (`type: bak`) |
-| `*-volume-labeler.yaml`, `job-enable-recurring-jobs.yaml` | PostSync hook that labels **every** volume into the `default` backup group |
+| `*-volume-labeler.yaml`, `job-enable-recurring-jobs.yaml` | PostSync hook that labels every volume into the `default` backup group, except the listed exceptions (Prometheus, Loki) |
 | `httproute.yaml`, `referencegrant.yaml` | `longhorn.jupitertech.net` → the UI (route lives in the `networking` namespace) |
 
 ## How a volume gets backed up
@@ -35,7 +35,7 @@ schedule, and serves the Kubernetes snapshot API.
 1. An app's PVC creates a Longhorn volume.
 2. On the next Argo sync of this app, the hook labels it
    `recurring-job-group.longhorn.io/default=enabled`.
-3. The two RecurringJobs back up every volume in that group to the NAS.
+3. The two RecurringJobs back up every volume in that group to the NAS, one backup per hour. Exceptions carry a `backup.jupitertech.net/policy` label (`daily` or `none`); see the hook file.
 
 So a brand-new volume isn't backed up until this app syncs once. Check
 nothing is missing:

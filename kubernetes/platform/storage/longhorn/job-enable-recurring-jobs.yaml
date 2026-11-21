@@ -1,3 +1,25 @@
+# Puts volumes into the backup schedule (recurringjob.yaml) on every sync of
+# this app.
+#
+# Every volume joins the `default` group (hourly + daily backups), except the
+# ones with a backup.jupitertech.net/policy label. The init containers below
+# set that label on the exceptions first, then the main container labels
+# everything else. (Longhorn also treats a volume with no recurring-job label
+# at all as `default`, so an exception must always carry some job or group
+# label, even "none".)
+#
+# Exceptions (decided 2026-11-21). Prometheus' TSDB is rewritten by
+# compaction every couple of hours, so hourly backups of its 50 GB volumes
+# meant huge snapshot purges, which loaded the disks etcd shares and stalled
+# it (2026-11-20, 17:52 and 18:27 UTC). Both Prometheus replicas scrape
+# everything, so one daily copy of one replica is enough:
+#   policy=daily  daily-backup only:  prometheus-0, loki
+#   policy=none   no backups:         prometheus-1 (prometheus-0 has the same data)
+#
+# Volumes are selected by Longhorn's `longhornvolume` label (= the PV name).
+# If one of these PVs is ever recreated, its selector matches nothing (no
+# error) and the new volume simply gets the default hourly + daily backups:
+# fail-safe, but update the PV name here.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -14,20 +36,17 @@ spec:
     spec:
       serviceAccountName: longhorn-volume-labeler
       restartPolicy: OnFailure
-      containers:
-        - name: labeler
-          # bitnami/* public Docker Hub tags were sunset (Aug 2025); use the
-          # maintained rancher/kubectl image instead. It is FROM scratch — only
-          # /bin/kubectl, no shell and no xargs — so the labeler must be a single
-          # shell-free `kubectl label --all` call (not a get|xargs pipeline), run
-          # directly via the image's /bin/kubectl entrypoint.
+      # rancher/kubectl is FROM scratch (only /bin/kubectl, no shell), so each
+      # step is one kubectl call. bitnami/* public tags were sunset (Aug 2025).
+      initContainers:
+        # monitoring/prometheus-...-prometheus-0
+        - name: daily-prometheus-0
           image: rancher/kubectl:v1.36.2
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
             # rancher/kubectl declares its user by name (USER kubectl), which
-            # kubelet can't verify against runAsNonRoot; pin the numeric UID the
-            # image assigns that user (useradd -u 1000) so the check passes.
+            # kubelet can't verify against runAsNonRoot; pin the numeric UID.
             runAsUser: 1000
             capabilities:
               drop: ["ALL"]
@@ -36,8 +55,78 @@ spec:
           args:
             - label
             - volumes.longhorn.io
-            - --all
-            - recurring-job-group.longhorn.io/default=enabled
             - -n
             - longhorn-system
+            - -l
+            - longhornvolume=pvc-e067a7d0-5b22-4bca-80ff-5c08f7487368
             - --overwrite
+            - backup.jupitertech.net/policy=daily
+            - recurring-job.longhorn.io/daily-backup=enabled
+            - recurring-job-group.longhorn.io/default-
+        # logging/storage-loki-0
+        - name: daily-loki
+          image: rancher/kubectl:v1.36.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - label
+            - volumes.longhorn.io
+            - -n
+            - longhorn-system
+            - -l
+            - longhornvolume=pvc-2525e6a1-21e5-4b06-8a1c-7e4ff7a89d3b
+            - --overwrite
+            - backup.jupitertech.net/policy=daily
+            - recurring-job.longhorn.io/daily-backup=enabled
+            - recurring-job-group.longhorn.io/default-
+        # monitoring/prometheus-...-prometheus-1: no backups. `no-backup` is a
+        # group no RecurringJob uses; it only keeps Longhorn from treating the
+        # volume as `default`.
+        - name: none-prometheus-1
+          image: rancher/kubectl:v1.36.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - label
+            - volumes.longhorn.io
+            - -n
+            - longhorn-system
+            - -l
+            - longhornvolume=pvc-c2e869e0-eca6-4112-9613-959c76a4b473
+            - --overwrite
+            - backup.jupitertech.net/policy=none
+            - recurring-job-group.longhorn.io/no-backup=enabled
+            - recurring-job-group.longhorn.io/default-
+      containers:
+        # Everything without a policy label: the default hourly + daily group.
+        - name: labeler
+          image: rancher/kubectl:v1.36.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - label
+            - volumes.longhorn.io
+            - -n
+            - longhorn-system
+            - -l
+            - "!backup.jupitertech.net/policy"
+            - --overwrite
+            - recurring-job-group.longhorn.io/default=enabled
