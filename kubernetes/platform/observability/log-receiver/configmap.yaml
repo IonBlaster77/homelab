@@ -56,7 +56,7 @@ data:
             "10.77.20.13": "talos3", "10.0.8.215": "talos3",
             "10.77.20.14": "talos4", "10.0.10.37": "talos4",
             "10.77.20.15": "talos5", "10.0.0.8": "talos5",
-            "10.77.20.16": "talos6"
+            "10.77.20.16": "talos6", "10.0.1.168": "talos6"
           }
           ip = string(.host) ?? ""
           by_ip = string(get(nodes, [ip]) ?? null) ?? ip

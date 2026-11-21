@@ -631,7 +631,7 @@ kubectl get cluster -n monitoring
 | 10.77.20.13 | talos3 (control-plane) |
 | 10.77.20.14 | talos4 (worker) |
 | 10.77.20.15 | talos5 (worker, joined 2026-11-21) |
-| 10.77.20.16 | talos6 (worker, not yet joined) |
+| 10.77.20.16 | talos6 (worker, ThinkCentre M700, SSD tier only, joined 2026-11-21) |
 | 10.77.20.50 | ArgoCD UI (`http://10.77.20.50`) |
 | 10.77.20.51 | Longhorn UI (`http://10.77.20.51`) |
 | 10.77.20.53 | AdGuard DNS (port 53 UDP+TCP) |
