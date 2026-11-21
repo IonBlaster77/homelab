@@ -17,14 +17,15 @@ then restarts them on emptier nodes.
 ## What it does here
 
 - Runs as a CronJob at **03:30 Australia/Adelaide**, nightly.
-- **LowNodeUtilization on memory requests only.** Nodes over 70% memory
-  requested give up pods; only nodes under 50% receive them. CPU is left out
-  because CPU requests sit near 85% on three nodes, so a CPU threshold would
-  find nowhere to move anything.
+- **LowNodeUtilization on CPU and memory requests.** A node gives up pods
+  while it is over 80% CPU or 70% memory requested; only nodes under 50% of
+  both receive them. Until 2026-11-21 this was memory-only, because CPU
+  requests sat near 85-95% on all four nodes and there was nowhere to move
+  anything; talos5 and talos6 changed that.
 - **RemoveDuplicates** and **RemovePodsViolatingTopologySpreadConstraint**,
   so replicas of one app don't stay stacked on one node.
-- At most **2 evictions per node and 5 in total per run**: the cluster
-  converges over a few nights instead of churning.
+- At most **3 evictions per node and 8 in total per run** (was 2/5): the
+  cluster converges over a few nights instead of churning.
 - `nodeFit: true`: a pod is only evicted if it fits on another node.
 
 ## What it never touches
