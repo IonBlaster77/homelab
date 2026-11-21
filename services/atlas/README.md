@@ -19,7 +19,7 @@ test/                     node:test against PGlite (real Postgres, in-process)
 ## Working on it
 
 ```bash
-npm ci
+npm ci --ignore-scripts
 npm run typecheck
 npm test
 npm run db:generate   # after changing src/db/schema.ts
