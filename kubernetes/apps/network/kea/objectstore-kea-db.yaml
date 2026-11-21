@@ -1,4 +1,9 @@
-# Where kea-db's WAL archive and base backups go: RustFS, under
+# Postgres 18 backup history of kea-db (until the 2026-11-21 upgrade to 19;
+# the live store is now objectstore-kea-db-pg19.yaml). Kept for restores to
+# before the upgrade; no cluster archives here any more, so its retention
+# no longer prunes anything.
+#
+# Where kea-db's WAL archive and base backups went: RustFS, under
 # s3://cnpg/kea-db/ (Barman appends the serverName set on the Cluster).
 # The key in kea-db-backup-s3 can only touch that prefix and cannot delete
 # object versions; the bucket is versioned, so nothing here can destroy the

@@ -1,0 +1,40 @@
+# kea-db's backups since the Postgres 19 upgrade (2026-11-21): RustFS, under
+# s3://cnpg/kea-db/pg19/ (destinationPath + the Cluster's serverName "pg19").
+#
+# A separate store from objectstore-kea-db.yaml because pg_upgrade gives the
+# database a new system identifier: Barman won't archive the new cluster
+# into the old path, and Postgres 18 backups can't be restored into 19
+# anyway. Kept under kea-db/ so the existing RustFS key (limited to
+# s3://cnpg/kea-db/) still works; no new user or policy needed.
+# See docs/runbooks/cnpg-major-upgrade.md.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: kea-db-backup-pg19
+  namespace: kea
+spec:
+  # Recovery window: base backups (and the WAL needed to replay them) older
+  # than this are deleted. The Longhorn NAS dailies keep 30 days on top.
+  retentionPolicy: "14d"
+  configuration:
+    destinationPath: s3://cnpg/kea-db/
+    endpointURL: http://rustfs.rustfs.svc.cluster.local:9000
+    s3Credentials:
+      accessKeyId:
+        name: kea-db-backup-s3
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: kea-db-backup-s3
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  instanceSidecarConfiguration:
+    env:
+      # Newer boto3 data-integrity checks break S3-compatible stores like
+      # RustFS (x-amz-content-sha256 errors, plugin issue #393).
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required

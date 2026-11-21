@@ -9,7 +9,11 @@ spec:
   # into the live spec at creation and never moves it again: four clusters
   # sat on 18.3 while newer ones got 18.6. Changing it rolls the replica
   # first, then a switchover (primaryUpdateMethod).
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-system-trixie
+  #
+  # Postgres 19 since 2026-11-21: the CNPG major-upgrade pilot
+  # (docs/runbooks/cnpg-major-upgrade.md). A new major in imageName makes CNPG
+  # stop the cluster, run pg_upgrade in a Job and recreate the replica.
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-system-trixie
   # OOM protection (docs/projects/oom-protection.md), sized 2026-11-07:
   # 30-day peak 136 MiB. Memory request = limit (~2x peak) so the
   # kubelet and the Talos OOM controller leave it alone; a CPU request but
@@ -47,11 +51,15 @@ spec:
         passwordSecret:
           name: kea-db-grafana-credentials
   # Point-in-time recovery: the Barman Cloud plugin archives every WAL segment
-  # and stores base backups in RustFS (s3://cnpg/kea-db/, see
-  # objectstore-kea-db.yaml). Adding this restarts both pods once.
+  # and stores base backups in RustFS. Adding this restarts both pods once.
+  # Since the Postgres 19 upgrade: s3://cnpg/kea-db/pg19/ (objectstore-kea-db-
+  # pg19.yaml). pg_upgrade gives the database a new system identifier, so the
+  # archive must move to an empty path in the same change as imageName; the
+  # Postgres 18 history stays in s3://cnpg/kea-db/base/ and wals/
+  # (objectstore-kea-db.yaml) for restores to before the upgrade.
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
       parameters:
-        barmanObjectName: kea-db-backup
-        serverName: kea-db
+        barmanObjectName: kea-db-backup-pg19
+        serverName: pg19

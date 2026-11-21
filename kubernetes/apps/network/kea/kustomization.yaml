@@ -12,6 +12,8 @@ resources:
   # kea-db's point-in-time-recovery backups to RustFS (Barman Cloud plugin)
   - secret-kea-db-backup.sops.yaml
   - objectstore-kea-db.yaml
+  # Since the Postgres 19 upgrade (2026-11-21); the store above keeps the 18 history
+  - objectstore-kea-db-pg19.yaml
   - scheduledbackup-kea-db.yaml
   - configmap.yaml
   - deployment.yaml
