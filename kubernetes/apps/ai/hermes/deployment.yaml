@@ -229,7 +229,7 @@ spec:
               value: /home/hermes
             - name: LANGFUSE_SDK
               # renovate: datasource=pypi depName=langfuse
-              value: "4.15.2"
+              value: "5.2.0"
             - name: UV_CACHE_DIR
               value: /tmp/uv-cache
           command:
