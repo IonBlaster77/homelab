@@ -12,6 +12,10 @@ spec:
     metadata:
       labels:
         app: kea-dhcp4
+      annotations:
+        # Bump to roll the pod after a configmap.yaml change (nothing watches
+        # the ConfigMap).
+        homelab/config-rev: "1"
     spec:
       # DHCP: evicted after ordinary pods (docs/projects/oom-protection.md).
       priorityClassName: homelab-critical

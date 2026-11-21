@@ -36,6 +36,16 @@ data:
           "host": "kea-db-rw.kea.svc.cluster.local",
           "name": "kea",
           "user": "kea",
+          // Ride out a lost database connection (a CNPG switchover, a primary
+          // restart) instead of exiting. Kea's default, stop-retry-exit, made
+          // the pod crash on every switchover: 17 restarts by 2026-11-22.
+          // serve-retry-continue keeps serving from memory while it retries
+          // every 5 s, up to 60 times (5 min), and keeps running after that.
+          // retry-on-startup: the same if the database is down at start.
+          "on-fail": "serve-retry-continue",
+          "retry-on-startup": true,
+          "max-reconnect-tries": 60,
+          "reconnect-wait-time": 5000,
           "password": "__DB_PASSWORD__"
         },
         // Bare names: Kea 3.x only loads hooks from its own hooks directory.
