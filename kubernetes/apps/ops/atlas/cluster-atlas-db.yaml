@@ -11,7 +11,7 @@ metadata:
 spec:
   instances: 2
   # Pinned here so Renovate tracks it (see cluster-paperclip-db.yaml).
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-system-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-system-trixie
   # OOM protection (docs/projects/oom-protection.md): memory request = limit
   # so the kubelet and the Talos OOM controller leave it alone; a CPU request
   # but no CPU limit. Not sized from history yet (new cluster): the working
