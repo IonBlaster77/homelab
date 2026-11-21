@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: nzbget
-          image: lscr.io/linuxserver/nzbget:v26.3-ls271
+          image: lscr.io/linuxserver/nzbget:v26.3-ls273
           ports:
             - containerPort: 6789
           env:
