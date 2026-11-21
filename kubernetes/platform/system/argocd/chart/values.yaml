@@ -258,7 +258,7 @@ argo-cd:
     # the image (a bare tag is invisible to it); minors arrive as drafts.
     image:
       repository: ecr-public.aws.com/docker/library/redis
-      tag: 8.2.11-alpine
+      tag: 8.10.3-alpine
     # ~16 MiB typical, 52 MiB peak
     resources:
       requests:
