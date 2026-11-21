@@ -188,10 +188,11 @@
       "schedule": ["* 0-5 * * *"]
     },
     {
-      "description": "The Langfuse Python SDK that Hermes' plugin loads is installed by an init container (LANGFUSE_SDK) and put on the import path by a .pth file that names the same version: both update in one PR.",
+      "description": "The Langfuse Python SDK that Hermes' plugin loads is installed by an init container (LANGFUSE_SDK) and put on the import path by a .pth file that names the same version: both update in one PR. The plugin (hermes-official-plugins/langfuse 2.0.0) pins langfuse==4.15.2 exactly, and deployment.yaml says to bump the SDK only with that pin, so every update waits for approval on the Dependency Dashboard (#1) instead of opening a PR (#576 was merged and reverted, #597 reopened it). Tick it there once the plugin's pin has moved.",
       "matchDatasources": ["pypi"],
       "matchPackageNames": ["langfuse"],
-      "groupName": "hermes langfuse sdk"
+      "groupName": "hermes langfuse sdk",
+      "dependencyDashboardApproval": true
     },
     {
       "description": "external-snapshotter: the Argo CD source tag and the snapshot-controller image override (upstream's manifests lag their own tag) must move together.",
