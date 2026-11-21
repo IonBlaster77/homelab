@@ -542,9 +542,42 @@ spec:
               value: /uv_cache/python
             - name: UV_LINK_MODE
               value: copy
+            # Browser traffic reaches the webui from the Cilium Gateway's Envoy,
+            # whose socket address is the per-node Cilium ingress IP
+            # (`kubectl get ciliumnodes -o jsonpath='{..spec.ingress.ipv4}'`).
+            # Listing those exact IPs lets the request log record the real
+            # client (`forwarded_for`) instead of "forwarded_for_ignored".
+            # Exact IPs, not the pod CIDR, so no other pod can assert a client
+            # IP. If a node's ingress IP ever changes, the log just falls back
+            # to ignoring the header (fail-safe).
+            #
+            # Deliberately NOT set: HERMES_WEBUI_TRUST_FORWARDED_FOR /
+            # HERMES_WEBUI_LOGIN_RATE_LIMIT_PER_CLIENT. Per-client login
+            # buckets would need them, but TRUST_FORWARDED_FOR also makes the
+            # local-origin check honor X-Real-IP from a trusted proxy, and
+            # Envoy passes a client-supplied X-Real-IP straight through. So
+            # login rate limiting stays one shared bucket for Gateway traffic
+            # (Cloudflare Access + the webui password sit in front anyway).
+            - name: HERMES_WEBUI_TRUSTED_PROXY_CIDRS
+              value: "10.0.11.155,10.0.9.11,10.0.8.54,10.0.10.110"
           ports:
             - containerPort: 8787
               name: webui
+          # The webui builds its venv on every start (~3.5 min) before it
+          # listens; without this the pod went Ready at once and Argo/rollout
+          # checks reported healthy while the Gateway still answered 503
+          # (2026-11-21). With one Recreate replica the 503 window itself
+          # remains; this makes the status honest. /health is a public
+          # route. Readiness only: a liveness probe could kill a slow
+          # install. The hermes-webui Service is the only one selecting this
+          # pod, so this gates nothing else.
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8787
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: hermes-data
               mountPath: /home/hermes/.hermes
