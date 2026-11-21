@@ -32,6 +32,15 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          env:
+            # Recent SearXNG builds refuse to load the wikipedia, wikidata and
+            # openstreetmap engines without general.contact_url (sent to those
+            # services so they can reach the operator); they had been failing
+            # since the 2026-11-20 build. The repo URL avoids putting personal
+            # contact details in outbound requests. settings.yml doesn't set
+            # contact_url, so this env var is what SearXNG uses.
+            - name: SEARXNG_CONTACT_URL
+              value: https://github.com/IonBlaster77/homelab
           volumeMounts:
             # The full settings.yml (incl. secret_key) lives in the Secret —
             # see secret.sops.yaml for why.
