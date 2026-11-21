@@ -252,10 +252,12 @@ argo-cd:
         memory: 256Mi
 
   redis:
-    # Kept on the 8.2 line (Trivy findings, 2026-11-08) although chart 10.17.2
-    # defaults to 8.6.4-alpine: a Redis minor bump is its own change.
+    # On the 8.10 line (#584, 2026-11-22), ahead of chart 10.18.2's default
+    # 8.6.4-alpine and matching Argo CD v3.6.2's own install manifest
+    # (redis 8.10.1). Pinned here since the 2026-11-08 Trivy findings.
     # repository = the chart's default, spelled out so Renovate can identify
-    # the image (a bare tag is invisible to it); minors arrive as drafts.
+    # the image (a bare tag is invisible to it). Minors arrive as normal PRs
+    # (renovate.json); check upstream Argo CD's tested Redis before merging.
     image:
       repository: ecr-public.aws.com/docker/library/redis
       tag: 8.10.3-alpine

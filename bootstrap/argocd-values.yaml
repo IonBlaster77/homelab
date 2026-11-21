@@ -246,7 +246,8 @@ applicationSet:
       memory: 256Mi
 
 redis:
-  # Same 8.2 line as chart 9.5.2's 8.2.3-alpine; Trivy findings, 2026-11-08.
+  # Same tag as the live argocd values (8.10 line since #584, 2026-11-22);
+  # pinned since the 2026-11-08 Trivy findings.
   # repository spelled out (= chart 10.18.2's default) so Renovate tracks it;
   # it updates this file in the same PR as the live argocd values.
   image:
