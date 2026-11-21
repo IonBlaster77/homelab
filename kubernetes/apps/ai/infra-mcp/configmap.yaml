@@ -226,7 +226,9 @@ data:
         """Read CloudNativePG cluster health and instance status. Empty namespace lists across all namespaces."""
         return _custom_list("cnpg_cluster_status", {"namespace": namespace}, "postgresql.cnpg.io", "v1", "clusters", namespace or None)
 
-    TALOS_NODES = ["10.77.20.11", "10.77.20.12", "10.77.20.13", "10.77.20.14"]
+    # Default fan-out target for every talosctl tool, so only nodes that exist:
+    # add talos6 (10.77.20.16) once it has joined, or every default call errors.
+    TALOS_NODES = ["10.77.20.11", "10.77.20.12", "10.77.20.13", "10.77.20.14", "10.77.20.15"]
     TALOSCTL = os.path.expanduser("~/.local/bin/talosctl")
 
     def _talosctl(tool_name, args, cmd_args, nodes):

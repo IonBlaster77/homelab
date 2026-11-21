@@ -100,8 +100,9 @@ spec:
 # Reply traffic to Envoy (Gateway) connections: native routing evaluates
 # replies against egress policy (see hermes-allow-node-egress). Narrower than
 # the other apps' 10.77.20.0/24 on purpose: agents run in this pod, so only
-# the four node IPs and the ingress identity, never the NAS, the API VIP or
-# the rest of the LAN. Update the list if a node is added or renumbered.
+# the node IPs and the ingress identity, never the NAS, the API VIP or
+# the rest of the LAN. Update the list if a node is added or renumbered
+# (talos6, 10.77.20.16, is listed ahead of its join).
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -119,6 +120,8 @@ spec:
         - 10.77.20.12/32
         - 10.77.20.13/32
         - 10.77.20.14/32
+        - 10.77.20.15/32
+        - 10.77.20.16/32
 ---
 # Pi's Langfuse extension exports traces over OTLP straight to Langfuse web,
 # in-cluster. The langfuse namespace allows this side in

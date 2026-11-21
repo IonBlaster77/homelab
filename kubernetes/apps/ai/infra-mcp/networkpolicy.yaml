@@ -87,7 +87,8 @@ spec:
 # specific `-n` node IPs *through* that connection — the per-node-IP-only
 # rule this started with let every call hang until timeout, since the VIP
 # itself was never reachable. Both are allowed here: the VIP (actually
-# dialed) and the 4 node IPs (needed for the per-node routing).
+# dialed) and the node IPs (needed for the per-node routing). talos6
+# (10.77.20.16) is listed ahead of its join so the policy needs no second edit.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -104,6 +105,8 @@ spec:
         - 10.77.20.12/32
         - 10.77.20.13/32
         - 10.77.20.14/32
+        - 10.77.20.15/32
+        - 10.77.20.16/32
       toPorts:
         - ports:
             - port: "50000"

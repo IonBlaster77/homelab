@@ -14,7 +14,7 @@ Estimated time: **45–60 minutes** from powered-off nodes to fully synced ArgoC
 | Cilium | v1.20.4 |
 | ArgoCD | v3.6.1 (Helm chart argo-cd-10.17.2, image tag pinned) |
 
-4 nodes: talos1–3 (control-plane), talos4 (worker)  
+6 nodes: talos1–3 (control-plane), talos4–6 (workers)  
 Storage: Longhorn on SSD (`/var/lib/longhorn`) + NVMe (`/var/lib/longhorn-nvme`) per node
 
 ---
@@ -630,6 +630,8 @@ kubectl get cluster -n monitoring
 | 10.77.20.12 | talos2 (control-plane) |
 | 10.77.20.13 | talos3 (control-plane) |
 | 10.77.20.14 | talos4 (worker) |
+| 10.77.20.15 | talos5 (worker, joined 2026-11-21) |
+| 10.77.20.16 | talos6 (worker, not yet joined) |
 | 10.77.20.50 | ArgoCD UI (`http://10.77.20.50`) |
 | 10.77.20.51 | Longhorn UI (`http://10.77.20.51`) |
 | 10.77.20.53 | AdGuard DNS (port 53 UDP+TCP) |
