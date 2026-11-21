@@ -40,10 +40,13 @@ every severity, including the ~10,000 `UNKNOWN` ones.
 
 ## Gotchas
 
-- **Deploy order:** the image must be built (and its tag set in
-  `deployment-collector.yaml`) and `secret-atlas-db-backup.sops.yaml`
-  generated (`REPO=<worktree> ~/homelab/restructure-tools/rustfs-cnpg-provision.sh atlas-db`)
-  before the first sync.
+- **New images:** build from `services/atlas` with the `build-image`
+  template (it runs on talos4, the only node allowing user namespaces), then
+  update the tag and digest in `deployment-collector.yaml`. Merging a
+  Renovate PR for `services/atlas` deploys nothing until that happens.
+- **Backup key:** `secret-atlas-db-backup.sops.yaml` was made by
+  `REPO=<worktree> ~/homelab/restructure-tools/rustfs-cnpg-provision.sh atlas-db`
+  (RustFS user `cnpg-atlas-db`, prefix `s3://cnpg/atlas-db/` only).
 - **First base backup by hand** after the first sync (cnpg-barman-cloud
   README), like every new CNPG cluster.
 - **Schema changes** are migrations: edit `services/atlas/src/db/schema.ts`,

@@ -23,6 +23,14 @@ metadata:
 spec:
   serviceAccountName: argo-workflow
   entrypoint: build
+  # Only talos4 allows user namespaces (user.max_user_namespaces in
+  # talos/talos4.yaml; 0 on talos1-3), and rootless BuildKit needs one.
+  # Elsewhere the build fails with "max_user_namespaces needs to be set to
+  # non-zero" / "fork/exec /proc/self/exe: no space left on device"
+  # (2026-11-21, the first atlas build landed on talos2). talos4's system
+  # disk also holds Longhorn replicas, so keep builds small (no big caches).
+  nodeSelector:
+    kubernetes.io/hostname: talos4
   ttlStrategy:
     secondsAfterCompletion: 3600
   arguments:
