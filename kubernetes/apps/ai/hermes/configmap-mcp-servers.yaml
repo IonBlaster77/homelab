@@ -13,6 +13,13 @@ metadata:
   namespace: hermes
 data:
   mcp-servers-fragment.yaml: |
+    # Default model for chats and alert triage. gpt-6.2-sol (2026-11-21)
+    # replaced gpt-5.6-sol: Codex charges half per input token and a quarter
+    # per cached token, and ~93% of Hermes' tokens are cached context.
+    # Per-model credit rates: learn.chatgpt.com/docs/pricing.
+    model:
+      default: gpt-6.2-sol
+      provider: openai-codex
     # Tool-calling rounds per turn, for every chat and cron job alike (cron
     # has no per-job override). Was the default 60: the first hardware-deals
     # run (2026-10-21) used all 60 on research and ended with no report.
@@ -47,11 +54,12 @@ data:
     # at xhigh: one WebUI research chat (2026-10-28, 3 children, ~30 min)
     # spent ~23.6M tokens and exhausted the ChatGPT Plus 5h window, which
     # also broke smart approvals (their aux LLM call 429'd and escalated to
-    # the broken manual prompt). terra/medium matches the hardware-deals
-    # cron jobs. Keys confirmed against tools/delegate_tool_config.py.
+    # the broken manual prompt). Terra at medium, gpt-6.1-terra since
+    # 2026-11-21 (was gpt-5.6-terra; ~3x cheaper per Codex credit rates).
+    # Keys confirmed against tools/delegate_tool_config.py.
     delegation:
       provider: openai-codex
-      model: gpt-5.6-terra
+      model: gpt-6.1-terra
       reasoning_effort: medium
       # Default 250. Children that run out return partial output with
       # exit_reason max_iterations rather than burning quota on retries.

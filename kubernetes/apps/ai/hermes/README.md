@@ -57,9 +57,12 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   full ~30-call investigation every hour and used up the ChatGPT weekly
   limit).
 - **Quota:** everything runs on the ChatGPT/Codex subscription
-  (`openai-codex`). Default model gpt-5.6-sol at reasoning `high` (set in
-  `configmap-mcp-servers.yaml`); cron jobs and delegation use gpt-5.6-terra
-  at medium. Token use per session is in `~/.hermes/state.db` (`sessions`
+  (`openai-codex`). Since 2026-11-21: default model gpt-6.2-sol at
+  reasoning `high` and delegation gpt-6.1-terra at medium (both set in
+  `configmap-mcp-servers.yaml`); the health review uses gpt-6.1-terra and
+  the deals jobs use gpt-6-luna, both at medium (set per cron job). Per-model
+  Codex credit rates are at learn.chatgpt.com/docs/pricing; cached input
+  is most of Hermes' tokens, so compare that column first. Token use per session is in `~/.hermes/state.db` (`sessions`
   table: source, title, api_call_count, input/cache_read/output tokens).
 - **#alerts-warning:** answers only when @mentioned. Warnings are covered
   by the **daily health review** instead (Hermes cron job, below).
@@ -74,14 +77,16 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   it. Settings that matter: continuity on (sees its previous report),
   `enabled_toolsets` `[infra-mcp, skills, file, todo]` (cron always blocks
   terminal/code execution, so don't offer them), report must end with
-  "End of daily health review." Model gpt-5.6-terra at reasoning medium
+  "End of daily health review." Model gpt-6.1-terra at reasoning medium
   since 2026-11-21 (on the sol/xhigh default it used ~36% of the quota).
   `daily-work-learning-content-check-in` was paused the same day. The old `daily-warning-review` job is
   paused, not deleted.
 - **Hardware deals:** three cron jobs (→ #hermes), one per category, daily:
   `hardware-deals-gpus` 21:00, `hardware-deals-ram` 21:20 and
   `hardware-deals-storage` 21:40 UTC (07:30–08:10 Adelaide in summer),
-  continuity on, model gpt-5.6-terra at reasoning medium (cheaper than Hermes' default sol/xhigh). Each searches Australian prices for its part of the watchlist in
+  continuity on, model gpt-6-luna at reasoning medium since 2026-11-21
+  (was gpt-5.6-terra; Luna is the small model, ~20x cheaper, on trial: if
+  reports misread prices or stop early, move them to gpt-6.1-terra). Each searches Australian prices for its part of the watchlist in
   the **hardware-deals** skill (`configmap-skill-hardware-deals.yaml`: RAM,
   DDR4/DDR5 SODIMM+UDIMM, DDR4 ECC RDIMM/LRDIMM, SSD/NVMe incl. ServerPartDeals enterprise SSDs,
   GPUs, with target prices; edit it there) and reports deals worth
