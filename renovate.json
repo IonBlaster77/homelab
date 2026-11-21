@@ -208,7 +208,8 @@
       "separateMinorPatch": true
     },
     {
-      "matchPackageNames": ["ecr-public.aws.com/docker/library/redis"],
+      "description": "Matched by depName: overridePackageName above turns the package name into `redis`, so a matchPackageNames rule after it never fires (#584 came out as a normal PR).",
+      "matchDepNames": ["ecr-public.aws.com/docker/library/redis"],
       "matchUpdateTypes": ["minor"],
       "draftPR": true,
       "addLabels": ["needs-planning"]
