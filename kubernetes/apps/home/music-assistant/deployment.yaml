@@ -47,13 +47,19 @@ spec:
             - name: TZ
               value: Australia/Adelaide
           securityContext:
-            # hostNetwork is the ONLY elevated thing this pod takes. Everything
-            # else stays locked down, which is the point of the "label is the
-            # floor, not the posture" note in namespace.yaml.
+            # hostNetwork plus NET_BIND_SERVICE are the ONLY elevated things this
+            # pod takes. Everything else stays locked down, which is the point of
+            # the "label is the floor, not the posture" note in namespace.yaml.
             privileged: false
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+              # AirPlay 2's PTP clock daemon must bind UDP 319/320 (privileged
+              # ports). The image runs as root, but with ALL dropped even root
+              # gets "Permission denied" and MA falls back to NTP timing, so
+              # multi-room AirPlay 2 sync can drift (seen on every start since
+              # at least 2.10.9). Nothing else on the node uses 319/320.
+              add: ["NET_BIND_SERVICE"]
           volumeMounts:
             - name: data
               mountPath: /data
@@ -69,22 +75,27 @@ spec:
               # Sized for the scoped 7 concurrent Sendspin streams + per-player
               # DSP. Revisit once real zone count is known.
               memory: 4Gi
+          # Probes use /info, not /: it always answers 200 without a login (MA's
+          # own apps use it for discovery). `/` redirects to /setup until the
+          # first-time setup is done, and since 2.10.13 /setup closes 15 min
+          # after start, after which `/` returns 403 - the liveness probe then
+          # killed the container every ~16 min (2026-11-21).
           startupProbe:
             httpGet:
-              path: /
+              path: /info
               port: 8095
             periodSeconds: 10
             failureThreshold: 30
           livenessProbe:
             httpGet:
-              path: /
+              path: /info
               port: 8095
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /
+              path: /info
               port: 8095
             periodSeconds: 10
             timeoutSeconds: 5
