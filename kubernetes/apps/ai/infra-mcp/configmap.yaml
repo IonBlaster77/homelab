@@ -39,7 +39,7 @@ data:
     import tarfile, urllib.request, io
     data = urllib.request.urlopen(
         # renovate: datasource=github-releases depName=cilium/hubble
-        'https://github.com/cilium/hubble/releases/download/v1.17.3/hubble-linux-amd64.tar.gz'
+        'https://github.com/cilium/hubble/releases/download/v1.20.4/hubble-linux-amd64.tar.gz'
     ).read()
     tarfile.open(fileobj=io.BytesIO(data)).extract('hubble', '/home/app/.local/bin')
     "
