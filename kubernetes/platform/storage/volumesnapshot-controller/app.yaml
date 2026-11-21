@@ -17,9 +17,10 @@ spec:
     path: deploy/kubernetes/snapshot-controller
     # Upstream's manifests at the v8.7.0 tag still reference the v8.6.0
     # image (found 2026-11-08 via Trivy), so pin it to match the tag.
-    # Bump this together with targetRevision.
+    # Bump this together with targetRevision (Renovate groups the two).
     kustomize:
       images:
+        # renovate: datasource=docker depName=registry.k8s.io/sig-storage/snapshot-controller
         - registry.k8s.io/sig-storage/snapshot-controller:v8.7.0
   destination:
     server: https://kubernetes.default.svc

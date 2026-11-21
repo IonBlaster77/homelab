@@ -22,7 +22,10 @@ argo-cd:
     domain: "argocd.jupitertech.net"
     # Argo CD 3.6.2 (= chart 10.18.2 appVersion), 2026-11-20. The two CMP sidecars
     # under repoServer.extraContainers pin the same image: keep all three in step.
+    # repository (= the chart default) lets Renovate see this pin, so it
+    # bumps all three in one PR.
     image:
+      repository: quay.io/argoproj/argocd
       tag: v3.6.2
     # Chart 10's default, set explicitly. Ingress-only NetworkPolicies per
     # component: repo-server (8081) only from server/controller/notifications/
@@ -251,7 +254,10 @@ argo-cd:
   redis:
     # Kept on the 8.2 line (Trivy findings, 2026-11-08) although chart 10.17.2
     # defaults to 8.6.4-alpine: a Redis minor bump is its own change.
+    # repository = the chart's default, spelled out so Renovate can identify
+    # the image (a bare tag is invisible to it); minors arrive as drafts.
     image:
+      repository: ecr-public.aws.com/docker/library/redis
       tag: 8.2.11-alpine
     # ~16 MiB typical, 52 MiB peak
     resources:
@@ -263,7 +269,9 @@ argo-cd:
 
   dex:
     # Same as chart 10.17.2's default (v2.46.1); pinned since the 2026-11-08 Trivy findings.
+    # repository = the chart's default, spelled out so Renovate tracks it.
     image:
+      repository: ghcr.io/dexidp/dex
       tag: v2.46.1
     # ~41 MiB typical, 112 MiB peak
     resources:

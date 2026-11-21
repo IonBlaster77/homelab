@@ -10,8 +10,9 @@
 # versions always win: the PVC copy can add langfuse but never shadow httpx,
 # pydantic, opentelemetry, ...
 #
-# Keep the version in step with install-langfuse-plugin's LANGFUSE_SDK, and
-# the mount path's python3.X with the image's Python (3.14 in v0.22.5). If
+# The version must match install-langfuse-plugin's LANGFUSE_SDK; Renovate
+# updates both in one PR (the annotation below is a .pth comment line, which
+# site.addsitedir skips). Keep the mount path's python3.X with the image's Python (3.14 in v0.22.5). If
 # either drifts, the plugin just logs "langfuse SDK is unavailable" and Hermes
 # carries on without tracing.
 apiVersion: v1
@@ -21,4 +22,5 @@ metadata:
   namespace: hermes
 data:
   zz-hermes-langfuse.pth: |
+    # renovate: datasource=pypi depName=langfuse
     /home/hermes/.hermes/pylib/langfuse-4.15.2

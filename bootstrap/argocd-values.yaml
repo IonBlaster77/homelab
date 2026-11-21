@@ -9,6 +9,7 @@ global:
   # Argo CD 3.6.2 (= chart 10.18.2 appVersion), 2026-11-20. The two CMP sidecars
   # under repoServer.extraContainers pin the same image: keep all three in step.
   image:
+    repository: quay.io/argoproj/argocd
     tag: v3.6.2
   # Chart 10's default, set explicitly: ingress-only NetworkPolicies per
   # component. See kubernetes/platform/system/argocd/chart/values.yaml.
@@ -246,7 +247,10 @@ applicationSet:
 
 redis:
   # Same 8.2 line as chart 9.5.2's 8.2.3-alpine; Trivy findings, 2026-11-08.
+  # repository spelled out (= chart 10.18.2's default) so Renovate tracks it;
+  # it updates this file in the same PR as the live argocd values.
   image:
+    repository: ecr-public.aws.com/docker/library/redis
     tag: 8.2.11-alpine
   # ~16 MiB typical, 52 MiB peak
   resources:
@@ -259,6 +263,7 @@ redis:
 dex:
   # Chart 9.5.2 ships v2.45.1; v2.46.1 for Trivy findings, 2026-11-08.
   image:
+    repository: ghcr.io/dexidp/dex
     tag: v2.46.1
   # ~41 MiB typical, 112 MiB peak
   resources:
