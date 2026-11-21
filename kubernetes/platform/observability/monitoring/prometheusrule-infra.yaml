@@ -131,6 +131,14 @@ spec:
           annotations:
             summary: "Synology NAS (10.77.20.20) NFS port is unreachable"
             description: "media-nfs's backing server is down — jellyfin/sonarr/radarr/etc. will hang on any I/O rather than error. See NAS-AND-SWITCH-MAINTENANCE.md: if this was an unplanned outage (not you doing NAS/switch maintenance under the runbook), consider scaling the affected media Deployments to 0 (kubectl scale deploy -n media bazarr jellyfin nzbget qbittorrent radarr sonarr unpackerr --replicas=0) until it's back, since a node reboot while this is firing risks the hard-NFS-hang failure mode documented there."
+        - alert: NetworkSwitchUnreachable
+          expr: probe_success{target="network-switches"} == 0
+          for: 3m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Switch {{ $labels.instance }} is not answering on its management port"
+            description: "10.77.10.2 = MikroTik CRS317 aggregation switch (the NAS hangs off it, so expect NASNFSUnreachable too), 10.77.10.3 = Dell N1148P-ON core switch (every Talos node is on Gi49-52; if it is really down the cluster has lost its network and this alert may not get out at all), 10.77.10.5 = HP 1930 Instant On PoE access switch (APs and client devices). A failed TCP connect to :80 from the cluster means the switch is down, rebooting, or its management plane is wedged. Check its link LEDs and console. If only the management UI is stuck, traffic may still be flowing."
 
     - name: unifi
       rules:
