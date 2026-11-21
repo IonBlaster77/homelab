@@ -23,4 +23,4 @@ metadata:
 data:
   zz-hermes-langfuse.pth: |
     # renovate: datasource=pypi depName=langfuse
-    /home/hermes/.hermes/pylib/langfuse-4.18.0
+    /home/hermes/.hermes/pylib/langfuse-4.15.2
