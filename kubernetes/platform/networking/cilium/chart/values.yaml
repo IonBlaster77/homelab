@@ -59,11 +59,10 @@ cilium:
   # To pick the order yourself (as the 1.20.4 hop did, talos4 first), switch
   # both this and envoy.updateStrategy to `type: OnDelete` for that hop and
   # delete each node's cilium + cilium-envoy pods by hand.
-  # TEMPORARY for the 1.20.5 hop: OnDelete, so the sync restarts no agent or
-  # Envoy pod; each node is upgraded by hand, talos4 first as the canary.
-  # Restore RollingUpdate / maxUnavailable 1 once all 4 nodes run 1.20.5.
   updateStrategy:
-    type: OnDelete
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   # Envoy (the Gateway's L7 proxy, one per node): ~97 MiB typical, 301 MiB
   # peak. Request only, no limit; the request lifts it out of BestEffort, the
   # class Talos' OOM controller kills first.
@@ -72,10 +71,11 @@ cilium:
       requests:
         cpu: 20m
         memory: 128Mi
-    # TEMPORARY OnDelete for the 1.20.5 hop, as for the agent above; normally
-    # RollingUpdate with maxUnavailable: 1.
+    # One node at a time, same reason as the agent's updateStrategy above.
     updateStrategy:
-      type: OnDelete
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 1
   hubble:
     relay:
       enabled: true
