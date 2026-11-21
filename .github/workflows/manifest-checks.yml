@@ -43,7 +43,7 @@ env:
   # renovate: datasource=github-releases depName=helm/helm
   HELM_VERSION: "v3.22.1"
   # renovate: datasource=github-releases depName=yannh/kubeconform
-  KUBECONFORM_VERSION: "v0.6.7"
+  KUBECONFORM_VERSION: "v0.8.0"
   # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>v.+)$
   KUSTOMIZE_VERSION: "v5.7.1"
   # renovate: datasource=github-releases depName=mikefarah/yq
