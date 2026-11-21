@@ -37,7 +37,7 @@ spec:
       initContainers:
         # Pi isn't in the image. Install a pinned version onto the data
         # volume, once per version (npm from the registry; egress allows it).
-        # Bump PI_VERSION by hand: Renovate doesn't see versions in scripts.
+        # PI_VERSION is tracked by Renovate via the `# renovate:` annotation.
         - name: install-pi
           image: ghcr.io/paperclipai/paperclip:2026.1117.0@sha256:bdf38d10544dc6c831e16dc027f23ad586353ef3be1a1b2c6979e63b956aceb1
           securityContext:
@@ -47,6 +47,7 @@ spec:
               drop: ["ALL"]
           env:
             - name: PI_VERSION
+              # renovate: datasource=npm depName=@earendil-works/pi-coding-agent
               value: "1.4.0"
             - name: HOME
               value: /paperclip

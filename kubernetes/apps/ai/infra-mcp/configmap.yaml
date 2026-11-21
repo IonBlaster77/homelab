@@ -19,13 +19,15 @@ data:
     pip install --user --no-cache-dir --quiet "mcp<2" kubernetes starlette uvicorn
 
     # talosctl is a single static binary, no package manager needed - pinned
-    # to the same version already running on this cluster (confirmed via
-    # `talosctl version --client` this session) rather than "latest", same
-    # never-:latest discipline as every image in this repo.
+    # rather than "latest", same never-:latest discipline as every image in
+    # this repo. Renovate tracks it (`# renovate:` annotation): patches come
+    # as normal PRs, a new Talos minor as a draft needs-planning PR (keep the
+    # client on the cluster's Talos minor).
     mkdir -p /home/app/.local/bin
     python3 -c "
     import urllib.request
     urllib.request.urlretrieve(
+        # renovate: datasource=github-releases depName=siderolabs/talos
         'https://github.com/siderolabs/talos/releases/download/v1.12.6/talosctl-linux-amd64',
         '/home/app/.local/bin/talosctl',
     )
@@ -36,6 +38,7 @@ data:
     python3 -c "
     import tarfile, urllib.request, io
     data = urllib.request.urlopen(
+        # renovate: datasource=github-releases depName=cilium/hubble
         'https://github.com/cilium/hubble/releases/download/v1.17.3/hubble-linux-amd64.tar.gz'
     ).read()
     tarfile.open(fileobj=io.BytesIO(data)).extract('hubble', '/home/app/.local/bin')

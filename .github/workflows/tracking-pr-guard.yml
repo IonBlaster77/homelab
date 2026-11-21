@@ -1,0 +1,34 @@
+name: tracking-pr-guard
+
+# Renovate raises "tracking-only" PRs for updates it can't apply itself:
+# Talos and Kubernetes versions (the Talos configs are SOPS files, and any
+# edit breaks their MAC) and the vendored Gateway API CRDs. They exist so the
+# upgrade shows up as a PR to plan; Renovate closes each one by itself once
+# the repo shows the new version. This check fails on purpose so they are
+# never merged by accident (merge-one.sh also refuses renovate/tracking-*).
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+permissions: {}
+
+jobs:
+  tracking-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Block tracking-only PRs
+        env:
+          HAS_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'tracking-only') }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          case "$HEAD_REF" in
+            renovate/tracking-*) tracking=true ;;
+            *) tracking=$HAS_LABEL ;;
+          esac
+          if [ "$tracking" = "true" ]; then
+            echo "::error::Tracking PR: do not merge. Do the upgrade by hand (talosctl + sops edit, or re-vendor the CRDs); Renovate closes this PR once the repo shows the new version."
+            exit 1
+          fi
+          echo "Not a tracking PR."

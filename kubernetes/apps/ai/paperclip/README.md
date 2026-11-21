@@ -105,5 +105,6 @@ here, then disable the Hermes crons.
 ## Upgrades
 
 Renovate bumps the image (`2026.MMDD.N` CalVer). The Pi version is
-`PI_VERSION` in the initContainer: Renovate doesn't see it, so bump it by hand.
+`PI_VERSION` in the initContainer, which Renovate tracks through its
+`# renovate:` annotation (npm `@earendil-works/pi-coding-agent`).
 The initContainer reinstalls only when that version changes.

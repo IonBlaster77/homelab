@@ -35,13 +35,24 @@ defaults:
 
 env:
   ENFORCE: "false"
+  # The cluster's Kubernetes minor (schemas only, so the .0 patch is fine).
+  # Not tracked by Renovate: bump it with the Kubernetes minor upgrade.
   KUBE_VERSION: "1.35.0"
+  # Tool pins below are tracked by the `# renovate:` annotation manager
+  # in renovate.json.
+  # renovate: datasource=github-releases depName=helm/helm
   HELM_VERSION: "v3.22.1"
+  # renovate: datasource=github-releases depName=yannh/kubeconform
   KUBECONFORM_VERSION: "v0.6.7"
+  # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>v.+)$
   KUSTOMIZE_VERSION: "v5.7.1"
+  # renovate: datasource=github-releases depName=mikefarah/yq
   YQ_VERSION: "v4.44.3"
+  # renovate: datasource=github-releases depName=rhysd/actionlint extractVersion=^v(?<version>.+)$
   ACTIONLINT_VERSION: "1.7.7"
+  # renovate: datasource=pypi depName=yamllint
   YAMLLINT_VERSION: "1.38.0"
+  # renovate: datasource=npm depName=renovate
   RENOVATE_VERSION: "44.178.5"
 
 jobs:

@@ -5,8 +5,6 @@
   "timezone": "Australia/Adelaide",
   "ignorePaths": [
     "**/node_modules/**",
-    "talos/**",
-    "bootstrap/**",
     "kubernetes/**/chart/charts/**"
   ],
   "prConcurrentLimit": 0,
@@ -16,7 +14,10 @@
     "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"]
   },
   "helm-values": {
-    "managerFilePatterns": ["/^kubernetes/.+/values\\.ya?ml$/"]
+    "managerFilePatterns": [
+      "/^kubernetes/.+/values\\.ya?ml$/",
+      "/^bootstrap/argocd-values\\.yaml$/"
+    ]
   },
   "argocd": {
     "managerFilePatterns": ["/^kubernetes/.+/app\\.yaml$/"]
@@ -28,22 +29,75 @@
       "managerFilePatterns": ["/^kubernetes/.+\\.ya?ml$/"],
       "matchStrings": ["imageName:\\s*(?<depName>[^:\\s]+):(?<currentValue>[^\\s@]+)"],
       "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Versions no manager can see (CI tool pins, packages installed by scripts at pod start, binaries downloaded by URL, kustomize image overrides): put `# renovate: datasource=<ds> depName=<name>` (optionally `extractVersion=<regex>`) on the line above, and the first x.y.z on the next line is tracked.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^kubernetes/.+\\.ya?ml$/",
+        "/^\\.github/workflows/.+\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+extractVersion=(?<extractVersion>\\S+))?\\s*\\n[^\\n]*?(?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+      ]
+    },
+    {
+      "description": "Talos OS version (tracking only, see the tracking-only rule below). talos/*.yaml are SOPS files: the installer line is plaintext so Renovate can read it, but any edit breaks the SOPS MAC, so these PRs are never merged. Only live `image:` lines, not the commented-out defaults.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^talos/.+\\.yaml$/"],
+      "matchStrings": ["\\n\\s*image: factory\\.talos\\.dev/installer/[0-9a-f]{64}:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "siderolabs/talos",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Kubernetes version (tracking only): the kubelet and control-plane images in the Talos machine configs. Only live `image:` lines.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^talos/.+\\.yaml$/"],
+      "matchStrings": ["\\n\\s*image: (?<depName>ghcr\\.io/siderolabs/kubelet|registry\\.k8s\\.io/kube-(?:apiserver|controller-manager|scheduler|proxy)):(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "The Harbor preload list carries the same kubelet and Talos installer versions, so it is part of the same tracking PRs (they close once it matches too).",
+      "customType": "regex",
+      "managerFilePatterns": ["/^kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload\\.yaml$/"],
+      "matchStrings": ["(?<depName>ghcr\\.io/siderolabs/kubelet):(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Same, for the Talos installer in the Harbor preload list.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload\\.yaml$/"],
+      "matchStrings": ["factory\\.talos\\.dev/installer/[0-9a-f]{64}:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "siderolabs/talos",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Gateway API CRDs are vendored per version directory (v1.6.3/...). Renovate can't re-vendor them, so its PR only renames the paths and fails the kustomize build: tracking only.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^kubernetes/platform/networking/gateway-api-crds/kustomization\\.yaml$/"],
+      "matchStrings": ["\\n\\s*-\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)/"],
+      "depNameTemplate": "kubernetes-sigs/gateway-api",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
     }
   ],
   "packageRules": [
+    {
+      "description": "Policy: every available update gets a PR, including risky ones, because PRs are how updates get noticed and planned. Majors arrive as draft PRs labelled needs-planning: visible, but they say plainly that they need a plan first.",
+      "matchUpdateTypes": ["major"],
+      "draftPR": true,
+      "addLabels": ["needs-planning"],
+      "prBodyNotes": [
+        "**Major version.** Raised so it can be planned, not merged as-is: read the upgrade notes and check our config against them first."
+      ]
+    },
     {
       "description": "Images we build ourselves (services/*, pushed to Harbor by the build-image workflow) are tagged with the git commit that built them. Harbor is LAN-only, so Renovate can't look them up; whoever builds a new image updates the tag.",
       "matchPackageNames": ["registry.jupitertech.net/**"],
       "enabled": false
     },
     {
-      "description": "All CNPG Postgres clusters run the same image, so they update together in one PR. Each cluster restarts its replica, then switches over (a few seconds' blip). Postgres majors (18 -> 19) need a dump/import or pg_upgrade, so Renovate only offers minors.",
-      "matchPackageNames": ["ghcr.io/cloudnative-pg/postgresql"],
-      "groupName": "cnpg postgresql",
-      "matchUpdateTypes": ["major"],
-      "enabled": false
-    },
-    {
+      "description": "All CNPG Postgres clusters run the same image, so they update together in one PR. Each cluster restarts its replica, then switches over (a few seconds' blip). Postgres majors (18 -> 19) need a dump/import or pg_upgrade: they arrive as draft needs-planning PRs (rule above).",
       "matchPackageNames": ["ghcr.io/cloudnative-pg/postgresql"],
       "groupName": "cnpg postgresql"
     },
@@ -68,10 +122,9 @@
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<build>\\d+)$"
     },
     {
-      "description": "VectorChord tags are pg<postgres major>-v<extension version> (pg17-v0.4.1), which docker versioning can't parse. Stay on Postgres 17 (pg18 needs a dump/restore of the data directory). Any VectorChord version is fine: Streamystats only uses the bundled pgvector, never the vchord extension (see statefulset-vectorchord.yaml).",
+      "description": "VectorChord tags are pg<postgres major>-v<extension version> (pg17-v0.4.1), which docker versioning can't parse. The Postgres major is the version's major, so pg17 -> pg18 arrives as a draft needs-planning PR (it needs a dump/restore of the data directory); extension bumps are minor/patch. Streamystats only uses the bundled pgvector, never the vchord extension (see statefulset-vectorchord.yaml).",
       "matchPackageNames": ["tensorchord/vchord-postgres"],
-      "versioning": "regex:^pg(?<compatibility>\\d+)-v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
-      "allowedVersions": "/^pg17-/"
+      "versioning": "regex:^pg(?<major>\\d+)-v(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)$"
     },
     {
       "description": "SearXNG tags are <date>-<commit> (2026.7.3-747cec4c2). Docker versioning reads the commit hash as a suffix that must match, so it never offered an update. Compare the date only. Upstream ships several builds a day, so only create/update its PR overnight (Adelaide): at most one bump a day.",
@@ -86,20 +139,38 @@
       "pinDigests": true
     },
     {
-      "description": "Kea: ISC numbers stable releases with an even minor (2.6, 3.0, 3.2) and development releases with an odd one (2.7, 3.1, 3.3), so only offer even minors. dhcp4 and kea-admin (the init container that upgrades the database schema) must run the same version, so they update together in one PR.",
+      "description": "Kea: ISC numbers stable releases with an even minor (2.6, 3.0, 3.2) and development releases with an odd one (2.7, 3.1, 3.3). Odd minors are development snapshots, not releases, so only even minors are offered. dhcp4 and kea-admin (the init container that upgrades the database schema) must run the same version, so they update together in one PR.",
       "matchPackageNames": ["jonasal/kea-dhcp4", "jonasal/kea-admin"],
       "allowedVersions": "/^\\d+\\.\\d*[02468]\\.\\d+$/",
       "groupName": "kea"
     },
     {
-      "description": "ClickHouse (Langfuse's trace store): LTS releases only. ClickHouse's LTS lines are the .3 and .8 releases (26.3, 26.8, 27.3, ...), supported about a year; regular releases get about three months. Langfuse v4 needs >= 25.12.",
+      "description": "ClickHouse (Langfuse's trace store): we run LTS lines (.3 and .8, about a year of support; regular releases get about three months). Patches on our line come as a normal PR; a newer release line (regular or the next LTS) comes as a separate draft needs-planning PR. Langfuse v4 needs >= 25.12.",
       "matchPackageNames": ["docker.io/clickhouse/clickhouse-server"],
-      "allowedVersions": "/^\\d+\\.[38]\\.\\d+\\.\\d+$/"
+      "separateMinorPatch": true
     },
     {
-      "description": "kubectl is only supported within one minor version of the API server. The cluster runs Kubernetes 1.35 (Talos), so allow 1.35.x and 1.36.x. Widen this when Talos/Kubernetes is upgraded (task #33).",
+      "matchPackageNames": ["docker.io/clickhouse/clickhouse-server"],
+      "matchUpdateTypes": ["minor"],
+      "draftPR": true,
+      "addLabels": ["needs-planning"],
+      "prBodyNotes": [
+        "**New ClickHouse release line.** We run LTS (.3/.8). A regular release means leaving LTS; prefer waiting for the next LTS unless there is a reason."
+      ]
+    },
+    {
+      "description": "kubectl is only supported within one minor version of the API server (Kubernetes 1.35 now). Patches come as normal PRs; a new minor comes as a draft needs-planning PR, mergeable once the cluster's Kubernetes is within one minor of it.",
       "matchPackageNames": ["registry.k8s.io/kubectl", "rancher/kubectl"],
-      "allowedVersions": "/^v?1\\.3[56]\\./"
+      "separateMinorPatch": true
+    },
+    {
+      "matchPackageNames": ["registry.k8s.io/kubectl", "rancher/kubectl"],
+      "matchUpdateTypes": ["minor"],
+      "draftPR": true,
+      "addLabels": ["needs-planning"],
+      "prBodyNotes": [
+        "**kubectl minor.** Check it is within one minor of the cluster's Kubernetes (see the Kubernetes tracking PRs) before merging."
+      ]
     },
     {
       "description": "Hermes switched from CalVer tags (v2026.9.24) to SemVer (v0.22.5) in October 2026. Without this, Renovate treats the old CalVer tags as the biggest version and never offers SemVer releases, and it would also offer the -desktop and rc. tags. Only plain vMAJOR.MINOR.PATCH.",
@@ -115,6 +186,102 @@
       "description": "hermes-webui publishes several releases a day, and each update restarts Hermes for ~3 minutes. Only create/update its PR overnight (Adelaide), so there is at most one bump a day.",
       "matchPackageNames": ["ghcr.io/nesquena/hermes-webui"],
       "schedule": ["* 0-5 * * *"]
+    },
+    {
+      "description": "The Langfuse Python SDK that Hermes' plugin loads is installed by an init container (LANGFUSE_SDK) and put on the import path by a .pth file that names the same version: both update in one PR.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["langfuse"],
+      "groupName": "hermes langfuse sdk"
+    },
+    {
+      "description": "external-snapshotter: the Argo CD source tag and the snapshot-controller image override (upstream's manifests lag their own tag) must move together.",
+      "matchPackageNames": [
+        "https://github.com/kubernetes-csi/external-snapshotter.git",
+        "registry.k8s.io/sig-storage/snapshot-controller"
+      ],
+      "groupName": "external-snapshotter"
+    },
+    {
+      "description": "Argo CD's bundled Redis is looked up on Docker Hub: the chart pulls the same official image from ecr-public.aws.com, whose tag list Renovate can't read. A Redis minor is its own change (the Argo CD chart's default may be newer than our pin), so it is a draft needs-planning PR.",
+      "matchPackageNames": ["ecr-public.aws.com/docker/library/redis"],
+      "overridePackageName": "redis",
+      "separateMinorPatch": true
+    },
+    {
+      "matchPackageNames": ["ecr-public.aws.com/docker/library/redis"],
+      "matchUpdateTypes": ["minor"],
+      "draftPR": true,
+      "addLabels": ["needs-planning"]
+    },
+    {
+      "description": "infra-mcp's talosctl client should stay on the cluster's Talos minor: patches are normal PRs, a new minor is a draft needs-planning PR to merge after the cluster's Talos upgrade.",
+      "matchPackageNames": ["siderolabs/talos"],
+      "matchFileNames": ["kubernetes/apps/ai/infra-mcp/**"],
+      "separateMinorPatch": true
+    },
+    {
+      "matchPackageNames": ["siderolabs/talos"],
+      "matchFileNames": ["kubernetes/apps/ai/infra-mcp/**"],
+      "matchUpdateTypes": ["minor"],
+      "draftPR": true,
+      "addLabels": ["needs-planning"]
+    },
+    {
+      "description": "Talos and Kubernetes versions: one tracking PR per release line (Talos and Kubernetes are upgraded one minor at a time; Kubernetes patches separately). These PRs edit SOPS files, which breaks the MAC, so they must never be merged: they are drafts, labelled tracking-only, fail the tracking-pr-guard check, and use a renovate/tracking- branch that merge-one.sh refuses. Do the upgrade with talosctl, update the configs with `sops edit`, and Renovate closes the PR by itself once the YAML shows the new version.",
+      "matchFileNames": [
+        "talos/**",
+        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml"
+      ],
+      "matchPackageNames": [
+        "siderolabs/talos",
+        "ghcr.io/siderolabs/kubelet",
+        "registry.k8s.io/kube-apiserver",
+        "registry.k8s.io/kube-controller-manager",
+        "registry.k8s.io/kube-scheduler",
+        "registry.k8s.io/kube-proxy"
+      ],
+      "draftPR": true,
+      "addLabels": ["tracking-only"],
+      "additionalBranchPrefix": "tracking-",
+      "separateMinorPatch": true,
+      "separateMultipleMinor": true,
+      "prBodyNotes": [
+        "**Tracking PR: do not merge.** It only exists so the upgrade shows up as a task. It edits SOPS-encrypted Talos configs (breaking their MAC) and the tracking-pr-guard check fails on purpose. Upgrade with talosctl, update the configs with `sops edit`, and this PR closes itself once the YAML shows the new version."
+      ]
+    },
+    {
+      "matchFileNames": [
+        "talos/**",
+        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml"
+      ],
+      "matchPackageNames": ["siderolabs/talos"],
+      "groupName": "talos"
+    },
+    {
+      "matchFileNames": [
+        "talos/**",
+        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/siderolabs/kubelet",
+        "registry.k8s.io/kube-apiserver",
+        "registry.k8s.io/kube-controller-manager",
+        "registry.k8s.io/kube-scheduler",
+        "registry.k8s.io/kube-proxy"
+      ],
+      "groupName": "kubernetes"
+    },
+    {
+      "description": "Gateway API CRDs: tracking only. Re-vendor the new version directory (and check Cilium supports it) by hand; the PR closes itself once kustomization.yaml points at it.",
+      "matchPackageNames": ["kubernetes-sigs/gateway-api"],
+      "matchFileNames": ["kubernetes/platform/networking/gateway-api-crds/**"],
+      "groupName": "gateway api crds",
+      "draftPR": true,
+      "addLabels": ["tracking-only"],
+      "additionalBranchPrefix": "tracking-",
+      "prBodyNotes": [
+        "**Tracking PR: do not merge.** Renovate can't vendor CRDs; this only renames paths. Vendor `vX.Y.Z/` from upstream, check Cilium's supported Gateway API version, point kustomization.yaml at it, and this PR closes itself."
+      ]
     },
     {
       "description": "cilium and argocd are umbrella charts that vendor the upstream chart as chart/charts/<name>-<version>.tgz, and Argo CD renders that archive as committed. Without this, Renovate bumped only Chart.yaml and Chart.lock and left the old .tgz, so merging deployed nothing while Argo showed Synced (#441). With it, Renovate runs helm dependency update and commits the new archive and the deletion of the old one.",
