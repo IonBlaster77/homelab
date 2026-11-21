@@ -1,0 +1,15 @@
+# CNPG metrics for atlas-db, so the CNPG alerts (incl. WALArchiveBacklog)
+# cover it. atlas-db-allow-cnpg in networkpolicy.yaml admits the scrape.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: atlas-db
+  namespace: atlas
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: atlas-db
+  podMetricsEndpoints:
+    - port: metrics

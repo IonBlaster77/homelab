@@ -1,0 +1,43 @@
+name: atlas
+
+# Type-check and test services/atlas (the Atlas collector) on changes to it.
+# The tests run against PGlite (real Postgres in-process), so no database
+# service is needed.
+
+on:
+  pull_request:
+    paths: ["services/atlas/**", ".github/workflows/atlas.yml"]
+  push:
+    branches: [main]
+    paths: ["services/atlas/**", ".github/workflows/atlas.yml"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+    working-directory: services/atlas
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: services/atlas/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      # Fails if schema.ts changed without a matching migration.
+      - name: Migrations up to date
+        run: |
+          npx drizzle-kit generate --name ci-check
+          if [ -n "$(git status --porcelain -- src/db/migrations)" ]; then
+            echo "::error::src/db/schema.ts has changes with no migration; run npm run db:generate and commit the result"
+            exit 1
+          fi
