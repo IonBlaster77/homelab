@@ -76,6 +76,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: forgejo
             cnpg.io/cluster: forgejo-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: atlas
+            cnpg.io/cluster: atlas-db
       toPorts:
         - ports:
             - port: "9000"
