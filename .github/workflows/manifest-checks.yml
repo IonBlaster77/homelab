@@ -41,7 +41,7 @@ env:
   # Tool pins below are tracked by the `# renovate:` annotation manager
   # in renovate.json.
   # renovate: datasource=github-releases depName=helm/helm
-  HELM_VERSION: "v3.22.1"
+  HELM_VERSION: "v4.3.2"
   # renovate: datasource=github-releases depName=yannh/kubeconform
   KUBECONFORM_VERSION: "v0.8.0"
   # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>v.+)$
