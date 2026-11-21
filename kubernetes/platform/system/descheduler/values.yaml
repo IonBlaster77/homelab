@@ -27,9 +27,10 @@ podSecurityContext:
 
 deschedulerPolicy:
   # At most a few evictions a night, so the cluster converges over several
-  # nights instead of churning at once.
-  maxNoOfPodsToEvictPerNode: 2
-  maxNoOfPodsToEvictTotal: 5
+  # nights instead of churning at once. Raised from 2/5 on 2026-11-21 when
+  # talos5/talos6 joined, so new nodes fill in days rather than weeks.
+  maxNoOfPodsToEvictPerNode: 3
+  maxNoOfPodsToEvictTotal: 8
   profiles:
     - name: default
       pluginConfig:
@@ -65,13 +66,17 @@ deschedulerPolicy:
               exclude: *excluded
         - name: LowNodeUtilization
           args:
-            # Memory requests only: CPU requests sit at ~85% on three of the
-            # four nodes, so a CPU threshold would find nowhere to move pods.
-            # Nodes under 50% memory requested may receive pods; nodes over
-            # 70% give pods up until they are under it.
+            # CPU and memory requests. A node may RECEIVE pods only while it is
+            # under BOTH thresholds (50% CPU, 50% memory requested); a node
+            # GIVES pods up while it is over EITHER target (80% CPU, 70%
+            # memory). CPU was memory-only until 2026-11-21: with four nodes
+            # all near 85-95% CPU requested there was nowhere to move pods;
+            # talos5/talos6 now give the cluster headroom.
             thresholds:
+              cpu: 50
               memory: 50
             targetThresholds:
+              cpu: 80
               memory: 70
             evictableNamespaces:
               exclude: *excluded
