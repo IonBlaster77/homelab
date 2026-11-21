@@ -57,9 +57,15 @@
       "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?(?:\\.(?<build>\\d+))?-ls(?<revision>\\d+)$"
     },
     {
-      "description": "qBittorrent's linuxserver tags also carry the libtorrent version: 5.2.3_v2.0.13-ls469. The libtorrent major is the compatibility part, so it stays on libtorrent 2.x and never jumps to the libtorrentv1-* tags.",
+      "description": "Shorter linuxserver.io versions (v1.6.2-ls371, v26.3-ls271): the -ls number goes in the build group. Renovate's regex versioning only compares the revision group when a build group is present, so with three or fewer version numbers a -ls rebuild compared as equal and was never offered (found 2026-11-21: bazarr, nzbget and adguardhome-sync were 1-2 rebuilds behind with no PR). Four-number versions (radarr, sonarr, prowlarr) keep the rule above.",
+      "matchPackageNames": ["lscr.io/linuxserver/**"],
+      "matchCurrentValue": "/^v?\\d+\\.\\d+(\\.\\d+)?-ls\\d+$/",
+      "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?-ls(?<build>\\d+)$"
+    },
+    {
+      "description": "qBittorrent's linuxserver tags also carry the libtorrent version: 5.2.3_v2.0.13-ls469. The libtorrent major is the compatibility part, so it stays on libtorrent 2.x and never jumps to the libtorrentv1-* tags. The -ls number is the build group: Renovate only compares a revision group when a build group exists.",
       "matchPackageNames": ["lscr.io/linuxserver/qbittorrent"],
-      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<revision>\\d+)$"
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<build>\\d+)$"
     },
     {
       "description": "VectorChord tags are pg<postgres major>-v<extension version> (pg17-v0.4.1), which docker versioning can't parse. Stay on Postgres 17 (pg18 needs a dump/restore of the data directory). Any VectorChord version is fine: Streamystats only uses the bundled pgvector, never the vchord extension (see statefulset-vectorchord.yaml).",
