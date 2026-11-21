@@ -20,10 +20,10 @@ spec:
         # Bump when configmap-mcp-servers.yaml changes: the fragment is only
         # merged into config.yaml by an initContainer, so a ConfigMap edit
         # alone never reaches the running pod.
-        hermes/config-fragment-rev: "2026-10-28-show-reasoning"
+        hermes/config-fragment-rev: "2026-11-21-reasoning-high"
         # Bump when a configmap-skill-*.yaml changes: skills are subPath
         # mounts, which never update in a running pod.
-        hermes/skills-rev: "2026-11-03-hardware-deals-1.7.0"
+        hermes/skills-rev: "2026-11-21-alert-triage-1.4.0"
     spec:
       serviceAccountName: hermes-sa
       restartPolicy: Always

@@ -337,13 +337,19 @@ alertmanager:
           group_wait: 2m
           group_interval: 15m
           repeat_interval: 24h
+        # Hermes runs a full investigation (~30 LLM calls) on every message in
+        # #alerts-critical, so each re-send costs Codex quota. Until
+        # 2026-11-21 this route grouped by severity and repeated hourly: one
+        # disk alert firing for two days was re-investigated 17 times and
+        # used up the weekly limit. Grouping per alert stops a new critical
+        # from re-posting every other still-firing one; 6h keeps a reminder.
         - matchers:
             - severity="critical"
           receiver: matrix-critical
-          group_by: ["severity"]
+          group_by: ["alertname", "namespace"]
           group_wait: 30s
           group_interval: 5m
-          repeat_interval: 1h
+          repeat_interval: 6h
         - matchers:
             - severity="warning"
           receiver: matrix-warning

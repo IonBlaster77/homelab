@@ -11,7 +11,7 @@ data:
     ---
     name: alert-triage
     description: How to investigate and report on homelab alerts. Load this whenever a message comes from @alertbot (an Alertmanager alert in #alerts-critical), and for the daily review of warning alerts and the log digest. Covers what to check, the reply format, and what you must not do.
-    version: 1.3.0
+    version: 1.4.0
     metadata:
       hermes:
         tags: [alerts, alertmanager, prometheus, triage, homelab, matrix]
@@ -47,6 +47,27 @@ data:
       Example: Sonarr's `Error parsing column 8 (MediaInfo=...)` on
       2026-10-21/22 was the .NET heap running out at a 1Gi limit, not
       malformed indexer data.
+
+    ## Step 0: was this alert already investigated? (do this first)
+
+    Every alert message starts a new session, so you can't see earlier
+    threads unless you look. Before loading other skills or running any
+    other tool, call `session_search` once for the alert name (for example
+    `LonghornDiskUsageCritical`) and check for an investigation of the same
+    alert (same name and namespace/target) in the last 24 hours.
+
+    - **Found one, and this message is FIRING:** it is a repeat. Run at most
+      ONE `prometheus_query` on the alert's metric to see whether it got
+      better or worse, then reply in two or three lines: "Repeat of the
+      investigation at <time>", the current value against the earlier one,
+      and whether the earlier follow-ups still apply. Stop there. Only do a
+      full investigation if the value moved sharply or a new target is
+      affected, and say why.
+    - **Nothing found:** do the full investigation below.
+
+    Investigations use the owner's limited model quota: on 2026-11-19/20 one
+    disk alert was fully re-investigated 17 times and used up the weekly
+    limit. Keep full investigations focused, around 15 tool calls.
 
     ## Investigating a FIRING alert
 
@@ -85,10 +106,9 @@ data:
     - **RESOLVED:** one or two lines: that it cleared, and whether any
       follow-up from the FIRING investigation still matters. No new
       investigation unless it flapped.
-    - **Repeats** (Alertmanager re-sends a still-firing alert, hourly for
-      critical): if you already investigated this alert in this room
-      recently, reply in one line ("still firing, no change since the earlier
-      analysis") unless something has materially changed; if so, say what.
+    - **Repeats** (Alertmanager re-sends a still-firing critical alert every
+      6 hours): handled by Step 0 above. Never start a fresh full
+      investigation of an alert already investigated in the last 24 hours.
 
     ## Daily review (the daily health review)
 
