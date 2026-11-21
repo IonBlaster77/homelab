@@ -202,16 +202,10 @@
       "groupName": "external-snapshotter"
     },
     {
-      "description": "Argo CD's bundled Redis is looked up on Docker Hub: the chart pulls the same official image from ecr-public.aws.com, whose tag list Renovate can't read. A Redis minor is its own change (the Argo CD chart's default may be newer than our pin), so it is a draft needs-planning PR.",
+      "description": "Argo CD's bundled Redis is looked up on Docker Hub: the chart pulls the same official image from ecr-public.aws.com, whose tag list Renovate can't read. Minors are normal PRs: Argo CD only uses Redis as a cache, the app is manual-sync anyway, and the PR review checks the chart's tested Redis version. Patches come separately so a patch on our line is never hidden behind a minor.",
       "matchPackageNames": ["ecr-public.aws.com/docker/library/redis"],
       "overridePackageName": "redis",
       "separateMinorPatch": true
-    },
-    {
-      "matchPackageNames": ["ecr-public.aws.com/docker/library/redis"],
-      "matchUpdateTypes": ["minor"],
-      "draftPR": true,
-      "addLabels": ["needs-planning"]
     },
     {
       "description": "infra-mcp's talosctl client should stay on the cluster's Talos minor: patches are normal PRs, a new minor is a draft needs-planning PR to merge after the cluster's Talos upgrade.",
