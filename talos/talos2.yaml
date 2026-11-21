@@ -167,7 +167,7 @@ machine:
         # Upgrades keep EPHEMERAL (/var/lib/longhorn on /dev/sda): talosctl 1.12
         # has no --preserve flag any more because it is always on, so the
         # replicas survive and only resync.
-        image: factory.talos.dev/installer/29ed30861180b374ed20fef0b1ebeda27c9e94e061a60bb029934378d335c5ac:v1.12.12
+        image: factory.talos.dev/installer/29ed30861180b374ed20fef0b1ebeda27c9e94e061a60bb029934378d335c5ac:v1.13.12
         # Indicates if the installation disk should be wiped at installation time.
         wipe: true
         # Indicates if legacy GRUB bootloader should use kernel cmdline from the UKI instead of building it on the host.
