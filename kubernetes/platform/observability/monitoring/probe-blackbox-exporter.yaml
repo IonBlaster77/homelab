@@ -89,3 +89,32 @@ spec:
       labels:
         target: cilium-gateway
   interval: 30s
+---
+# Liveness of the switches' management web UIs (TCP connect to :80), so a
+# dead or rebooting switch raises an alert instead of only turning a
+# Homepage dot red. 10.77.10.2 = MikroTik CRS317 aggregation switch (NAS),
+# 10.77.10.3 = Dell N1148P-ON core switch (every Talos node, Gi49-52),
+# 10.77.10.5 = HP 1930 Instant On PoE access switch. Port 80 because it is
+# the one port all three answer from the cluster (the CRS317 limits ssh to
+# VLANs 10/110; the Dell has no SSH yet). The router (10.77.10.1) is left
+# out: mikrotik-exporter already covers it.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: network-switches
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  module: tcp_connect
+  prober:
+    url: blackbox-exporter.monitoring.svc.cluster.local:9115
+  targets:
+    staticConfig:
+      static:
+        - 10.77.10.2:80
+        - 10.77.10.3:80
+        - 10.77.10.5:80
+      labels:
+        target: network-switches
+  interval: 30s
