@@ -961,6 +961,23 @@ config:
                   label: Runtime
                 - field: data.result.0.metric.kubelet_version
                   label: Kubelet
+        - talos6:
+            id: node-os-talos6-card
+            description: Worker — 10.77.20.16
+            icon: mdi-server
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=kube_node_info%7Bnode%3D%22talos6%22%7D"
+              refreshInterval: 600000
+              mappings:
+                - field: data.result.0.metric.os_image
+                  label: OS
+                - field: data.result.0.metric.kernel_version
+                  label: Kernel
+                - field: data.result.0.metric.container_runtime_version
+                  label: Runtime
+                - field: data.result.0.metric.kubelet_version
+                  label: Kubelet
     # Per-device firmware. AP versions come from unpoller_device_info's
     # `version` label - note the metric prefix is `unpoller_`, not
     # `unifi_` (the project renamed itself from unifi-poller to
