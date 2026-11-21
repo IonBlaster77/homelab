@@ -49,7 +49,18 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   investigation, posted in that alert's thread (Summary / Investigation /
   Findings / Likely cause / Follow-ups), per the **alert-triage** skill
   (`configmap-skill-alert-triage.yaml`, mounted into the skills tree).
-  Read-only: it diagnoses and plans, never changes anything.
+  Read-only: it diagnoses and plans, never changes anything. Repeats are
+  cheap: the skill first checks `session_search` for an investigation of
+  the same alert in the last 24h and, if there is one, replies in a few
+  lines. Alertmanager re-sends a still-firing critical every 6h, grouped
+  per alert (was 1h grouped by severity until 2026-11-21, which re-ran a
+  full ~30-call investigation every hour and used up the ChatGPT weekly
+  limit).
+- **Quota:** everything runs on the ChatGPT/Codex subscription
+  (`openai-codex`). Default model gpt-5.6-sol at reasoning `high` (set in
+  `configmap-mcp-servers.yaml`); cron jobs and delegation use gpt-5.6-terra
+  at medium. Token use per session is in `~/.hermes/state.db` (`sessions`
+  table: source, title, api_call_count, input/cache_read/output tokens).
 - **#alerts-warning:** answers only when @mentioned. Warnings are covered
   by the **daily health review** instead (Hermes cron job, below).
 - **Who can trigger it:** `@kmoorthy`, and `@alertbot` (critical alerts).
@@ -63,7 +74,9 @@ in `secret.sops.yaml`, synced into `.env` by `sync-env-secrets`).
   it. Settings that matter: continuity on (sees its previous report),
   `enabled_toolsets` `[infra-mcp, skills, file, todo]` (cron always blocks
   terminal/code execution, so don't offer them), report must end with
-  "End of daily health review." The old `daily-warning-review` job is
+  "End of daily health review." Model gpt-5.6-terra at reasoning medium
+  since 2026-11-21 (on the sol/xhigh default it used ~36% of the quota).
+  `daily-work-learning-content-check-in` was paused the same day. The old `daily-warning-review` job is
   paused, not deleted.
 - **Hardware deals:** three cron jobs (→ #hermes), one per category, daily:
   `hardware-deals-gpus` 21:00, `hardware-deals-ram` 21:20 and
