@@ -28,7 +28,7 @@ data:
     import urllib.request
     urllib.request.urlretrieve(
         # renovate: datasource=github-releases depName=siderolabs/talos
-        'https://github.com/siderolabs/talos/releases/download/v1.12.12/talosctl-linux-amd64',
+        'https://github.com/siderolabs/talos/releases/download/v1.14.6/talosctl-linux-amd64',
         '/home/app/.local/bin/talosctl',
     )
     "
