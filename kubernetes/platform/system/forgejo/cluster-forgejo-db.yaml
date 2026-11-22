@@ -24,6 +24,15 @@ spec:
   # Promote the running standby for primary updates (seconds of downtime)
   # instead of restarting the primary pod in place.
   primaryUpdateMethod: switchover
+  # Synchronous replication (2026-11-22, piloted on paperclip-db): commits wait
+  # for the standby, so an unplanned failover can't drop acknowledged writes.
+  # "preferred", not "required": with two instances "required" would block all
+  # writes while the replica is down. See cluster-paperclip-db.yaml.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
   # Point-in-time recovery: the Barman Cloud plugin archives every WAL segment
   # and stores base backups in RustFS (s3://cnpg/forgejo-db/, see
   # objectstore-forgejo-db.yaml).

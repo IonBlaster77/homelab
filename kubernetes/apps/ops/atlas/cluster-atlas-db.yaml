@@ -24,6 +24,15 @@ spec:
     limits:
       memory: 512Mi
   primaryUpdateMethod: switchover
+  # Synchronous replication (2026-11-22, piloted on paperclip-db): commits wait
+  # for the standby, so an unplanned failover can't drop acknowledged writes.
+  # "preferred", not "required": with two instances "required" would block all
+  # writes while the replica is down. See cluster-paperclip-db.yaml.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
   storage:
     # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
     storageClass: longhorn-nvme
