@@ -57,6 +57,31 @@
       "datasourceTemplate": "docker"
     },
     {
+      "description": "etcd version (tracking only): the control-plane configs pin cluster.etcd.image, so a Talos upgrade can't move etcd by itself (Talos 1.14 defaults to etcd 3.7). Looked up on GitHub releases: registry.k8s.io/etcd also carries 3.x.y-0 style tags that docker versioning can't compare with the v-prefixed ones.",
+      "customType": "regex",
+      "managerFilePatterns": ["/^talos/.+\\.yaml$/"],
+      "matchStrings": ["\\n\\s*image: registry\\.k8s\\.io/etcd:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "etcd-io/etcd",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "The Kubernetes version CI validates against (helm --kube-version and kubeconform schemas). It belongs to the same tracking PR as the cluster's Kubernetes, so that PR stays open until CI is bumped too.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/manifest-checks\\.yml$/",
+        "/^scripts/ci/(render-apps|validate-rendered)\\.sh$/"
+      ],
+      "matchStrings": [
+        "KUBE_VERSION: \"(?<currentValue>\\d+\\.\\d+\\.\\d+)\"",
+        "KUBE_VERSION:-(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "default (?<currentValue>\\d+\\.\\d+\\.\\d+), the cluster's version",
+        "KUBE_VERSION, default (?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "kubernetes/kubernetes",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
       "description": "The Harbor preload list carries the same kubelet and Talos installer versions, so it is part of the same tracking PRs (they close once it matches too).",
       "customType": "regex",
       "managerFilePatterns": ["/^kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload\\.yaml$/"],
@@ -159,7 +184,7 @@
       ]
     },
     {
-      "description": "kubectl is only supported within one minor version of the API server (Kubernetes 1.35 now). Patches come as normal PRs; a new minor comes as a draft needs-planning PR, mergeable once the cluster's Kubernetes is within one minor of it.",
+      "description": "kubectl is only supported within one minor version of the API server (the cluster's Kubernetes version is in talos/*.yaml). Patches come as normal PRs; a new minor comes as a draft needs-planning PR, mergeable once the cluster's Kubernetes is within one minor of it.",
       "matchPackageNames": ["registry.k8s.io/kubectl", "rancher/kubectl"],
       "separateMinorPatch": true
     },
@@ -225,7 +250,10 @@
       "description": "Talos and Kubernetes versions: one tracking PR per release line (Talos and Kubernetes are upgraded one minor at a time; Kubernetes patches separately). These PRs edit SOPS files, which breaks the MAC, so they must never be merged: they are drafts, labelled tracking-only, fail the tracking-pr-guard check, and use a renovate/tracking- branch that merge-one.sh refuses. Do the upgrade with talosctl, update the configs with `sops edit`, and Renovate closes the PR by itself once the YAML shows the new version.",
       "matchFileNames": [
         "talos/**",
-        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml"
+        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml",
+        ".github/workflows/manifest-checks.yml",
+        "scripts/ci/render-apps.sh",
+        "scripts/ci/validate-rendered.sh"
       ],
       "matchPackageNames": [
         "siderolabs/talos",
@@ -233,7 +261,9 @@
         "registry.k8s.io/kube-apiserver",
         "registry.k8s.io/kube-controller-manager",
         "registry.k8s.io/kube-scheduler",
-        "registry.k8s.io/kube-proxy"
+        "registry.k8s.io/kube-proxy",
+        "kubernetes/kubernetes",
+        "etcd-io/etcd"
       ],
       "draftPR": true,
       "addLabels": ["tracking-only"],
@@ -255,16 +285,26 @@
     {
       "matchFileNames": [
         "talos/**",
-        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml"
+        "kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload.yaml",
+        ".github/workflows/manifest-checks.yml",
+        "scripts/ci/render-apps.sh",
+        "scripts/ci/validate-rendered.sh"
       ],
       "matchPackageNames": [
         "ghcr.io/siderolabs/kubelet",
         "registry.k8s.io/kube-apiserver",
         "registry.k8s.io/kube-controller-manager",
         "registry.k8s.io/kube-scheduler",
-        "registry.k8s.io/kube-proxy"
+        "registry.k8s.io/kube-proxy",
+        "kubernetes/kubernetes"
       ],
       "groupName": "kubernetes"
+    },
+    {
+      "description": "etcd: its own tracking PR. A new minor (3.6 -> 3.7) changes the metrics/health port to 2383 and needs a plan: move the cluster.etcd.image pin in controlplane.yaml and talos1-3 with sops edit, one control-plane node at a time.",
+      "matchFileNames": ["talos/**"],
+      "matchPackageNames": ["etcd-io/etcd"],
+      "groupName": "etcd"
     },
     {
       "description": "Gateway API CRDs: tracking only. Re-vendor the new version directory (and check Cilium supports it) by hand; the PR closes itself once kustomization.yaml points at it.",
