@@ -27,6 +27,19 @@ spec:
   # Promote the running standby for primary updates (seconds of downtime)
   # instead of restarting the primary pod in place.
   primaryUpdateMethod: switchover
+  # Synchronous replication pilot (2026-11-22): a commit returns only once the
+  # standby has flushed it, so an unplanned failover (primary node crash or
+  # power loss) can't drop acknowledged writes. Planned switchovers are
+  # lossless even with async replication. "preferred", not the default
+  # "required": with only two instances, "required" blocks every write while
+  # the replica is down (each node drain). With "preferred" CNPG lists only
+  # ready standbys, so a missing replica makes commits async until it returns.
+  # Applied by reload, no restart.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
   storage:
     # nvme, not ssd: same reasoning as the other databases (kea-db, 2026-08-05).
     storageClass: longhorn-nvme
