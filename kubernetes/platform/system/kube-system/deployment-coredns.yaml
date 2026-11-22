@@ -20,6 +20,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  annotations:
+    # Marks this object as NOT Talos's. Talos 1.13's `upgrade-k8s` keeps an
+    # inventory (kube-system/talos-bootstrap-manifests-inventory) of the
+    # bootstrap objects it created and prunes any it no longer renders; with
+    # Talos's CoreDNS disabled that would delete all of CoreDNS. cli-utils never
+    # prunes an object whose owning-inventory names someone else (default
+    # policy AdoptIfNoInventory). Set on all six CoreDNS objects; keep it.
+    config.k8s.io/owning-inventory: argocd
   labels:
     k8s-app: kube-dns
     kubernetes.io/name: CoreDNS

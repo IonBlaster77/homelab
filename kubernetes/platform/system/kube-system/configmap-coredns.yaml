@@ -32,6 +32,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  annotations:
+    # Not Talos's: stops `talosctl upgrade-k8s` pruning it (deployment-coredns.yaml)
+    config.k8s.io/owning-inventory: argocd
   name: coredns
   namespace: kube-system
 data:
