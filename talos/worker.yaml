@@ -244,6 +244,11 @@ cluster:
         endpoint: https://192.168.77.10:6443
     # Configures the cluster's name.
     clusterName: homelab
+    # CoreDNS is owned by Argo CD (kubernetes/platform/system/kube-system) since
+    # 2026-11-22, see deployment-coredns.yaml there. Never re-enable this
+    # without removing those manifests first, or Talos and Argo CD will fight.
+    coreDNS:
+        disabled: true
     # Provides cluster specific network configuration options.
     network:
         # The domain used by Kubernetes DNS.
@@ -431,8 +436,8 @@ sops:
             THhqZmpvN2czR3NNQXNscEFETG1uNWMKDAkR6J0Qwih9AiLTee1Clx/UIWxuwzpd
             N2m4LUkVU4+v3buDVbYB5mo5iRsrH5UOQyYNEtw5DqVYpBHlmKfF8g==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T19:18:12Z"
-    mac: ENC[AES256_GCM,data:wOqVX8aYpjWoRfL5fXY+J6aQikknuOSY9vZyxCkhFBDW49kEPUJ49rhBNlUcPXDXn6VzmBIoErKk9xY27fWrq1LBpvdKAbJwEL4cPZViwgbqhJsp50Co8XR9P7RK6xpKQGHyh0yOpBlL0ZzNdGYKdEBvuAh8mYBJe/mN5JIzUmY=,iv:rW7xtRBCaJYRCaIY4spGMzV4TZXDX3c/e5NgACOfvxg=,tag:1doKQpJqcuZjlyyWfszKog==,type:str]
+    lastmodified: "2026-11-22T04:41:41Z"
+    mac: ENC[AES256_GCM,data:g5SaNZd9ERwrkxY8A6n8/8kbQTI0am0SNRBv4X7eTRPcLMgEfAST0PdN6885EOsMyrgiJueHw/TNBSIbcKSA5pkG453H7hPp72FfrWU0tGC8+Wvo4qyTbVwT47uxOvgolkvNHTkLyqeNt/qa2F/uMTUH3feitHw0W3KHjZcB3po=,iv:OkO8MkvvJX3gkXWKcp2xXDX/vmqs89vBOL3owcg5TS0=,tag:f9ewZMsLLqk870fpE1tb7A==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -454,7 +459,7 @@ sops:
             THhqZmpvN2czR3NNQXNscEFETG1uNWMKDAkR6J0Qwih9AiLTee1Clx/UIWxuwzpd
             N2m4LUkVU4+v3buDVbYB5mo5iRsrH5UOQyYNEtw5DqVYpBHlmKfF8g==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-21T19:18:12Z"
-    mac: ENC[AES256_GCM,data:wOqVX8aYpjWoRfL5fXY+J6aQikknuOSY9vZyxCkhFBDW49kEPUJ49rhBNlUcPXDXn6VzmBIoErKk9xY27fWrq1LBpvdKAbJwEL4cPZViwgbqhJsp50Co8XR9P7RK6xpKQGHyh0yOpBlL0ZzNdGYKdEBvuAh8mYBJe/mN5JIzUmY=,iv:rW7xtRBCaJYRCaIY4spGMzV4TZXDX3c/e5NgACOfvxg=,tag:1doKQpJqcuZjlyyWfszKog==,type:str]
+    lastmodified: "2026-11-22T04:41:41Z"
+    mac: ENC[AES256_GCM,data:g5SaNZd9ERwrkxY8A6n8/8kbQTI0am0SNRBv4X7eTRPcLMgEfAST0PdN6885EOsMyrgiJueHw/TNBSIbcKSA5pkG453H7hPp72FfrWU0tGC8+Wvo4qyTbVwT47uxOvgolkvNHTkLyqeNt/qa2F/uMTUH3feitHw0W3KHjZcB3po=,iv:OkO8MkvvJX3gkXWKcp2xXDX/vmqs89vBOL3owcg5TS0=,tag:f9ewZMsLLqk870fpE1tb7A==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
