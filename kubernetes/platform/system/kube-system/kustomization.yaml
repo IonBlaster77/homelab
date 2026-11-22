@@ -3,8 +3,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  # CoreDNS: DNS for every pod in the cluster
+  # CoreDNS: DNS for every pod in the cluster. All of it is Argo CD's since
+  # 2026-11-22 (Talos's copy is disabled), see deployment-coredns.yaml.
   - configmap-coredns.yaml
+  - rbac-coredns.yaml
+  - service-kube-dns.yaml
+  - deployment-coredns.yaml
   # node-uncordon: uncordons each node when it comes back up
   - serviceaccount-node-uncordon.yaml
   - clusterrole-node-uncordon.yaml

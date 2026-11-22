@@ -1,12 +1,9 @@
-# Brings the previously Talos-bootstrapped `coredns` ConfigMap under GitOps
-# management. Talos applies this once at cluster bootstrap (and potentially
-# resets it to stock during a future `talosctl upgrade-k8s`), but does not
-# continuously reconcile it — so ArgoCD selfHeal owning it is a net win: if a
-# k8s upgrade ever reverts it to the default forward target, ArgoCD's next
-# reconcile silently restores this config, rather than the change being lost.
-#
-# Only the ConfigMap is managed here, not the coredns Deployment — Talos still
-# owns the CoreDNS image/version across k8s upgrades.
+# The Corefile. Originally a Talos bootstrap manifest; Argo CD managed only
+# this ConfigMap until 2026-11-22, when it took over the whole CoreDNS set
+# (Deployment, Service, RBAC) and Talos's copy was disabled with
+# `cluster.coreDNS.disabled: true`. Reason: Talos 1.13's `upgrade-k8s`
+# re-applies bootstrap manifests with server-side apply and would have reset
+# this file to stock on every Kubernetes upgrade. See deployment-coredns.yaml.
 #
 # Change from stock: `forward . /etc/resolv.conf` -> `forward . 10.77.20.53 10.77.20.1`
 #   - 10.77.20.53 (adguard-dns LoadBalancer) is primary: gives every pod
