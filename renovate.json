@@ -45,7 +45,7 @@
       "description": "Talos OS version (tracking only, see the tracking-only rule below). talos/*.yaml are SOPS files: the installer line is plaintext so Renovate can read it, but any edit breaks the SOPS MAC, so these PRs are never merged. Only live `image:` lines, not the commented-out defaults.",
       "customType": "regex",
       "managerFilePatterns": ["/^talos/.+\\.yaml$/"],
-      "matchStrings": ["\\n\\s*image: factory\\.talos\\.dev/installer/[0-9a-f]{64}:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "matchStrings": ["\\n\\s*image: factory\\.talos\\.dev/(?:metal-)?installer/[0-9a-f]{64}:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "siderolabs/talos",
       "datasourceTemplate": "github-releases"
     },
@@ -67,7 +67,7 @@
       "description": "Same, for the Talos installer in the Harbor preload list.",
       "customType": "regex",
       "managerFilePatterns": ["/^kubernetes/platform/system/argo-workflows/workflowtemplate-harbor-preload\\.yaml$/"],
-      "matchStrings": ["factory\\.talos\\.dev/installer/[0-9a-f]{64}:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
+      "matchStrings": ["factory\\.talos\\.dev/(?:metal-)?installer/[0-9a-f]{64}:(?<currentValue>v\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "siderolabs/talos",
       "datasourceTemplate": "github-releases"
     },

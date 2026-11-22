@@ -106,7 +106,7 @@ machine:
         # The disk used for installations.
         disk: /dev/sda
         # Allows for supplying the image used to perform the installation.
-        image: factory.talos.dev/installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.13.12
+        image: factory.talos.dev/metal-installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.14.6
         # Indicates if the installation disk should be wiped at installation time.
         wipe: false
         # Indicates if legacy GRUB bootloader should use kernel cmdline from the UKI instead of building it on the host.
@@ -436,8 +436,8 @@ sops:
             THhqZmpvN2czR3NNQXNscEFETG1uNWMKDAkR6J0Qwih9AiLTee1Clx/UIWxuwzpd
             N2m4LUkVU4+v3buDVbYB5mo5iRsrH5UOQyYNEtw5DqVYpBHlmKfF8g==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-22T05:08:03Z"
-    mac: ENC[AES256_GCM,data:t1rZIa2qrofjuRT/2cWPpnVGAIfDolTIh+fysoWD2bLCYn0LG4lSQzrwJvEjwgFSNKwsAveFBjIhmaGOkpp3zSxMfLiqbq2hmphYuu5d4N9myQ0u5qJLM1WbgdJEYoR4qGpl8K977glO8MquR3MGQgudvxM/NvkKrULSm6x1gOE=,iv:wM3ax5HDwAaaKsczvuPUiewPVckaCsq8qgzE73lWcoE=,tag:81latRMFoSjhCq1rCDFslQ==,type:str]
+    lastmodified: "2026-11-22T08:26:09Z"
+    mac: ENC[AES256_GCM,data:xY1rvOoJzUsLPyubEO3IjlnCQN3D21VzjqitkiDH0jneGWo5hiVvikURVzoqmRR21o4sACCUasVWbarNIFimXmJ2iEjdLZxaGRW4eq90ngMdK9vL9DKDiCXBTArx4ip6nuW8Ha8BmJT/gqhTkgKHbKJ5GqGGEFXjX82fF0zDczY=,iv:odIcu2HIkQXn0QzvZkBgbIV7SA04rNPKTqVDfhYRBR8=,tag:NwXB0+M0hcG/u9UjS8rGKA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -459,7 +459,7 @@ sops:
             THhqZmpvN2czR3NNQXNscEFETG1uNWMKDAkR6J0Qwih9AiLTee1Clx/UIWxuwzpd
             N2m4LUkVU4+v3buDVbYB5mo5iRsrH5UOQyYNEtw5DqVYpBHlmKfF8g==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-22T05:08:03Z"
-    mac: ENC[AES256_GCM,data:t1rZIa2qrofjuRT/2cWPpnVGAIfDolTIh+fysoWD2bLCYn0LG4lSQzrwJvEjwgFSNKwsAveFBjIhmaGOkpp3zSxMfLiqbq2hmphYuu5d4N9myQ0u5qJLM1WbgdJEYoR4qGpl8K977glO8MquR3MGQgudvxM/NvkKrULSm6x1gOE=,iv:wM3ax5HDwAaaKsczvuPUiewPVckaCsq8qgzE73lWcoE=,tag:81latRMFoSjhCq1rCDFslQ==,type:str]
+    lastmodified: "2026-11-22T08:26:09Z"
+    mac: ENC[AES256_GCM,data:xY1rvOoJzUsLPyubEO3IjlnCQN3D21VzjqitkiDH0jneGWo5hiVvikURVzoqmRR21o4sACCUasVWbarNIFimXmJ2iEjdLZxaGRW4eq90ngMdK9vL9DKDiCXBTArx4ip6nuW8Ha8BmJT/gqhTkgKHbKJ5GqGGEFXjX82fF0zDczY=,iv:odIcu2HIkQXn0QzvZkBgbIV7SA04rNPKTqVDfhYRBR8=,tag:NwXB0+M0hcG/u9UjS8rGKA==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1

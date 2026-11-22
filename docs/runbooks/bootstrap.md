@@ -9,7 +9,7 @@ Estimated time: **45–60 minutes** from powered-off nodes to fully synced ArgoC
 
 | Component | Version |
 |---|---|
-| Talos OS | v1.13.12 |
+| Talos OS | v1.14.6 |
 | Kubernetes | v1.36.6 |
 | Cilium | v1.20.4 |
 | ArgoCD | v3.6.1 (Helm chart argo-cd-10.17.2, image tag pinned) |
@@ -49,7 +49,7 @@ generic Talos ISO.
 
 **Image Factory ISO URL:**
 ```
-https://factory.talos.dev/image/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b/v1.13.12/metal-amd64.iso
+https://factory.talos.dev/image/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b/v1.14.6/metal-amd64.iso
 ```
 
 > **⚠️ USB enumeration warning:** If booting from a USB stick, ensure the USB is **not**
