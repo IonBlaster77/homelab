@@ -400,7 +400,7 @@ cluster:
     # Etcd specific configuration options.
     etcd:
         # Pinned: Talos 1.14 defaults to etcd 3.7. Move to 3.7 as its own step.
-        image: registry.k8s.io/etcd:v3.6.14
+        image: registry.k8s.io/etcd:v3.6.17
         # The `ca` is the root certificate authority of the PKI.
         ca:
             crt: ENC[AES256_GCM,data:rh0NleMNqjDS+1IDeL6bf4/5SmL2Te15tnPblJFN1BrSwFtXntVTFzg3XMjXFHzCPNbQybca/fVVRhCRH/+AuYiRcO1b4z88mB7lKxK7EZ1XE5JrwUujnzxraxGa4LxQc9iKIDyhHnZoVk/ueB9FNcTm61ds45XBWDfk5HLeKx3ygnnQXdL9IYLPWZ81jGPiY8fXBLNibEIH9klMZ8dvCn4VD/Y1i9+NZQOiVzLDibV7LRlRryWuvGp93QD5AIpf+Uctfyl5Qa8Lw5pW6LtNb7u5hwNjzJn9UtbESt4Jv1NzKtaTI9pjgiYrdWyifcMdbDitwBJlCiTRhK/d5TvEsI8VWv1iaov1wzdrW6cX1mLt1Zpr3io2M9WfAhJwlrdBHWrVVLnpSWZ+Fxh/Yqy/HvR8rpM8T3OxkUI9av6+pM7RWLF4xobGGf0US4FtvztiocWWIiE/y3iCFUOWlsKMVSX1W4VCRuoC1cJ63XbGFqDXS+tj/tPBan3lBVXkfZSVPOPx9oP+vPA2SsRE8ExI8yom2H9OgHyjFZV7M8eUa7yTKkDFPf2oaL5IZKLJ6XT8LYLZw+U/v54+CRtliBJhrxw0BcH/J9Bx4qMATvOoeR1UZ+xJx+5CNq2zV9oT/tzjH707Vmqaj5iaECgj8qSq+bbV+vucjSJLPrQLI5W/MrUcXYKOt0x79GXdvHmdLHtVs//PvAl3pQhgLwjrPuMTVK8c1RnkIgbUfrW1NraM/7EzzfyGhhruJB0bA71aO+h63ggJqo9jHk/ewDfABUSpBVQVr5Q/S1GKmuJNbq6sLcPs2lNWNQtjo6PuKS/NCHZDtEEAWpoDjaGoOZ+8n7nFyqQpRH/FRh0i7Xw5xbDrVaqd1fK882Edo12s2VU1/pMOrZ+/apa1Qc4D+y9xHg5c6Vy07mRxTsjfVcYylHuuB08srQ0NLwQK0KR1mw8L2o5IXQbECTdN0XQQsMF3qII5ImI7NFGb9UOUuY2DNPqYVCUjj/WypT0wcICb8JdTu8rWuc8t1A==,iv:lhkSp1MOXTRfu4E8ve10DiKukq19AiCiAcAfQXkLSEw=,tag:Wv5SlanFheCZ0DRwCBMQuQ==,type:str]
