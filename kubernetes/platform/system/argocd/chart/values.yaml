@@ -260,7 +260,7 @@ argo-cd:
     # (renovate.json); check upstream Argo CD's tested Redis before merging.
     image:
       repository: ecr-public.aws.com/docker/library/redis
-      tag: 8.10.3-alpine
+      tag: 8.12.0-alpine
     # ~16 MiB typical, 52 MiB peak
     resources:
       requests:
