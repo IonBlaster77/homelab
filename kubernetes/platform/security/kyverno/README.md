@@ -42,7 +42,7 @@ Hardening Guide describe. Trivy Operator's `ClusterComplianceReport`
 | File | What it is |
 |---|---|
 | `app.yaml` | Argo CD Application, three sources: engine chart, policies chart, this folder. Server-Side Apply |
-| `values.yaml` | Engine: GHCR images, fail-open webhooks, admission reports off, exceptions only from this namespace, background/cleanup controllers off, 2 admission replicas, sizing |
+| `values.yaml` | Engine: GHCR images, fail-open webhooks, admission reports off, exceptions only from this namespace, background/cleanup controllers off, 2 admission replicas, reports controller on workers only, sizing |
 | `values-policies.yaml` | Pod Security Standards set to `restricted`, Audit |
 | `policies/` | Our own CEL `ValidatingPolicy` rules (MS-xx) |
 | `policies/tests/` | `kyverno test` fixtures: a passing and a failing resource per rule, plus edge cases. Not applied to the cluster |

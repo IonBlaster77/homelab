@@ -94,6 +94,18 @@ admissionController:
 # stale for a while and nothing else happens.
 reportsController:
   priorityClassName: homelab-critical
+  # Workers only (talos4-6). The first full scan on 2026-11-26 ran it at ~2
+  # of talos1's 4 cores for ~6 min (node 40% -> 75% CPU) next to
+  # kube-apiserver and the etcd leader. talos1-3 are labelled control-plane
+  # but not tainted (allowSchedulingOnControlPlanes), so this has to be an
+  # affinity. It moves only the controller's own CPU: the API reads and
+  # report writes still land on the API server and etcd.
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: node-role.kubernetes.io/control-plane
+              operator: DoesNotExist
   resources:
     requests:
       cpu: 50m
