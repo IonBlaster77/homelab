@@ -8,7 +8,8 @@ metadata:
   labels:
     app: streamystats
 spec:
-  replicas: 1
+  # 0 while the database moves to CNPG (no writes during the import).
+  replicas: 0
   selector:
     matchLabels:
       app: streamystats
