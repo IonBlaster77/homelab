@@ -13,7 +13,7 @@ spec:
   project: homelab
   source:
     repoURL: https://github.com/kubernetes-csi/external-snapshotter.git
-    targetRevision: v8.7.0
+    targetRevision: v8.7.1
     path: deploy/kubernetes/snapshot-controller
     # Upstream's manifests at the v8.7.0 tag still reference the v8.6.0
     # image (found 2026-11-08 via Trivy), so pin it to match the tag.
@@ -21,7 +21,7 @@ spec:
     kustomize:
       images:
         # renovate: datasource=docker depName=registry.k8s.io/sig-storage/snapshot-controller
-        - registry.k8s.io/sig-storage/snapshot-controller:v8.7.0
+        - registry.k8s.io/sig-storage/snapshot-controller:v8.7.1
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
