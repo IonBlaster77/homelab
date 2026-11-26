@@ -77,7 +77,7 @@ core:
 jobservice:
   image:
     repository: docker.io/goharbor/harbor-jobservice
-    tag: v2.15.5
+    tag: v2.16.0
   existingSecret: harbor-secrets
   existingSecretKey: JOBSERVICE_SECRET
   # ~35 MiB typical, 36 MiB peak
