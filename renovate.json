@@ -5,7 +5,8 @@
   "timezone": "Australia/Adelaide",
   "ignorePaths": [
     "**/node_modules/**",
-    "kubernetes/**/chart/charts/**"
+    "kubernetes/**/chart/charts/**",
+    "kubernetes/platform/security/kyverno/policies/tests/**"
   ],
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
