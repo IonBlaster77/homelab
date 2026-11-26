@@ -1,6 +1,9 @@
 # The collector reads, cluster-wide: Trivy's VulnerabilityReports, and
 # ReplicaSets (to skip reports of old rollout revisions and to name the owning
-# Deployment). Read-only; nothing else.
+# Deployment); Kyverno's PolicyReports and ClusterPolicyReports, plus Pods
+# and Jobs to fold each report up to its owning workload. Pods and Jobs are
+# only ever requested as metadata (PartialObjectMetadataList, k8s.ts), never
+# their specs, although `list` would allow it. Read-only; nothing else.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -18,6 +21,15 @@ rules:
   - apiGroups: ["apps"]
     resources: ["replicasets"]
     verbs: ["get", "list"]
+  - apiGroups: ["wgpolicyk8s.io"]
+    resources: ["policyreports", "clusterpolicyreports"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

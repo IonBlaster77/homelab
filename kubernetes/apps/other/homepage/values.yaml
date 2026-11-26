@@ -121,6 +121,12 @@ config:
         # 7 cards: the Critical/High row of four, then the other three.
         columns: 4
         icon: mdi-shield-bug
+      Compliance:
+        tab: Patch Ops
+        style: row
+        # 6 cards: open violations by kind of rule, then score and trend.
+        columns: 3
+        icon: mdi-clipboard-check
 
   bookmarks:
     - Quick Links:
@@ -1190,6 +1196,90 @@ config:
               mappings:
                 - field: data.result.0.value.1
                   label: Images
+                  format: number
+
+    # Kyverno policy results, as recorded by the Atlas collector
+    # (kubernetes/apps/ops/atlas). Counts are violations: one policy failing
+    # on one workload (Pods and ReplicaSets folded up to their Deployment,
+    # CronJob, CNPG Cluster...). Kyverno is audit-only, so nothing is blocked.
+    - Compliance:
+        - Pod Security, baseline:
+            id: compliance-pss-baseline-card
+            description: Privileged, host access, unsafe capabilities — the serious ones
+            href: https://github.com/IonBlaster77/homelab/tree/main/kubernetes/platform/security/kyverno
+            icon: mdi-shield-lock-open
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=sum(atlas_policy_violations_open%7Bcategory%3D%22Pod%20Security%20Standards%20(Baseline)%22%7D)%20or%20vector(0)"
+              refreshInterval: 120000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Violations
+                  format: number
+        - Pod Security, restricted:
+            id: compliance-pss-restricted-card
+            description: Hardening — non-root, drop capabilities, seccomp
+            href: https://github.com/IonBlaster77/homelab/tree/main/kubernetes/platform/security/kyverno
+            icon: mdi-shield-half-full
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=sum(atlas_policy_violations_open%7Bcategory%3D%22Pod%20Security%20Standards%20(Restricted)%22%7D)%20or%20vector(0)"
+              refreshInterval: 120000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Violations
+                  format: number
+        - Manifest standards:
+            id: compliance-manifest-card
+            description: Our MS rules — requests, probes, pinned images, PSA labels
+            href: https://github.com/IonBlaster77/homelab/blob/main/docs/projects/manifest-standards.md
+            icon: mdi-clipboard-list
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=sum(atlas_policy_violations_open%7Bcategory%3D%22Manifest%20standards%22%7D)%20or%20vector(0)"
+              refreshInterval: 120000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Violations
+                  format: number
+        - Checks passing:
+            id: compliance-score-card
+            description: Workload × policy checks that pass, all policies
+            href: https://github.com/IonBlaster77/homelab/tree/main/kubernetes/platform/security/kyverno
+            icon: mdi-gauge
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=100%20*%20sum(atlas_policy_workloads%7Bresult%3D%22pass%22%7D)%20%2F%20sum(atlas_policy_workloads%7Bresult%3D~%22pass%7Cfail%22%7D)"
+              refreshInterval: 120000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Passing
+                  format: percent
+        - Fixed (7 days):
+            id: compliance-fixed-week-card
+            description: Violations that went away this week, workload still running
+            href: https://github.com/IonBlaster77/homelab/tree/main/kubernetes/platform/security/kyverno
+            icon: mdi-check-decagram
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=sum(atlas_policy_violations_resolved_7d%7Bresolution%3D%22fixed%22%7D)%20or%20vector(0)"
+              refreshInterval: 120000
+              mappings:
+                - field: data.result.0.value.1
+                  label: Fixed
+                  format: number
+        - New (7 days):
+            id: compliance-new-week-card
+            description: Violations that appeared this week (starting backlog excluded)
+            href: https://github.com/IonBlaster77/homelab/tree/main/kubernetes/platform/security/kyverno
+            icon: mdi-new-box
+            widget:
+              type: customapi
+              url: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090/api/v1/query?query=sum(atlas_policy_violations_new_7d)%20or%20vector(0)"
+              refreshInterval: 120000
+              mappings:
+                - field: data.result.0.value.1
+                  label: New
                   format: number
 
   widgets:

@@ -35,7 +35,7 @@ spec:
           # Built by the build-image WorkflowTemplate from services/atlas at
           # this git commit. Harbor runs in this cluster (see the
           # argo-workflows README for the cold-start caveat).
-          image: registry.jupitertech.net/homelab/atlas:d3f1d975ca7c@sha256:35ebf8b6d2577154f53279a25526d38b74b0f08296f3d0b8f073244750822115
+          image: registry.jupitertech.net/homelab/atlas:880aa061a413@sha256:76cfc356f07375351b9889dded1edb8c144960929e3c3a02b755d1fe95cddacf
           env:
             - name: DATABASE_URL
               valueFrom:

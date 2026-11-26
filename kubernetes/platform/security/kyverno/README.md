@@ -10,7 +10,7 @@ Kyverno answers "is what we deploy configured the way we said it would be?".
 
 | | |
 |---|---|
-| **URL** | None. Results via `kubectl get policyreports -A` (below); Atlas ingest and a Homepage card come later |
+| **URL** | None. Homepage → Patch Ops → Compliance (via the Atlas collector, which keeps the history in atlas-db); detail with `kubectl get policyreports -A` (below) |
 | **Charts** | [`kyverno`](https://github.com/kyverno/kyverno) and `kyverno-policies` from `kyverno.github.io/kyverno`, both pinned to the same release in `app.yaml` |
 | **Namespace** | `kyverno` (PSA restricted) |
 | **Storage** | None (reports are API objects) |
