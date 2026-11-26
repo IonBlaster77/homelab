@@ -6,8 +6,7 @@ metadata:
   labels:
     app: seerr
 spec:
-  # 0 while the database moves from SQLite to CNPG (no writes during the copy).
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -33,6 +32,38 @@ spec:
               value: Australia/Adelaide
             - name: PORT
               value: "5055"
+            # Database: Postgres in the CNPG cluster seerr-db
+            # (cluster-seerr-db.yaml), from its generated credentials. Moved
+            # off SQLite on 2026-11-26 with pgloader (data only); the old
+            # /app/config/db/db.sqlite3 is unused. settings.json stays on
+            # the PVC.
+            - name: DB_TYPE
+              value: postgres
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-db-app
+                  key: host
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-db-app
+                  key: port
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-db-app
+                  key: username
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-db-app
+                  key: password
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: seerr-db-app
+                  key: dbname
           volumeMounts:
             - name: config
               mountPath: /app/config
