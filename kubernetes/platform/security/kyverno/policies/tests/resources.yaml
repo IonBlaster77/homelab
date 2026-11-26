@@ -59,7 +59,7 @@ metadata:
 spec:
   containers:
     - name: kube-apiserver
-      image: registry.k8s.io/kube-apiserver:v1.36.6
+      image: registry.k8s.io/kube-apiserver:v1.37.3
 ---
 # MS-09 fail: :latest.
 apiVersion: v1
