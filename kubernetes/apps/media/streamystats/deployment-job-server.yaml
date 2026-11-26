@@ -9,8 +9,7 @@ metadata:
   labels:
     app: job-server
 spec:
-  # 0 while the database moves to CNPG (no writes during the import).
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: job-server
@@ -33,11 +32,13 @@ spec:
               value: "3005"
             - name: HOST
               value: 0.0.0.0
+            # CNPG-generated (cluster-streamystats-db.yaml): the read-write
+            # service, the app user and its password.
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: streamystats-secret
-                  key: DATABASE_URL
+                  name: streamystats-db-app
+                  key: uri
             - name: TZ
               value: Australia/Adelaide
           startupProbe:
