@@ -60,7 +60,7 @@ existingSecretSecretKey: harbor-secrets
 core:
   image:
     repository: docker.io/goharbor/harbor-core
-    tag: v2.15.5
+    tag: v2.16.0
   existingSecret: harbor-secrets
   secretName: harbor-token
   existingXsrfSecret: harbor-secrets
