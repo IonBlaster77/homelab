@@ -1,0 +1,17 @@
+# Values for the upstream kyverno/kyverno-policies chart: the Pod Security
+# Standards as CEL ValidatingPolicies (rule MS-08 in
+# docs/projects/manifest-standards.md). Version pinned in app.yaml.
+#
+# `restricted` renders the 10 baseline policies plus the 8 restricted ones.
+# These are the same checks as the apiserver's own Pod Security Admission and
+# the PSS profile in CIS Kubernetes Benchmark section 5.2 / NSA-CISA hardening
+# guidance, but reported for every pod in every namespace, whatever its PSA
+# label says.
+podSecurityStandard: restricted
+
+# Report only. Moving to Enforce is phase 3 of the ratchet, rule by rule.
+validationFailureAction: Audit
+
+# Belt and braces: Kyverno also forces Ignore on every webhook
+# (features.forceFailurePolicyIgnore in values.yaml).
+failurePolicy: Ignore

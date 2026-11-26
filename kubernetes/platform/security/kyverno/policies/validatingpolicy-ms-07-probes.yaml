@@ -1,0 +1,37 @@
+# MS-07: long-running containers have readiness and liveness probes, so a
+# hung process gets restarted and traffic only reaches pods that can serve
+# it. Init containers and Jobs/CronJobs are exempt (they are meant to exit).
+# Checked on the controllers rather than Pods: that is where the fix goes,
+# and it matches what CI will see in rendered manifests.
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: ms-07-probes
+  annotations:
+    policies.kyverno.io/title: "MS-07 Readiness and liveness probes"
+    policies.kyverno.io/category: Manifest standards
+    policies.kyverno.io/severity: low
+    policies.kyverno.io/subject: Deployment, StatefulSet, DaemonSet
+    policies.kyverno.io/description: >-
+      Every container (not init containers) in a Deployment, StatefulSet or
+      DaemonSet must define a readinessProbe and a livenessProbe. See
+      docs/projects/manifest-standards.md.
+spec:
+  validationActions:
+    - Audit
+  failurePolicy: Ignore
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [apps]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [deployments, statefulsets, daemonsets]
+  validations:
+    - expression: >-
+        object.spec.template.spec.containers.all(c,
+          has(c.readinessProbe) && has(c.livenessProbe))
+      messageExpression: >-
+        'MS-07: containers missing a readiness or liveness probe: ' +
+        object.spec.template.spec.containers.filter(c,
+          !has(c.readinessProbe) || !has(c.livenessProbe)
+        ).map(c, c.name).join(', ')

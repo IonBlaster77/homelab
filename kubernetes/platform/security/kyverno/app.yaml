@@ -1,0 +1,70 @@
+# Kyverno: policy engine for the manifest standards (MS-xx rules in
+# docs/projects/manifest-standards.md). Phase 0, AUDIT ONLY: it reports what
+# breaks the standards as PolicyReports and never blocks anything. Three
+# sources: the engine chart, the upstream Pod Security Standards policies,
+# and this folder (our own policies, network policies). See README.md.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  annotations:
+    # Required with ServerSideApply below, or Argo CD shows phantom OutOfSync.
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: homelab
+  sources:
+    # Chart 3.10.0 = Kyverno v1.20.0. 1.20 no longer runs the legacy
+    # ClusterPolicy kind; every policy here is a CEL ValidatingPolicy.
+    - repoURL: https://kyverno.github.io/kyverno/
+      chart: kyverno
+      targetRevision: 3.10.0
+      helm:
+        releaseName: kyverno
+        valueFiles:
+          - $values/kubernetes/platform/security/kyverno/values.yaml
+    # Pod Security Standards (baseline + restricted) as ValidatingPolicies.
+    # Same release line as the engine: bump both together.
+    - repoURL: https://kyverno.github.io/kyverno/
+      chart: kyverno-policies
+      targetRevision: 3.10.0
+      helm:
+        releaseName: kyverno-policies
+        valueFiles:
+          - $values/kubernetes/platform/security/kyverno/values-policies.yaml
+    # This folder: our policies and network policies via kustomization.yaml,
+    # and, as ref "values", the values files for the charts above.
+    - repoURL: https://github.com/IonBlaster77/homelab.git
+      targetRevision: HEAD
+      path: kubernetes/platform/security/kyverno
+      ref: values
+      plugin:
+        name: sops-kustomize-v1.0
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      # Safe to prune: policies and reports only. Removing a policy here
+      # removes its reports too.
+      prune: true
+      selfHeal: true
+    managedNamespaceMetadata:
+      labels:
+        app.kubernetes.io/managed-by: argocd
+        # The chart's pods already meet restricted (non-root, no caps,
+        # seccomp RuntimeDefault, read-only root).
+        pod-security.kubernetes.io/enforce: restricted
+    syncOptions:
+      - CreateNamespace=true
+      # Kyverno's CRDs are too large for a client-side apply annotation.
+      - ServerSideApply=true
+      # First sync: the policy objects are validated before the CRDs that
+      # define them exist. Let Argo CD apply the CRDs first, then retry.
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

@@ -1,0 +1,112 @@
+# Default deny all ingress and egress for kyverno.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kyverno-default-deny
+  namespace: kyverno
+spec:
+  endpointSelector: {}
+  # A list with one EMPTY RULE (- {}) is the canonical deny-all; an empty list
+  # (ingress: []) is rejected by Cilium and leaves the namespace open.
+  ingress:
+    - {}
+  egress:
+    - {}
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kyverno-allow-dns
+  namespace: kyverno
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+---
+# Every Kyverno component watches and writes through the API server. No other
+# egress: no policy here verifies image signatures or calls out (apiCall /
+# HTTP context), so nothing needs the internet or a registry.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kyverno-allow-egress-to-apiserver
+  namespace: kyverno
+spec:
+  endpointSelector: {}
+  egress:
+    - toEntities:
+        - kube-apiserver
+---
+# The API server calls the admission webhook on the pod's container port 9443
+# (post-DNAT, not the Service port 443). Talos runs kube-apiserver on the host
+# network of talos1-3, so the source is the kube-apiserver entity; host and
+# remote-node cover the same nodes in case the identity resolves to the node.
+# If this rule is wrong, every matched request waits for the webhook timeout
+# (10s) before failing open: check Hubble for drops on :9443 after the sync.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kyverno-allow-ingress-webhook
+  namespace: kyverno
+spec:
+  endpointSelector:
+    matchLabels:
+      app.kubernetes.io/component: admission-controller
+  ingress:
+    - fromEntities:
+        - kube-apiserver
+        - host
+        - remote-node
+      toPorts:
+        - ports:
+            - port: "9443"
+              protocol: TCP
+---
+# The chart's hook Jobs and test pods check the admission controller's
+# readiness through its Service. Everything inside the namespace may talk to
+# everything else.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kyverno-allow-intra-namespace
+  namespace: kyverno
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+        - {}
+  egress:
+    - toEndpoints:
+        - {}
+---
+# Prometheus scrapes both controllers' metrics on container port 8000.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: kyverno-allow-ingress-from-monitoring
+  namespace: kyverno
+spec:
+  endpointSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values:
+          - admission-controller
+          - reports-controller
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP

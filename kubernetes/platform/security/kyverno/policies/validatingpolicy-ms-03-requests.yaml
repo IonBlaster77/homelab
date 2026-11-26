@@ -1,0 +1,49 @@
+# MS-03: every container, init containers included, sets a CPU and a memory
+# request. Without them the scheduler packs pods blind and the pod is
+# BestEffort, first in line for Talos' OOM controller (oom-protection.md).
+# Checked on Pods so operator-created pods (CNPG, Longhorn, Prometheus,
+# Trivy scan jobs, Argo Workflows steps) are covered too.
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: ms-03-requests
+  annotations:
+    policies.kyverno.io/title: "MS-03 Resource requests"
+    policies.kyverno.io/category: Manifest standards
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Every container and init container must set resources.requests.cpu and
+      resources.requests.memory. See docs/projects/manifest-standards.md.
+spec:
+  validationActions:
+    - Audit
+  failurePolicy: Ignore
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  matchConditions:
+    # Talos static control-plane pods: the kubelet runs them from machine
+    # config whatever the API says. Their resources live in talos/*.yaml.
+    - name: not-a-mirror-pod
+      expression: >-
+        !('kubernetes.io/config.mirror' in object.metadata.?annotations.orValue({}))
+  variables:
+    - name: ctnrs
+      expression: >-
+        object.spec.containers +
+        object.spec.?initContainers.orValue([])
+  validations:
+    - expression: >-
+        variables.ctnrs.all(c,
+          'cpu' in c.?resources.?requests.orValue({}) &&
+          'memory' in c.?resources.?requests.orValue({}))
+      messageExpression: >-
+        'MS-03: containers without a CPU and memory request: ' +
+        variables.ctnrs.filter(c,
+          !('cpu' in c.?resources.?requests.orValue({})) ||
+          !('memory' in c.?resources.?requests.orValue({}))
+        ).map(c, c.name).join(', ')
