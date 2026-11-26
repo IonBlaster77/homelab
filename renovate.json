@@ -131,19 +131,19 @@
       "commitMessageTopic": "{{depName}}"
     },
     {
-      "description": "linuxserver.io tags are <app version>-ls<build> (v1.6.0-ls356, 2.5.2.5491-ls155, v26.2-ls256). Docker versioning reads -ls356 as a suffix that must match exactly, so it never offered a rebuild (where linuxserver ships base-image security fixes) and almost never an app bump. Here the ls build number is the last version component, so every newer build is offered. The version-* alias tags don't match and are ignored.",
-      "matchPackageNames": ["lscr.io/linuxserver/**"],
+      "description": "linuxserver.io tags are <app version>-ls<build> (v1.6.0-ls356, 2.5.2.5491-ls155, v26.2-ls256). Docker versioning reads -ls356 as a suffix that must match exactly, so it never offered a rebuild (where linuxserver ships base-image security fixes) and almost never an app bump. Here the ls build number is the last version component, so every newer build is offered. The version-* alias tags don't match and are ignored. Reference linuxserver images as ghcr.io/linuxserver/*, not lscr.io (a redirector to the same GHCR images): on 2026-11-24 lscr.io answered Mend's shared runners with 429, Renovate treats that as an external-host-error and aborts the whole run, and Mend then didn't schedule another for ~37h. ghcr.io lookups are authenticated with the GitHub token.",
+      "matchPackageNames": ["ghcr.io/linuxserver/**"],
       "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?(?:\\.(?<build>\\d+))?-ls(?<revision>\\d+)$"
     },
     {
       "description": "Shorter linuxserver.io versions (v1.6.2-ls371, v26.3-ls271): the -ls number goes in the build group. Renovate's regex versioning only compares the revision group when a build group is present, so with three or fewer version numbers a -ls rebuild compared as equal and was never offered (found 2026-11-21: bazarr, nzbget and adguardhome-sync were 1-2 rebuilds behind with no PR). Four-number versions (radarr, sonarr, prowlarr) keep the rule above.",
-      "matchPackageNames": ["lscr.io/linuxserver/**"],
+      "matchPackageNames": ["ghcr.io/linuxserver/**"],
       "matchCurrentValue": "/^v?\\d+\\.\\d+(\\.\\d+)?-ls\\d+$/",
       "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?-ls(?<build>\\d+)$"
     },
     {
       "description": "qBittorrent's linuxserver tags also carry the libtorrent version: 5.2.3_v2.0.13-ls469. The libtorrent major is the compatibility part, so it stays on libtorrent 2.x and never jumps to the libtorrentv1-* tags. The -ls number is the build group: Renovate only compares a revision group when a build group exists.",
-      "matchPackageNames": ["lscr.io/linuxserver/qbittorrent"],
+      "matchPackageNames": ["ghcr.io/linuxserver/qbittorrent"],
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<build>\\d+)$"
     },
     {
