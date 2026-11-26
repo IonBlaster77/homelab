@@ -79,6 +79,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: atlas
             cnpg.io/cluster: atlas-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: streamystats
+            cnpg.io/cluster: streamystats-db
       toPorts:
         - ports:
             - port: "9000"
