@@ -1,0 +1,16 @@
+# Daily base backup of bazarr-db to RustFS. 17:00 UTC = 03:30 Adelaide (ACDT).
+# CNPG cron has a seconds field. No `immediate` (it fires before the
+# sidecar exists); the first base backup is taken by hand.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: bazarr-db-daily
+  namespace: media
+spec:
+  schedule: "0 0 17 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: bazarr-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

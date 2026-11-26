@@ -1,0 +1,48 @@
+# Bazarr's Postgres (series/movies/episodes, subtitle history, blacklist, language profiles). POSTGRES_ENABLED and POSTGRES_* env select it (they override config.yaml).
+# CloudNativePG generates the credentials into bazarr-db-app (username, password,
+# host, uri); the Deployment reads them.
+#
+# Right-sized for a small app database (decided 2026-11-26: one cluster per
+# app, not a shared media cluster): 2 instances, 256Mi, 2Gi. The existing
+# small clusters use 45-90 MiB per pod on average.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: bazarr-db
+  namespace: media
+spec:
+  instances: 2
+  # Pinned here so Renovate tracks it (same group as the other clusters).
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
+  # OOM protection (docs/projects/oom-protection.md): memory request = limit,
+  # a CPU request, no CPU limit, like the other clusters.
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 256Mi
+  primaryUpdateMethod: switchover
+  # Synchronous replication, same as every other cluster (see
+  # paperclip-db): "preferred", never "required" with two instances.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    storageClass: longhorn-nvme
+    size: 2Gi
+  bootstrap:
+    initdb:
+      database: bazarr
+      owner: bazarr
+  # Point-in-time recovery from day one: WAL archive + base backups in RustFS
+  # (s3://cnpg/bazarr-db/, see objectstore-bazarr-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: bazarr-db-backup
+        serverName: bazarr-db
