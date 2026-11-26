@@ -215,11 +215,14 @@ function serve() {
             (res) => `atlas_policy_workloads{policy="${lv(r.policy)}",category="${lv(r.category)}",result="${res}"} ${r[res]}`,
           ),
         ),
-        "# HELP atlas_policy_violations_open Open policy violations in the Atlas database.",
+        // workload_namespace, not namespace: Prometheus sets `namespace` to
+        // the collector's own (atlas) at scrape time and would rename ours to
+        // exported_namespace. Cluster-scoped objects (Namespaces) have "".
+        "# HELP atlas_policy_violations_open Open policy violations in the Atlas database, by the violating workload's namespace.",
         "# TYPE atlas_policy_violations_open gauge",
         ...metrics.policy.open.map(
           (o) =>
-            `atlas_policy_violations_open{policy="${lv(o.policy)}",category="${lv(o.category)}",namespace="${lv(o.namespace)}"} ${o.n}`,
+            `atlas_policy_violations_open{policy="${lv(o.policy)}",category="${lv(o.category)}",workload_namespace="${lv(o.namespace)}"} ${o.n}`,
         ),
         "# HELP atlas_policy_violations_new_7d Violations first seen in the last 7 days (the starting backlog excluded).",
         "# TYPE atlas_policy_violations_new_7d gauge",
