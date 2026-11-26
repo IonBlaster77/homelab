@@ -6,6 +6,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
+  # Recorder database: Postgres (CloudNativePG) with point-in-time recovery
+  # to RustFS
+  - cluster-home-assistant-db.yaml
+  - podmonitor-home-assistant-db.yaml
+  - secret-home-assistant-db-backup.sops.yaml
+  - objectstore-home-assistant-db.yaml
+  - scheduledbackup-home-assistant-db.yaml
   - pvc.yaml
   - configmap.yaml
   - deployment.yaml
