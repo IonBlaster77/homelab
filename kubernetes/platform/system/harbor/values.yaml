@@ -201,7 +201,7 @@ trivy:
   enabled: true
   image:
     repository: docker.io/goharbor/trivy-adapter-photon
-    tag: v2.15.5
+    tag: v2.16.0
 
 metrics:
   enabled: true
