@@ -45,6 +45,7 @@ Hardening Guide describe. Trivy Operator's `ClusterComplianceReport`
 | `values.yaml` | Engine: GHCR images, fail-open webhooks, admission reports off, exceptions only from this namespace, background/cleanup controllers off, 2 admission replicas, sizing |
 | `values-policies.yaml` | Pod Security Standards set to `restricted`, Audit |
 | `policies/` | Our own CEL `ValidatingPolicy` rules (MS-xx) |
+| `policies/tests/` | `kyverno test` fixtures: a passing and a failing resource per rule, plus edge cases. Not applied to the cluster |
 | `kustomization.yaml` | Lists this folder's own manifests |
 | `networkpolicy.yaml` | Default deny, plus DNS, API server out, webhook in from the API server (:9443), intra-namespace, Prometheus scrapes (:8000) |
 
@@ -64,6 +65,22 @@ kubectl get validatingpolicies
 
 The background scan runs hourly and on every change, so a fix shows up
 in the report within minutes of Argo CD syncing it.
+
+## Testing a policy change
+
+The Kyverno CLI (same version as the engine) is in WSL at
+`~/.local/bin/kyverno`. Both commands are read-only:
+
+```bash
+# Unit tests: every policy against the fixtures
+cd kubernetes/platform/security/kyverno/policies/tests && kyverno test .
+# Preview against the live cluster (reads objects, evaluates locally,
+# writes nothing). Add --cluster-wide-resources for Namespace rules.
+cd .. && kyverno apply validatingpolicy-ms-*.yaml --cluster -t
+```
+
+Add a fixture to `tests/resources.yaml` and an expected result to
+`tests/kyverno-test.yaml` with every new rule or edge case.
 
 ## Gotchas
 

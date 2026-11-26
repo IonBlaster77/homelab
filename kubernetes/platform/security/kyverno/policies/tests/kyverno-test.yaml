@@ -1,0 +1,72 @@
+# Expected results for our MS-xx policies against resources.yaml.
+# Run from this folder:  kyverno test .
+# Pod policies are also evaluated on the pod controllers (Kyverno autogen),
+# which is what CI will see in rendered manifests.
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: ms-policies
+policies:
+  - ../validatingpolicy-ms-03-requests.yaml
+  - ../validatingpolicy-ms-07-probes.yaml
+  - ../validatingpolicy-ms-09-image-tag.yaml
+  - ../validatingpolicy-ms-11-psa-label.yaml
+resources:
+  - resources.yaml
+results:
+  # MS-03 requests
+  - policy: ms-03-requests
+    kind: Pod
+    resources: [fixtures/good-pod, fixtures/latest-tag, fixtures/no-tag, fixtures/registry-port-no-tag, fixtures/registry-port-tagged]
+    result: pass
+  - policy: ms-03-requests
+    kind: Pod
+    resources: [fixtures/init-no-memory-request, fixtures/besteffort]
+    result: fail
+  - policy: ms-03-requests
+    kind: Pod
+    resources: [kube-system/kube-apiserver-talos1]
+    result: skip
+  - policy: ms-03-requests
+    kind: Deployment
+    resources: [fixtures/with-probes]
+    result: fail
+  - policy: ms-03-requests
+    kind: StatefulSet
+    resources: [fixtures/missing-liveness]
+    result: fail
+  - policy: ms-03-requests
+    kind: DaemonSet
+    resources: [fixtures/no-probes]
+    result: fail
+  # MS-07 probes
+  - policy: ms-07-probes
+    kind: Deployment
+    resources: [fixtures/with-probes]
+    result: pass
+  - policy: ms-07-probes
+    kind: StatefulSet
+    resources: [fixtures/missing-liveness]
+    result: fail
+  - policy: ms-07-probes
+    kind: DaemonSet
+    resources: [fixtures/no-probes]
+    result: fail
+  # MS-09 pinned images
+  - policy: ms-09-image-tag
+    kind: Pod
+    resources: [fixtures/good-pod, fixtures/init-no-memory-request, fixtures/besteffort, kube-system/kube-apiserver-talos1, fixtures/registry-port-tagged]
+    result: pass
+  - policy: ms-09-image-tag
+    kind: Pod
+    resources: [fixtures/latest-tag, fixtures/no-tag, fixtures/registry-port-no-tag]
+    result: fail
+  # MS-11 PSA label
+  - policy: ms-11-psa-label
+    kind: Namespace
+    resources: [labelled]
+    result: pass
+  - policy: ms-11-psa-label
+    kind: Namespace
+    resources: [unlabelled, warn-only, bad-level]
+    result: fail

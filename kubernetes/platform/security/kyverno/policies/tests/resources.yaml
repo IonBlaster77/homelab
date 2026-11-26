@@ -1,0 +1,212 @@
+# Fixtures for kyverno-test.yaml: one passing and at least one failing
+# resource per policy, plus the edge cases each policy's comments mention.
+# Not applied to the cluster (kustomization.yaml doesn't list this folder).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pod
+  namespace: fixtures
+spec:
+  initContainers:
+    - name: init
+      image: ghcr.io/example/init:1.0.0
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+  containers:
+    - name: app
+      image: ghcr.io/example/app@sha256:0000000000000000000000000000000000000000000000000000000000000000
+      resources:
+        requests: {cpu: 50m, memory: 64Mi}
+        limits: {memory: 128Mi}
+---
+# MS-03 fail: the init container has no memory request.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-no-memory-request
+  namespace: fixtures
+spec:
+  initContainers:
+    - name: init
+      image: ghcr.io/example/init:1.0.0
+      resources:
+        requests: {cpu: 10m}
+  containers:
+    - name: app
+      image: ghcr.io/example/app:1.0.0
+      resources:
+        requests: {cpu: 50m, memory: 64Mi}
+---
+# MS-03 fail: BestEffort, no resources at all.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: besteffort
+  namespace: fixtures
+spec:
+  containers:
+    - name: app
+      image: ghcr.io/example/app:1.0.0
+---
+# MS-03 skip: Talos static pod (mirror pod); its resources live in machine config.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-apiserver-talos1
+  namespace: kube-system
+  annotations:
+    kubernetes.io/config.mirror: "0123456789abcdef"
+spec:
+  containers:
+    - name: kube-apiserver
+      image: registry.k8s.io/kube-apiserver:v1.36.6
+---
+# MS-09 fail: :latest.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: latest-tag
+  namespace: fixtures
+spec:
+  containers:
+    - name: app
+      image: docker.io/library/nginx:latest
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+---
+# MS-09 fail: no tag (implies latest).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-tag
+  namespace: fixtures
+spec:
+  containers:
+    - name: app
+      image: nginx
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+---
+# MS-09 fail: the ":5000" is the registry port, not a tag.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: registry-port-no-tag
+  namespace: fixtures
+spec:
+  containers:
+    - name: app
+      image: registry.local:5000/team/app
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+---
+# MS-09 pass: registry port AND a tag.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: registry-port-tagged
+  namespace: fixtures
+spec:
+  containers:
+    - name: app
+      image: registry.local:5000/team/app:2.1.0
+      resources:
+        requests: {cpu: 10m, memory: 16Mi}
+---
+# MS-07 pass.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: with-probes
+  namespace: fixtures
+spec:
+  selector:
+    matchLabels: {app: with-probes}
+  template:
+    metadata:
+      labels: {app: with-probes}
+    spec:
+      initContainers:
+        # Init containers are exempt.
+        - name: init
+          image: ghcr.io/example/init:1.0.0
+      containers:
+        - name: app
+          image: ghcr.io/example/app:1.0.0
+          readinessProbe:
+            httpGet: {path: /ready, port: 8080}
+          livenessProbe:
+            httpGet: {path: /health, port: 8080}
+---
+# MS-07 fail: sidecar has a readiness probe but no liveness probe.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: missing-liveness
+  namespace: fixtures
+spec:
+  serviceName: missing-liveness
+  selector:
+    matchLabels: {app: missing-liveness}
+  template:
+    metadata:
+      labels: {app: missing-liveness}
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/example/app:1.0.0
+          readinessProbe:
+            tcpSocket: {port: 5432}
+          livenessProbe:
+            tcpSocket: {port: 5432}
+        - name: sidecar
+          image: ghcr.io/example/sidecar:1.0.0
+          readinessProbe:
+            tcpSocket: {port: 9187}
+---
+# MS-07 fail: no probes at all.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: no-probes
+  namespace: fixtures
+spec:
+  selector:
+    matchLabels: {app: no-probes}
+  template:
+    metadata:
+      labels: {app: no-probes}
+    spec:
+      containers:
+        - name: agent
+          image: ghcr.io/example/agent:1.0.0
+---
+# MS-11 pass.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: labelled
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+# MS-11 fail: no labels at all.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unlabelled
+---
+# MS-11 fail: other PSA labels but no enforce, which still means privileged.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: warn-only
+  labels:
+    pod-security.kubernetes.io/warn: restricted
+---
+# MS-11 fail: not a real level.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bad-level
+  labels:
+    pod-security.kubernetes.io/enforce: strict
