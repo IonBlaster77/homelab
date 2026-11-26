@@ -85,6 +85,22 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: home-assistant
             cnpg.io/cluster: home-assistant-db
+        # media apps, one cluster each (CNPG consolidation, 2026-11-26)
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            cnpg.io/cluster: seerr-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            cnpg.io/cluster: bazarr-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            cnpg.io/cluster: prowlarr-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            cnpg.io/cluster: radarr-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            cnpg.io/cluster: sonarr-db
       toPorts:
         - ports:
             - port: "9000"
