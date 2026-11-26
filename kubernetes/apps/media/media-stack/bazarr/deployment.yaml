@@ -6,8 +6,7 @@ metadata:
   labels:
     app: bazarr
 spec:
-  # 0 while the database moves from SQLite to CNPG (no writes during the copy).
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -31,6 +30,43 @@ spec:
               value: "100"
             - name: TZ
               value: Australia/Adelaide
+            # Database: Postgres in the CNPG cluster bazarr-db
+            # (cluster-bazarr-db.yaml), from its generated credentials. These
+            # env vars override config.yaml. Moved off SQLite on 2026-11-26
+            # with pgloader (Bazarr wiki recipe); /config/db/bazarr.db is
+            # unused.
+            - name: POSTGRES_ENABLED
+              value: "true"
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: bazarr-db-app
+                  key: host
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: bazarr-db-app
+                  key: port
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: bazarr-db-app
+                  key: dbname
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: bazarr-db-app
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: bazarr-db-app
+                  key: password
+            # linuxserver runs Bazarr as a non-root user; without this libpq
+            # tries /root/.postgresql/postgresql.crt and the connection fails
+            # (Bazarr wiki).
+            - name: PGSSLCERT
+              value: /tmp/postgresql.crt
           volumeMounts:
             - name: config
               mountPath: /config
