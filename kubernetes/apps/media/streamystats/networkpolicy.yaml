@@ -113,6 +113,8 @@ spec:
     - toEndpoints:
         - matchLabels:
             app: vectorchord
+        - matchLabels:
+            cnpg.io/cluster: streamystats-db
       toPorts:
         - ports:
             - port: "5432"
@@ -167,6 +169,8 @@ spec:
     - toEndpoints:
         - matchLabels:
             app: vectorchord
+        - matchLabels:
+            cnpg.io/cluster: streamystats-db
       toPorts:
         - ports:
             - port: "5432"
@@ -212,6 +216,9 @@ spec:
             app: streamystats
         - matchLabels:
             app: job-server
+        # streamystats-db's one-off import (pg_dump) from this server.
+        - matchLabels:
+            cnpg.io/cluster: streamystats-db
       toPorts:
         - ports:
             - port: "5432"
@@ -258,4 +265,104 @@ spec:
             - port: "443"
               protocol: TCP
             - port: "80"
+              protocol: TCP
+---
+# streamystats-db: the CloudNativePG operator manages it; its instance manager
+# talks to the Kubernetes API; the Barman Cloud sidecar uploads to RustFS;
+# Prometheus scrapes CNPG metrics. Same as every other CNPG cluster.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-db-allow-cnpg
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: streamystats-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # `kubectl cnpg status` reads each instance's /pg/status (8000) through
+    # the kube-apiserver pod proxy.
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
+---
+# streamystats-db instances to each other (streaming replication, the
+# instance manager's status endpoint) and from the web UI and job server.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: streamystats-db-allow-clients
+  namespace: streamystats
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: streamystats-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: streamystats-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+            - port: "8000"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            app: streamystats
+        - matchLabels:
+            app: job-server
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: streamystats-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+            - port: "8000"
+              protocol: TCP
+    # One-off: the bootstrap import runs pg_dump against the old vectorchord
+    # server. Remove with the vectorchord StatefulSet.
+    - toEndpoints:
+        - matchLabels:
+            app: vectorchord
+      toPorts:
+        - ports:
+            - port: "5432"
               protocol: TCP
