@@ -121,7 +121,7 @@ registry:
 nginx:
   image:
     repository: docker.io/goharbor/nginx-photon
-    tag: v2.15.5
+    tag: v2.16.0
   priorityClassName: homelab-critical
   # ~46 MiB typical, 153 MiB peak
   resources:
