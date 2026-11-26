@@ -42,10 +42,13 @@ data:
       # The Gateway terminates TLS; HA itself speaks plain HTTP internally.
       server_port: 8123
 
-    # Recorder keeps the state history in SQLite on the PVC. 7 days is a
-    # deliberate cap: the default is 10 and the DB is the fastest-growing thing
-    # on this volume. Raise it once there is a reason to.
+    # Recorder (state history, events, long-term statistics) in the CNPG
+    # cluster home-assistant-db (cluster-home-assistant-db.yaml), not SQLite
+    # on the PVC. RECORDER_DB_URL is that cluster's generated `uri`
+    # (deployment.yaml). 7 days of history is a deliberate cap (default 10);
+    # long-term statistics are kept regardless.
     recorder:
+      db_url: !env_var RECORDER_DB_URL
       purge_keep_days: 7
 
     automation: !include automations.yaml

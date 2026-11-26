@@ -59,6 +59,13 @@ spec:
           env:
             - name: TZ
               value: Australia/Adelaide
+            # Recorder database (configuration.yaml: `!env_var RECORDER_DB_URL`):
+            # CNPG-generated read-write URI for home-assistant-db.
+            - name: RECORDER_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: home-assistant-db-app
+                  key: uri
           volumeMounts:
             - name: config
               mountPath: /config
