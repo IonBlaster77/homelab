@@ -98,7 +98,7 @@ registry:
   registry:
     image:
       repository: docker.io/goharbor/registry-photon
-      tag: v2.15.5
+      tag: v2.16.0
     # ~116 MiB typical, 282 MiB peak (blob uploads)
     resources:
       requests:
