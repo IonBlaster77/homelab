@@ -62,6 +62,17 @@ synapse:
           include_content: false
         # No server-side fetching of links people post.
         url_preview_enabled: false
+        # Per-user message rate limit. Synapse's default (0.2/s, burst 10)
+        # dropped alerts: matrix-alertmanager-receiver posts one message per
+        # alert, ignores 429s and still answers Alertmanager 200, so anything
+        # past the 10th message of a webhook was lost for good (~1,900 sends
+        # 2026-11-12..14, mostly Trivy bursts). @alertbot posts to every alert
+        # room, so a vulnerability burst also starved #alerts-critical. Only
+        # three local users (owner, @hermes, @alertbot) and no federation, so
+        # a generous limit costs nothing. Watch MatrixAlertDeliveryFailing.
+        rc_message:
+          per_second: 2
+          burst_count: 200
 
 matrixAuthenticationService:
   ingress:

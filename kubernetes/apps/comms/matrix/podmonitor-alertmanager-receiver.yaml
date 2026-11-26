@@ -1,0 +1,19 @@
+# Scrapes the alert bridge's own metrics. It drops failed Matrix sends while
+# still answering Alertmanager 200, so matrix_alertmanager_receiver_send_failure_total
+# is the only record of a lost alert: MatrixAlertDeliveryFailing
+# (monitoring/prometheusrule-infra.yaml) alerts on it.
+# matrix-alertmanager-receiver's ingress in networkpolicy.yaml admits Prometheus.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: matrix-alertmanager-receiver
+  namespace: matrix
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager-receiver
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics

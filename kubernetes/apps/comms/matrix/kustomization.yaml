@@ -23,4 +23,5 @@ resources:
   - configmap-alertmanager-receiver.yaml
   - deployment-alertmanager-receiver.yaml
   - service-alertmanager-receiver.yaml
+  - podmonitor-alertmanager-receiver.yaml
   - networkpolicy.yaml

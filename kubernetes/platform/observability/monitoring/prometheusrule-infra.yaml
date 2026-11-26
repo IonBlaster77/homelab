@@ -105,6 +105,31 @@ spec:
             summary: "Cilium Gateway (networking/homelab-gateway) is not responding"
             description: "Every public *.jupitertech.net hostname except auth.jupitertech.net routes through this shared Envoy Gateway — a failure here takes all of them down at once, even though cloudflared's tunnel-to-edge connection (see CloudflareTunnelDown) stays healthy throughout, since this is an origin-reachability failure, not a tunnel one. Known cause: cilium-agent/cilium-envoy proxy-port drift after a partial restart (agent restarted without envoy, or vice versa) — compare `cilium-dbg envoy admin listeners` against the agent's 'Adding new proxy port rules' log line on each node; a mismatch means that node's envoy needs restarting too."
 
+    # The Matrix alert bridge (kubernetes/apps/comms/matrix) logs and drops a
+    # failed send but still answers Alertmanager 200, so
+    # alertmanager_notifications_failed_total stays at 0 while alerts vanish.
+    # Its own counter (scraped by podmonitor-alertmanager-receiver.yaml) is
+    # the only signal. This alert travels the same path, but bursts are short
+    # and the rate limit refills within minutes, so it does get through; the
+    # daily health review sees it too.
+    - name: alert-delivery
+      rules:
+        - alert: MatrixAlertDeliveryFailing
+          expr: increase(matrix_alertmanager_receiver_send_failure_total[30m]) > 0
+          labels:
+            severity: warning
+          annotations:
+            summary: "Matrix alert bridge failed {{ $value | humanize }} sends in 30 min: some alerts never reached Matrix"
+            description: "Dropped messages are not retried. Read `kubectl logs -n matrix deploy/matrix-alertmanager-receiver` for the error (M_LIMIT_EXCEEDED = Synapse rc_message in kubernetes/apps/comms/matrix/values.yaml; M_FORBIDDEN = @alertbot left a room), then check Alertmanager (amtool alert query) for alerts that fired in that window."
+        - alert: MatrixAlertBridgeDown
+          expr: absent(up{namespace="matrix", pod=~"matrix-alertmanager-receiver-.*"} == 1)
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Matrix alert bridge is not being scraped"
+            description: "Either the bridge pod is down (so no alert reaches Matrix) or its PodMonitor broke (so MatrixAlertDeliveryFailing can't fire). Check the matrix-alertmanager-receiver pod and the Prometheus target."
+
     - name: network-services
       rules:
         - alert: AdGuardDNSProbeFailed
