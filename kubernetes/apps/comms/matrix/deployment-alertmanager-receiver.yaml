@@ -28,7 +28,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: receiver
-          image: docker.io/metio/matrix-alertmanager-receiver:2026.9.23@sha256:e9ab88b729762f3c294152ef8440a5d2915fa1dd6af53a2483d1c0a083079a55
+          image: docker.io/metio/matrix-alertmanager-receiver:2026.11.25@sha256:c4769eb758fe430ac42d25dbc83b6427f01917404131614e0b4c0436b36f83ab
           args:
             - --config-path=/config/config.yaml
           envFrom:
