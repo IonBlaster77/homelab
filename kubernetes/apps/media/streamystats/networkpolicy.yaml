@@ -112,8 +112,6 @@ spec:
               protocol: TCP
     - toEndpoints:
         - matchLabels:
-            app: vectorchord
-        - matchLabels:
             cnpg.io/cluster: streamystats-db
       toPorts:
         - ports:
@@ -168,8 +166,6 @@ spec:
   egress:
     - toEndpoints:
         - matchLabels:
-            app: vectorchord
-        - matchLabels:
             cnpg.io/cluster: streamystats-db
       toPorts:
         - ports:
@@ -198,30 +194,6 @@ spec:
             - port: "443"
               protocol: TCP
             - port: "80"
-              protocol: TCP
----
-# Database ingress from the web UI and the job server only.
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: streamystats-allow-db-ingress
-  namespace: streamystats
-spec:
-  endpointSelector:
-    matchLabels:
-      app: vectorchord
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            app: streamystats
-        - matchLabels:
-            app: job-server
-        # streamystats-db's one-off import (pg_dump) from this server.
-        - matchLabels:
-            cnpg.io/cluster: streamystats-db
-      toPorts:
-        - ports:
-            - port: "5432"
               protocol: TCP
 ---
 # Ollama ingress from the job server (embedding generation) and the web UI
@@ -356,13 +328,4 @@ spec:
             - port: "5432"
               protocol: TCP
             - port: "8000"
-              protocol: TCP
-    # One-off: the bootstrap import runs pg_dump against the old vectorchord
-    # server. Remove with the vectorchord StatefulSet.
-    - toEndpoints:
-        - matchLabels:
-            app: vectorchord
-      toPorts:
-        - ports:
-            - port: "5432"
               protocol: TCP

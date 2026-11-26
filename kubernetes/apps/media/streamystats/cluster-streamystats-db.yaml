@@ -11,9 +11,8 @@
 #
 # Moved here from the plain `vectorchord` StatefulSet (tensorchord
 # vchord-postgres, PG17) on 2026-11-26 with a one-off `microservice` import
-# (pg_dump from the old server, pg_restore into this one, PG17 -> PG18).
-# The bootstrap only runs when the cluster is created; once it exists the
-# `bootstrap` and `externalClusters` sections are inert.
+# (pg_dump from the old server, pg_restore into this one, PG17 -> PG18);
+# the old server was removed the same day.
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -46,29 +45,12 @@ spec:
     # pg_dump in PGDATA, so leave room for dump + restored data + indexes.
     storageClass: longhorn-nvme
     size: 5Gi
+  # The import section (source: the old vectorchord server) was removed with
+  # that server; bootstrap only ever runs when the cluster is created.
   bootstrap:
     initdb:
       database: streamystats
       owner: streamystats
-      import:
-        type: microservice
-        databases:
-          - streamystats
-        source:
-          externalCluster: vectorchord
-  externalClusters:
-    # The old server, only for the import. Its `streamystats` user is that
-    # server's superuser (POSTGRES_USER), which pg_dump needs.
-    - name: vectorchord
-      connectionParameters:
-        host: vectorchord.streamystats.svc.cluster.local
-        port: "5432"
-        user: streamystats
-        dbname: streamystats
-        sslmode: disable
-      password:
-        name: streamystats-secret
-        key: POSTGRES_PASSWORD
   # Point-in-time recovery from day one: the Barman Cloud plugin archives every
   # WAL segment and stores base backups in RustFS (s3://cnpg/streamystats-db/,
   # see objectstore-streamystats-db.yaml).

@@ -12,10 +12,6 @@ resources:
   - secret-streamystats-db-backup.sops.yaml
   - objectstore-streamystats-db.yaml
   - scheduledbackup-streamystats-db.yaml
-  # The old database (import source, rollback): removed once the CNPG move
-  # has run cleanly for a while.
-  - service-vectorchord.yaml
-  - statefulset-vectorchord.yaml
   # Embedding server
   - pvc-ollama.yaml
   - service-ollama.yaml
