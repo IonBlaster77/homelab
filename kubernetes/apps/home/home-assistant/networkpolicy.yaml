@@ -179,3 +179,124 @@ spec:
         - ports:
             - port: "8123"
               protocol: TCP
+---
+# Home Assistant -> its recorder database (home-assistant-db). The pod-CIDR
+# egress rule above doesn't cover this: Cilium CIDR rules don't select
+# cluster-managed endpoints.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-allow-db-egress
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      app: home-assistant
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: home-assistant-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+---
+# home-assistant-db: the CloudNativePG operator manages it; its instance
+# manager talks to the Kubernetes API; the Barman Cloud sidecar uploads to
+# RustFS (by name, hence DNS: the namespace's DNS rule only covers HA itself);
+# Prometheus scrapes CNPG metrics. Same as every other CNPG cluster.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-db-allow-cnpg
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: home-assistant-db
+  egress:
+    - toEntities:
+        - kube-apiserver
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: rustfs
+            app: rustfs
+      toPorts:
+        - ports:
+            - port: "9000"
+              protocol: TCP
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cnpg-system
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+            - port: "5432"
+              protocol: TCP
+    # `kubectl cnpg status` reads each instance's /pg/status (8000) through
+    # the kube-apiserver pod proxy.
+    - fromEntities:
+        - kube-apiserver
+      toPorts:
+        - ports:
+            - port: "8000"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: monitoring
+            app.kubernetes.io/name: prometheus
+      toPorts:
+        - ports:
+            - port: "9187"
+              protocol: TCP
+---
+# home-assistant-db instances to each other (streaming replication, the
+# instance manager's status endpoint) and from Home Assistant.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: home-assistant-db-allow-clients
+  namespace: home-assistant
+spec:
+  endpointSelector:
+    matchLabels:
+      cnpg.io/cluster: home-assistant-db
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: home-assistant-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+            - port: "8000"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            app: home-assistant
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            cnpg.io/cluster: home-assistant-db
+      toPorts:
+        - ports:
+            - port: "5432"
+              protocol: TCP
+            - port: "8000"
+              protocol: TCP

@@ -82,6 +82,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: streamystats
             cnpg.io/cluster: streamystats-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: home-assistant
+            cnpg.io/cluster: home-assistant-db
       toPorts:
         - ports:
             - port: "9000"
