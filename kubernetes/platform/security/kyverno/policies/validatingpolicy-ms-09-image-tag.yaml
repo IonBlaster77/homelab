@@ -1,0 +1,47 @@
+# MS-09: every image is pinned: a digest, or an explicit tag that isn't
+# `latest`. A floating tag means the running code can change without a PR,
+# and Trivy, Renovate and Atlas can't say what is actually deployed.
+# repo-lint's `images` check covers the YAML in git; this covers what is
+# really running (operator-created pods, anything applied by hand).
+apiVersion: policies.kyverno.io/v1beta1
+kind: ValidatingPolicy
+metadata:
+  name: ms-09-image-tag
+  annotations:
+    policies.kyverno.io/title: "MS-09 Pinned images"
+    policies.kyverno.io/category: Manifest standards
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Every container image must carry a digest or an explicit tag other than
+      `latest`. See docs/projects/manifest-standards.md.
+spec:
+  validationActions:
+    - Audit
+  failurePolicy: Ignore
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+  variables:
+    - name: ctnrs
+      expression: >-
+        object.spec.containers +
+        object.spec.?initContainers.orValue([]) +
+        object.spec.?ephemeralContainers.orValue([])
+    # The last path segment ("name:tag"); a ":" before it would be a
+    # registry port, not a tag.
+    - name: unpinned
+      expression: >-
+        variables.ctnrs.filter(c,
+          !c.image.contains('@') &&
+          (!c.image.substring(c.image.lastIndexOf('/') + 1).contains(':') ||
+           c.image.endsWith(':latest'))
+        ).map(c, c.name + ' (' + c.image + ')')
+  validations:
+    - expression: size(variables.unpinned) == 0
+      messageExpression: >-
+        'MS-09: images without a digest or a non-latest tag: ' +
+        variables.unpinned.join(', ')

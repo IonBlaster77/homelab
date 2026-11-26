@@ -1,0 +1,106 @@
+# Kyverno values. Only the settings we change from the chart defaults; see
+# README.md and docs/projects/manifest-standards.md for why. Chart:
+# kyverno/kyverno, version pinned in app.yaml.
+#
+# Phase 0 of the manifest-standards ratchet: AUDIT ONLY. Nothing here can
+# block an API request: every webhook fails open, and every policy in this
+# app is `validationActions: [Audit]`.
+
+global:
+  image:
+    # GHCR instead of the chart default reg.kyverno.io: GHCR goes through
+    # Harbor's pull-through cache (Talos registry mirrors), reg.kyverno.io
+    # doesn't, and Trivy scans these images through the same mirror.
+    registry: ghcr.io
+
+# Kyverno 1.20 refuses to install while legacy kyverno.io policies
+# (ClusterPolicy, Policy, ...) exist, via a render-time lookup and a
+# pre-install/pre-upgrade hook Job. This cluster has never run Kyverno, and
+# every policy here is the CEL `policies.kyverno.io` kind, so there is nothing
+# to migrate. Acknowledging also stops Argo CD running that hook Job on every
+# auto-sync.
+upgrade:
+  acknowledgeLegacyPoliciesNotEnforced: true
+
+config:
+  webhooks:
+    # The chart default excludes only kube-system. Also keep the webhook out of
+    # the request path for the namespaces that must be able to heal on a cold
+    # boot before Kyverno is up (storage, Postgres). They are still covered by
+    # the background scan (features.backgroundScan.skipResourceFilters).
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - longhorn-system
+            - cnpg-system
+
+features:
+  # Every webhook Kyverno registers uses failurePolicy Ignore, whatever a
+  # policy says, in every phase including Enforce: a Kyverno outage must never
+  # stop pods being created (including Kyverno's own replacements).
+  forceFailurePolicyIgnore:
+    enabled: true
+  # The background scan is the report we want (every live object, hourly).
+  # Admission reports would add one report per admission request on top, which
+  # costs reports-controller memory for little extra signal in Audit mode.
+  admissionReports:
+    enabled: false
+  # Don't generate native ValidatingAdmissionPolicies from our policies yet.
+  # Revisit at the Enforce phase (design doc, "Why Kyverno").
+  generateValidatingAdmissionPolicy:
+    enabled: false
+  # Exceptions only count when they live in the kyverno namespace, so an
+  # exception created anywhere else does nothing. Exceptions are reviewed
+  # files in exceptions/ (none yet).
+  policyExceptions:
+    enabled: true
+    namespace: kyverno
+
+# Generate / mutate-existing policies only. We have neither, so don't run it.
+backgroundController:
+  enabled: false
+
+# CleanupPolicy / TTL-label deletion only. We have neither.
+cleanupController:
+  enabled: false
+
+# Admission controller: serves the webhooks and validates policy objects.
+# Two replicas on different nodes (chart anti-affinity is on by default) and a
+# PDB, which the chart enables automatically with more than one replica.
+# Fail-open webhooks make a third replica unnecessary.
+# Sizing is provisional (no history yet): the 1.20 chart defaults raised for
+# 18 upstream + 4 local policies. Recheck after a week (oom-protection.md).
+admissionController:
+  replicas: 2
+  priorityClassName: homelab-critical
+  container:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 192Mi
+      limits:
+        memory: 512Mi
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: monitoring
+
+# Reports controller: runs the hourly background scan and writes the
+# PolicyReports. Its memory grows with the number of objects scanned, so it
+# gets the largest limit. One replica is fine: if it is down, reports go
+# stale for a while and nothing else happens.
+reportsController:
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+  serviceMonitor:
+    enabled: true
+    additionalLabels:
+      release: monitoring

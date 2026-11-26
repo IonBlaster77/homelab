@@ -35,3 +35,5 @@ spec:
     - ghcr.io/element-hq/ess-helm
     # Trivy Operator (2026-11)
     - https://aquasecurity.github.io/helm-charts
+    # Kyverno engine + kyverno-policies (2026-11, manifest standards)
+    - https://kyverno.github.io/kyverno/
