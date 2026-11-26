@@ -46,7 +46,7 @@ never stops the vulnerability part, `stats.policy.error` records it):
 - The first policy run is marked `baseline`, so "new this week" doesn't count
   the starting backlog. The same half-the-reports guard applies.
 
-Metrics (`/metrics`): `atlas_policy_violations_open{policy,category,namespace}`,
+Metrics (`/metrics`): `atlas_policy_violations_open{policy,category,workload_namespace}` (not `namespace`: Prometheus sets that to `atlas` at scrape time),
 `atlas_policy_workloads{policy,category,result}`,
 `atlas_policy_violations_new_7d`, `atlas_policy_violations_resolved_7d{resolution}`,
 `atlas_policy_last_success_timestamp_seconds` (alert `AtlasPolicyIngestStale`).
