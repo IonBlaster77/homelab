@@ -49,7 +49,18 @@ existingSecretSecretKey: harbor-secrets
 # the 30-day peak (floor 128Mi), never a CPU limit. Every node pulls images
 # through core + registry + nginx, so those three are homelab-critical; the
 # portal, jobservice and exporter keep default priority.
+#
+# --- Image tags --------------------------------------------------------------
+# Every component's image tag is set here instead of taken from the chart.
+# Harbor ships patch releases (v2.15.5, 2026-11-12: Photon base + Go CVE
+# fixes) without a new chart release, so following the chart left us on
+# v2.15.4 with ~160 fixable Criticals (curl/expat in Photon). Renovate's
+# helm-values manager tracks these repository/tag pairs. Keep all eight on the
+# same version: they are released and tested together.
 core:
+  image:
+    repository: docker.io/goharbor/harbor-core
+    tag: v2.15.5
   existingSecret: harbor-secrets
   secretName: harbor-token
   existingXsrfSecret: harbor-secrets
@@ -64,6 +75,9 @@ core:
       memory: 768Mi
 
 jobservice:
+  image:
+    repository: docker.io/goharbor/harbor-jobservice
+    tag: v2.15.5
   existingSecret: harbor-secrets
   existingSecretKey: JOBSERVICE_SECRET
   # ~35 MiB typical, 36 MiB peak
@@ -82,6 +96,9 @@ registry:
     existingSecret: harbor-secrets
   priorityClassName: homelab-critical
   registry:
+    image:
+      repository: docker.io/goharbor/registry-photon
+      tag: v2.15.5
     # ~116 MiB typical, 282 MiB peak (blob uploads)
     resources:
       requests:
@@ -90,6 +107,9 @@ registry:
       limits:
         memory: 768Mi
   controller:
+    image:
+      repository: docker.io/goharbor/harbor-registryctl
+      tag: v2.15.5
     # ~31 MiB typical, 32 MiB peak
     resources:
       requests:
@@ -99,6 +119,9 @@ registry:
         memory: 128Mi
 
 nginx:
+  image:
+    repository: docker.io/goharbor/nginx-photon
+    tag: v2.15.5
   priorityClassName: homelab-critical
   # ~46 MiB typical, 153 MiB peak
   resources:
@@ -109,6 +132,9 @@ nginx:
       memory: 384Mi
 
 portal:
+  image:
+    repository: docker.io/goharbor/harbor-portal
+    tag: v2.15.5
   # ~5 MiB typical, 11 MiB peak
   resources:
     requests:
@@ -118,6 +144,9 @@ portal:
       memory: 128Mi
 
 exporter:
+  image:
+    repository: docker.io/goharbor/harbor-exporter
+    tag: v2.15.5
   # ~23 MiB typical, 29 MiB peak
   resources:
     requests:
@@ -170,6 +199,9 @@ redis:
 # --- Scanning and metrics ----------------------------------------------------
 trivy:
   enabled: true
+  image:
+    repository: docker.io/goharbor/trivy-adapter-photon
+    tag: v2.15.5
 
 metrics:
   enabled: true
