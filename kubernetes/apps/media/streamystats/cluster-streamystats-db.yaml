@@ -1,0 +1,80 @@
+# Streamystats' Postgres (watch history, library items, users, and the media
+# embeddings used for recommendations). CloudNativePG generates the app
+# credentials into streamystats-db-app (username, password, uri); the web UI
+# and job server read `uri` as DATABASE_URL and run their own migrations.
+#
+# `standard` image, not `system` like the older clusters: Streamystats needs
+# pgvector (`vector` extension, HNSW indexes), which only `standard` ships
+# (`system` is deprecated upstream anyway). Its migrations also create
+# uuid-ossp and pg_trgm, which every flavour has. It never used the
+# VectorChord (`vchord`) extension of the old image.
+#
+# Moved here from the plain `vectorchord` StatefulSet (tensorchord
+# vchord-postgres, PG17) on 2026-11-26 with a one-off `microservice` import
+# (pg_dump from the old server, pg_restore into this one, PG17 -> PG18).
+# The bootstrap only runs when the cluster is created; once it exists the
+# `bootstrap` and `externalClusters` sections are inert.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: streamystats-db
+  namespace: streamystats
+spec:
+  instances: 2
+  # Pinned here so Renovate tracks it (same group as the other clusters).
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
+  # OOM protection (docs/projects/oom-protection.md): the old server's 30-day
+  # peak was 182 MiB. Memory request = limit (~2.5x peak), a CPU request but
+  # no CPU limit, as for the other clusters.
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 50m
+      memory: 512Mi
+    limits:
+      memory: 512Mi
+  primaryUpdateMethod: switchover
+  # Synchronous replication, same as every other cluster (see
+  # paperclip-db): "preferred", never "required" with two instances.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    # ~0.8 GiB used on the old 10Gi volume. The import keeps a temporary
+    # pg_dump in PGDATA, so leave room for dump + restored data + indexes.
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: streamystats
+      owner: streamystats
+      import:
+        type: microservice
+        databases:
+          - streamystats
+        source:
+          externalCluster: vectorchord
+  externalClusters:
+    # The old server, only for the import. Its `streamystats` user is that
+    # server's superuser (POSTGRES_USER), which pg_dump needs.
+    - name: vectorchord
+      connectionParameters:
+        host: vectorchord.streamystats.svc.cluster.local
+        port: "5432"
+        user: streamystats
+        dbname: streamystats
+        sslmode: disable
+      password:
+        name: streamystats-secret
+        key: POSTGRES_PASSWORD
+  # Point-in-time recovery from day one: the Barman Cloud plugin archives every
+  # WAL segment and stores base backups in RustFS (s3://cnpg/streamystats-db/,
+  # see objectstore-streamystats-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: streamystats-db-backup
+        serverName: streamystats-db
