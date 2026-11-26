@@ -23,6 +23,21 @@ spec:
               The vulnerability history in atlas-db isn't being updated. Check
               `kubectl -n atlas logs deploy/atlas-collector` and the last rows
               of the collector_runs table (error column).
+        - alert: AtlasPolicyIngestStale
+          # The Kyverno part of the run fails on its own (the vulnerability
+          # part keeps going), so it needs its own staleness check. The
+          # Homepage Compliance cards freeze while this fires.
+          expr: time() - atlas_policy_last_success_timestamp_seconds > 2700
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Atlas: no successful Kyverno policy run for {{ $value | humanizeDuration }}"
+            description: >-
+              Policy violations in atlas-db aren't being updated. Check
+              `kubectl -n atlas logs deploy/atlas-collector | grep policy`
+              (stats.policy.error in collector_runs) and that Kyverno's
+              reports controller is running.
         - alert: AtlasCollectorDown
           expr: absent(up{job="atlas/atlas-collector"} == 1)
           for: 15m

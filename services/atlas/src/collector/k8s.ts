@@ -49,6 +49,29 @@ export interface ReplicaSet {
   spec?: { replicas?: number };
 }
 
+export interface PolicyReportResult {
+  policy: string;
+  rule?: string;
+  /** pass | fail | warn | error | skip */
+  result: string;
+  message?: string;
+  category?: string;
+  severity?: string;
+  source?: string;
+}
+
+/** wgpolicyk8s.io PolicyReport / ClusterPolicyReport: one per checked object (`scope`). */
+export interface PolicyReport {
+  metadata: ObjectMeta;
+  scope?: { apiVersion?: string; kind: string; name: string; namespace?: string; uid?: string };
+  results?: PolicyReportResult[] | null;
+}
+
+/** Pods and Jobs are only listed for their metadata (owners), see listMetadata. */
+export interface MetadataOnly {
+  metadata: ObjectMeta;
+}
+
 async function authHeaders(): Promise<Record<string, string>> {
   try {
     const t = (await readFile(TOKEN_FILE, "utf8")).trim();
@@ -59,14 +82,14 @@ async function authHeaders(): Promise<Record<string, string>> {
 }
 
 /** GET a list endpoint, following `continue` tokens. */
-async function list<T>(path: string, pageSize = 50): Promise<T[]> {
+async function list<T>(path: string, pageSize = 50, accept = "application/json"): Promise<T[]> {
   const items: T[] = [];
   let cont = "";
   do {
     const url = new URL(API + path);
     url.searchParams.set("limit", String(pageSize));
     if (cont) url.searchParams.set("continue", cont);
-    const res = await fetch(url, { headers: { Accept: "application/json", ...(await authHeaders()) } });
+    const res = await fetch(url, { headers: { Accept: accept, ...(await authHeaders()) } });
     if (!res.ok) throw new Error(`GET ${path}: HTTP ${res.status} ${(await res.text()).slice(0, 300)}`);
     const body = (await res.json()) as { items: T[]; metadata?: { continue?: string } };
     items.push(...body.items);
@@ -79,3 +102,18 @@ export const listVulnerabilityReports = () =>
   list<VulnerabilityReport>("/apis/aquasecurity.github.io/v1alpha1/vulnerabilityreports");
 
 export const listReplicaSets = () => list<ReplicaSet>("/apis/apps/v1/replicasets", 500);
+
+/**
+ * List only the objects' metadata (PartialObjectMetadataList): owners and
+ * labels, never a Pod's spec, so env values and the like are never fetched.
+ * RBAC still needs `list` on the resource.
+ */
+const listMetadata = (path: string) =>
+  list<MetadataOnly>(path, 500, "application/json;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1,application/json");
+
+export const listPodMetadata = () => listMetadata("/api/v1/pods");
+export const listJobMetadata = () => listMetadata("/apis/batch/v1/jobs");
+
+export const listPolicyReports = () => list<PolicyReport>("/apis/wgpolicyk8s.io/v1alpha2/policyreports", 200);
+export const listClusterPolicyReports = () =>
+  list<PolicyReport>("/apis/wgpolicyk8s.io/v1alpha2/clusterpolicyreports", 200);

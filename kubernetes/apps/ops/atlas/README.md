@@ -1,8 +1,9 @@
 # Atlas
 
 Homelab ops, security and governance in one place. **Phase 1:** only the
-vulnerability collector and its database, so the findings history starts
-building up before there's a UI. Code: [`services/atlas/`](../../../../services/atlas/README.md).
+collector and its database, so the vulnerability and policy-violation
+history builds up before there's a UI. Its metrics feed the Homepage
+Patch Ops → Compliance cards. Code: [`services/atlas/`](../../../../services/atlas/README.md).
 
 | | |
 |---|---|
@@ -10,7 +11,7 @@ building up before there's a UI. Code: [`services/atlas/`](../../../../services/
 | **Image** | `registry.jupitertech.net/homelab/atlas:<git sha>`, built from `services/atlas` by the `build-image` WorkflowTemplate |
 | **Namespace** | `atlas` (PSA `restricted`) |
 | **Database** | CNPG `atlas-db` (2 instances), point-in-time recovery to RustFS `s3://cnpg/atlas-db/` |
-| **Reads** | Trivy `VulnerabilityReports` and `ReplicaSets` (cluster-wide, read-only), Prometheus |
+| **Reads** | Trivy `VulnerabilityReports`, `ReplicaSets`, Kyverno `PolicyReports`/`ClusterPolicyReports`, Pod and Job metadata (cluster-wide, read-only), Prometheus |
 
 ## What the collector does
 
@@ -30,6 +31,25 @@ On its first start (empty database) it imports history from Prometheus
 (`trivy:vulnerability:present`, kept 60 days). If a run sees fewer than half
 the reports of the last good run, it resolves nothing, so an API hiccup
 can't close every finding at once.
+
+The same run then reads Kyverno's reports (on its own: a Kyverno failure
+never stops the vulnerability part, `stats.policy.error` records it):
+
+- **policy_violations:** one row per policy + rule + **workload**. Kyverno
+  reports every Pod, ReplicaSet and controller separately; they are folded
+  up to the owner (Pod → ReplicaSet → Deployment, Pod → Job → CronJob, CNPG
+  pods → their `Cluster`, Longhorn pods → their `InstanceManager`), so a
+  rollout doesn't look like a fix plus a new violation. Static pods keep
+  their own name. Resolved as `fixed` (workload still reported, now passes)
+  or `removed` (nothing reports it any more).
+- **policy_violation_events:** first_seen, resolved, reopened.
+- The first policy run is marked `baseline`, so "new this week" doesn't count
+  the starting backlog. The same half-the-reports guard applies.
+
+Metrics (`/metrics`): `atlas_policy_violations_open{policy,category,namespace}`,
+`atlas_policy_workloads{policy,category,result}`,
+`atlas_policy_violations_new_7d`, `atlas_policy_violations_resolved_7d{resolution}`,
+`atlas_policy_last_success_timestamp_seconds` (alert `AtlasPolicyIngestStale`).
 
 ## Numbers differ from Homepage
 

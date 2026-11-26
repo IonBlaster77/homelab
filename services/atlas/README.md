@@ -13,6 +13,8 @@ src/collector/prom.ts     Prometheus queries
 src/collector/snapshot.ts reports -> current findings (pure, unit-tested)
 src/collector/apply.ts    snapshot -> database changes + events
 src/collector/backfill.ts history import from Prometheus
+src/collector/policy-snapshot.ts  Kyverno PolicyReports -> violations per workload (pure, unit-tested)
+src/collector/policy-apply.ts     policy snapshot -> database changes + events
 test/                     node:test against PGlite (real Postgres, in-process)
 ```
 

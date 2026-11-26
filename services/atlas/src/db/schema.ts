@@ -10,7 +10,8 @@
 //     we don't extract today can be extracted later for past data too.
 //   - Stable identity: a finding is image repository + vulnerability +
 //     package, the same key as the Trivy alert rules. Where it was seen
-//     (workload, tag, digest) lives in finding_sightings.
+//     (workload, tag, digest) lives in finding_sightings. A policy violation
+//     is policy + rule + workload (namespace, kind, name).
 import {
   bigint,
   bigserial,
@@ -148,6 +149,76 @@ export const scanReports = pgTable(
     lastSeenAt: ts("last_seen_at").notNull(),
   },
   (t) => [uniqueIndex("scan_reports_identity").on(t.imageDigest, t.contentHash)],
+);
+
+/**
+ * One Kyverno policy (rule) failing on one workload. Kyverno reports every
+ * Pod, ReplicaSet and controller separately; the collector folds those up to
+ * the owning workload (policy-snapshot.ts), so a rollout doesn't look like a
+ * violation fixed and re-raised. Cluster-scoped objects (Namespaces) have
+ * namespace "".
+ */
+export const policyViolations = pgTable(
+  "policy_violations",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    // Identity
+    policy: text("policy").notNull(),
+    /** Kyverno rule name; "validation" for CEL ValidatingPolicies. */
+    rule: text("rule").notNull(),
+    namespace: text("namespace").notNull(),
+    resourceKind: text("resource_kind").notNull(),
+    resourceName: text("resource_name").notNull(),
+    // Attributes (latest seen)
+    /** e.g. "Pod Security Standards (Baseline)", "Manifest standards". */
+    category: text("category").notNull().default(""),
+    severity: text("severity").notNull().default(""),
+    /** e.g. KyvernoValidatingPolicy. */
+    source: text("source").notNull().default(""),
+    message: text("message").notNull().default(""),
+    // Lifecycle
+    /** open | resolved */
+    status: text("status").notNull().default("open"),
+    /**
+     * Automatic: fixed (the workload still exists and now passes), removed
+     * (nothing reports the workload any more). Later, set by people/agents:
+     * exception (a reviewed PolicyException), risk_accepted.
+     */
+    resolution: text("resolution"),
+    /**
+     * Present in the very first policy run, so "new this week" doesn't count
+     * the whole starting backlog.
+     */
+    baseline: boolean("baseline").notNull().default(false),
+    firstSeenAt: ts("first_seen_at").notNull(),
+    lastSeenAt: ts("last_seen_at").notNull(),
+    resolvedAt: ts("resolved_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("policy_violations_identity").on(t.policy, t.rule, t.namespace, t.resourceKind, t.resourceName),
+    index("policy_violations_status_category").on(t.status, t.category),
+    index("policy_violations_workload").on(t.namespace, t.resourceKind, t.resourceName),
+  ],
+);
+
+/** Append-only history of policy violations. Types: first_seen, resolved, reopened. */
+export const policyViolationEvents = pgTable(
+  "policy_violation_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    violationId: bigint("violation_id", { mode: "number" })
+      .notNull()
+      .references(() => policyViolations.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    at: ts("at").notNull(),
+    details: jsonb("details").$type<Record<string, unknown>>(),
+  },
+  (t) => [
+    index("policy_violation_events_violation").on(t.violationId, t.at),
+    index("policy_violation_events_type_at").on(t.type, t.at),
+  ],
 );
 
 /** One row per collector run, for health checks and debugging. */
