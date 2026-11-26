@@ -10,7 +10,7 @@ global:
   # under repoServer.extraContainers pin the same image: keep all three in step.
   image:
     repository: quay.io/argoproj/argocd
-    tag: v3.6.2
+    tag: v3.6.3
   # Chart 10's default, set explicitly: ingress-only NetworkPolicies per
   # component. See kubernetes/platform/system/argocd/chart/values.yaml.
   networkPolicy:
@@ -164,7 +164,7 @@ repoServer:
           memory: 96Mi
         limits:
           memory: 512Mi
-      image: quay.io/argoproj/argocd:v3.6.2
+      image: quay.io/argoproj/argocd:v3.6.3
       command: [/var/run/argocd/argocd-cmp-server]
       securityContext:
         runAsNonRoot: true
@@ -208,7 +208,7 @@ repoServer:
           memory: 128Mi
         limits:
           memory: 512Mi
-      image: quay.io/argoproj/argocd:v3.6.2
+      image: quay.io/argoproj/argocd:v3.6.3
       command: [/var/run/argocd/argocd-cmp-server]
       securityContext:
         runAsNonRoot: true
