@@ -1,0 +1,31 @@
+{
+  "name": "atlas-web",
+  "private": true,
+  "type": "module",
+  "description": "Atlas UI (Vite + React). Served by the API (src/api/main.ts) from web/dist.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.108.4",
+    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-virtual": "3.14.28",
+    "clsx": "2.1.1",
+    "echarts": "6.1.0",
+    "lucide-react": "1.83.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tailwind-merge": "3.7.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.5",
+    "@types/react": "19.3.3",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "tailwindcss": "4.3.5",
+    "typescript": "7.0.2",
+    "vite": "8.4.0"
+  }
+}

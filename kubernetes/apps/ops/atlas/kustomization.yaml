@@ -17,3 +17,7 @@ resources:
   - deployment-collector.yaml
   - podmonitor-collector.yaml
   - prometheusrule-atlas.yaml
+  # The web UI + read-only API, https://atlas.jupitertech.net (route in the
+  # networking namespace), and its read-only database login
+  - secret-atlas-db-web.sops.yaml
+  - deployment-web.yaml

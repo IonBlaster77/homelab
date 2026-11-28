@@ -19,7 +19,29 @@ src/collector/intel.ts     CISA KEV + FIRST EPSS -> vuln_intel, kev_listed event
 src/collector/exposure.ts  HTTPRoutes, tunnel rules, LoadBalancers + public DNS -> workload_exposure
 src/collector/priority.ts  P1-P4 rule and SLA days (pure), open-finding counts
 test/                     node:test against PGlite (real Postgres, in-process)
+src/api/main.ts           API + web server (Hono): read-only GET routes, strict CSP, serves web/dist
+src/api/security.ts       Security tab queries (priority from collector/priority.ts)
+web/                      UI: Vite + React + Tailwind, TanStack Router/Query/Virtual, ECharts
 ```
+
+## UI prototype (not deployed yet)
+
+The Security tab runs locally against the **read-only replica**. Every API
+session is also `default_transaction_read_only`, so it can't write. No login
+yet: it binds to 127.0.0.1 until Authentik OIDC lands.
+
+```bash
+kubectl -n atlas port-forward svc/atlas-db-ro 15432:5432   # loop it: kubectl exits when Postgres closes a connection
+kubectl -n atlas get secret atlas-db-app -o jsonpath='{.data.password}' | base64 -d > /tmp/atlas-db.pass   # never print it
+DATABASE_URL=postgres://atlas@127.0.0.1:15432/atlas DB_PASSWORD_FILE=/tmp/atlas-db.pass \
+  node --watch src/api/main.ts                       # API on 127.0.0.1:8081
+cd web && npm ci && npm run dev                      # UI on 127.0.0.1:5173, proxies /api
+# or: cd web && npm run build, then open http://127.0.0.1:8081 (the API serves it with the CSP)
+```
+
+Before it's deployed: its own read-only DB role (not the `atlas` owner),
+Authentik OIDC with group -> role mapping, an image that includes web/dist,
+and verifying the CNPG CA instead of `rejectUnauthorized: false`.
 
 ## Working on it
 

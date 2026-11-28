@@ -1,0 +1,161 @@
+# The Atlas web UI and its read-only API (services/atlas/src/api), at
+# https://atlas.jupitertech.net. Same image as the collector, other command.
+#
+# Who gets in: Cloudflare Access (Authentik + passkey) in front, and the API
+# itself rejects any request without a valid Access token (src/api/access.ts),
+# because the Gateway is also reachable on the LAN where Access isn't.
+# What it can do: read only. Its own database login atlas_web
+# (pg_read_all_data), the replica service, read-only sessions, GET routes,
+# no Kubernetes API token.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlas-web
+  namespace: atlas
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-web
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-web
+  template:
+    metadata:
+      labels:
+        app: atlas-web
+    spec:
+      serviceAccountName: atlas-web
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: registry.jupitertech.net/homelab/atlas:0411baad9445@sha256:3864e5916becff0b4b842e95382c30bfc46bdfe604e99e23ba2ce7be09fd63d4
+          command: ["node", "src/api/main.ts"]
+          env:
+            - name: HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "8081"
+            # The replica: reads never touch the primary. Hostname matches the
+            # CNPG server certificate, which is verified against atlas-db-ca.
+            - name: DATABASE_URL
+              value: postgres://atlas_web@atlas-db-ro.atlas.svc:5432/atlas
+            - name: DB_PASSWORD_FILE
+              value: /secrets/db/password
+            - name: DB_SSL_CA_FILE
+              value: /secrets/db-ca/ca.crt
+            # The wildcard Access application for *.jupitertech.net (its AUD
+            # tag, read from the Access login redirect 2026-11-28). Not secret.
+            - name: CF_ACCESS_TEAM_DOMAIN
+              value: jupitertech7.cloudflareaccess.com
+            - name: CF_ACCESS_AUD
+              value: 5fc241f7189d300103bf076040241ca83c867ba0e46c49925935e64a77bd6384
+          ports:
+            - name: http
+              containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+            periodSeconds: 30
+            failureThreshold: 4
+          volumeMounts:
+            - name: db
+              mountPath: /secrets/db
+              readOnly: true
+            - name: db-ca
+              mountPath: /secrets/db-ca
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: db
+          secret:
+            secretName: atlas-db-web
+            items:
+              - key: password
+                path: password
+        - name: db-ca
+          secret:
+            secretName: atlas-db-ca
+            items:
+              - key: ca.crt
+                path: ca.crt
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-web
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# The route lives with the app but in the Gateway's namespace (like hermes);
+# the ReferenceGrant lets it point at the Service here. The Gateway's
+# wildcard certificate (cert-manager, jupitertech-wildcard-tls) covers the
+# hostname, and cloudflared's wildcard tunnel rule sends it to the Gateway.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: atlas
+  namespace: networking
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: networking
+      sectionName: https
+  hostnames:
+    - atlas.jupitertech.net
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: atlas-web
+          namespace: atlas
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-networking-to-atlas-web
+  namespace: atlas
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: networking
+  to:
+    - group: ""
+      kind: Service
+      name: atlas-web
