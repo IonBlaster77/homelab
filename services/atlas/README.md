@@ -15,6 +15,9 @@ src/collector/apply.ts    snapshot -> database changes + events
 src/collector/backfill.ts history import from Prometheus
 src/collector/policy-snapshot.ts  Kyverno PolicyReports -> violations per workload (pure, unit-tested)
 src/collector/policy-apply.ts     policy snapshot -> database changes + events
+src/collector/intel.ts     CISA KEV + FIRST EPSS -> vuln_intel, kev_listed events
+src/collector/exposure.ts  HTTPRoutes, tunnel rules, LoadBalancers + public DNS -> workload_exposure
+src/collector/priority.ts  P1-P4 rule and SLA days (pure), open-finding counts
 test/                     node:test against PGlite (real Postgres, in-process)
 ```
 

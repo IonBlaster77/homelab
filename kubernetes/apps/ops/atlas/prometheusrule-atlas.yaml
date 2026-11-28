@@ -38,6 +38,43 @@ spec:
               `kubectl -n atlas logs deploy/atlas-collector | grep policy`
               (stats.policy.error in collector_runs) and that Kyverno's
               reports controller is running.
+        - alert: AtlasExposureStale
+          # Which workloads are internet/LAN reachable feeds the risk
+          # ranking; stale exposure means stale priorities.
+          expr: time() - atlas_exposure_last_success_timestamp_seconds > 2700
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Atlas: no successful exposure run for {{ $value | humanizeDuration }}"
+            description: >-
+              Workload exposure in atlas-db isn't being updated. Check
+              `kubectl -n atlas logs deploy/atlas-collector | grep exposure`:
+              usually RBAC (services, httproutes, the cloudflared ConfigMap)
+              or the DNS-over-HTTPS egress to cloudflare-dns.com.
+        - alert: AtlasThreatIntelStale
+          # Refreshes every 6 h; a day without one = several failures.
+          # 0 = never succeeded since start and nothing in the database.
+          expr: time() - atlas_intel_last_success_timestamp_seconds > 86400
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Atlas: KEV/EPSS threat intel not refreshed for {{ $value | humanizeDuration }}"
+            description: >-
+              New known-exploited CVEs won't raise findings to P1. Check
+              `kubectl -n atlas logs deploy/atlas-collector | grep intel` and
+              the egress policy atlas-collector-internet-feeds (www.cisa.gov,
+              epss.empiricalsecurity.com).
+        - alert: AtlasThreatIntelFeedFailing
+          # One feed failing keeps its old values; say so if it lasts.
+          expr: atlas_intel_feed_ok == 0 and on() atlas_intel_runs_total{result="ok"} > 0
+          for: 13h
+          labels:
+            severity: info
+          annotations:
+            summary: "Atlas: the {{ $labels.feed }} feed failed on the last refreshes"
+            description: "Its previous values are kept. Check the collector log (grep intel) for the download error."
         - alert: AtlasCollectorDown
           expr: absent(up{job="atlas/atlas-collector"} == 1)
           for: 15m

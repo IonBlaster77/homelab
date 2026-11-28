@@ -115,8 +115,9 @@ export const findingSightings = pgTable(
 
 /**
  * Append-only history. Types: first_seen, fix_available, fix_in_control,
- * severity_changed, resolved, reopened. `details` holds the before/after
- * values and the source (collector or backfill).
+ * severity_changed, resolved, reopened, kev_listed (its CVE joined CISA's
+ * KEV catalog while the finding was open). `details` holds the before/after
+ * values and the source (collector, backfill or intel).
  */
 export const findingEvents = pgTable(
   "finding_events",
@@ -218,6 +219,62 @@ export const policyViolationEvents = pgTable(
   (t) => [
     index("policy_violation_events_violation").on(t.violationId, t.at),
     index("policy_violation_events_type_at").on(t.type, t.at),
+  ],
+);
+
+/**
+ * Threat intelligence per vulnerability ID (CVE), for ranking findings by real
+ * risk (priority.ts): CISA's Known Exploited Vulnerabilities catalog and
+ * FIRST's EPSS (probability of exploitation in the next 30 days). Only IDs
+ * that some finding has are stored; refreshed by intel.ts every few hours.
+ * GHSA-only IDs never match (both feeds are keyed by CVE).
+ */
+export const vulnIntel = pgTable("vuln_intel", {
+  vulnId: text("vuln_id").primaryKey(),
+  kev: boolean("kev").notNull().default(false),
+  /** CISA's dateAdded: when it was confirmed exploited in the wild. */
+  kevAddedAt: ts("kev_added_at"),
+  /** CISA's remediation due date for US federal agencies (a reference point, not our SLA). */
+  kevDueAt: ts("kev_due_at"),
+  /** knownRansomwareCampaignUse = "Known". */
+  kevRansomware: boolean("kev_ransomware").notNull().default(false),
+  kevName: text("kev_name"),
+  /** 0..1 */
+  epss: real("epss"),
+  /** 0..1, rank among all scored CVEs. */
+  epssPercentile: real("epss_percentile"),
+  epssDate: ts("epss_date"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+/**
+ * Workloads reachable from outside the cluster, from the last run
+ * (exposure.ts). internet: a public DNS name reaches it through the
+ * Cloudflare tunnel (still behind Cloudflare Access, but reachable). lan: an
+ * HTTPRoute on the gateway without a public DNS record, or a LoadBalancer
+ * Service. Workloads not listed are internal only. Rows that stop matching
+ * are kept with active = false, so exposure history survives.
+ */
+export const workloadExposure = pgTable(
+  "workload_exposure",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    namespace: text("namespace").notNull(),
+    workloadKind: text("workload_kind").notNull(),
+    workloadName: text("workload_name").notNull(),
+    /** internet | lan */
+    exposure: text("exposure").notNull(),
+    /** Hostnames that reach it (empty for LoadBalancer-only). */
+    hosts: jsonb("hosts").$type<string[]>().notNull(),
+    /** What exposes it: "HTTPRoute ns/name", "Service ns/name (LoadBalancer)", "tunnel host". */
+    via: jsonb("via").$type<string[]>().notNull(),
+    firstSeenAt: ts("first_seen_at").notNull(),
+    lastSeenAt: ts("last_seen_at").notNull(),
+    active: boolean("active").notNull().default(true),
+  },
+  (t) => [
+    uniqueIndex("workload_exposure_identity").on(t.namespace, t.workloadKind, t.workloadName),
+    index("workload_exposure_active").on(t.active, t.exposure),
   ],
 );
 

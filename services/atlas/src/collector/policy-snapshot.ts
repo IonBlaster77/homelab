@@ -53,19 +53,27 @@ export const violationKey = (policy: string, rule: string, namespace: string, ki
 const controllerOf = (m: ObjectMeta | undefined) =>
   m?.ownerReferences?.find((o) => o.controller) ?? m?.ownerReferences?.[0];
 
+export interface Workload {
+  namespace: string;
+  kind: string;
+  name: string;
+}
+
 /**
- * @param reports     every PolicyReport and ClusterPolicyReport
+ * The fold-up described at the top, as a function: object -> owning workload,
+ * or null when it runs nothing (a Pod already gone, an old ReplicaSet). Also
+ * used by exposure.ts, so both agree on what a workload is.
+ *
  * @param pods        every Pod's metadata (owners)
  * @param replicaSets every ReplicaSet: old rollout revisions (0 replicas) are
  *                    skipped, the rest name their Deployment
  * @param jobs        every Job's metadata: Jobs a CronJob made fold up to it
  */
-export function buildPolicySnapshot(
-  reports: PolicyReport[],
+export function workloadResolver(
   pods: MetadataOnly[],
   replicaSets: ReplicaSet[],
   jobs: MetadataOnly[],
-): PolicySnapshot {
+): (scope: { namespace?: string; kind: string; name: string }) => Workload | null {
   const podMeta = new Map(pods.map((p) => [`${p.metadata.namespace}/${p.metadata.name}`, p.metadata]));
   const rs = new Map(
     replicaSets.map((r) => [
@@ -80,8 +88,7 @@ export function buildPolicySnapshot(
     ]),
   );
 
-  /** The workload an object belongs to, or null to skip its report. */
-  const resolve = (scope: NonNullable<PolicyReport["scope"]>) => {
+  return (scope) => {
     const namespace = scope.namespace ?? "";
     let kind = scope.kind;
     let name = scope.name;
@@ -114,6 +121,20 @@ export function buildPolicySnapshot(
     }
     return { namespace, kind, name };
   };
+}
+
+/**
+ * @param reports     every PolicyReport and ClusterPolicyReport
+ * @param pods, replicaSets, jobs  see workloadResolver
+ */
+export function buildPolicySnapshot(
+  reports: PolicyReport[],
+  pods: MetadataOnly[],
+  replicaSets: ReplicaSet[],
+  jobs: MetadataOnly[],
+): PolicySnapshot {
+  /** The workload an object belongs to, or null to skip its report. */
+  const resolve = workloadResolver(pods, replicaSets, jobs);
 
   // Per workload + policy + rule: the worst result seen, and the first
   // failure message.
