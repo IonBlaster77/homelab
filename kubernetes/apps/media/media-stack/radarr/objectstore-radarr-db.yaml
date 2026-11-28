@@ -1,3 +1,8 @@
+# HISTORY: radarr-db's Postgres 17 WAL archive and base backups (s3://cnpg/radarr-db/),
+# up to the 17 -> 18 upgrade on 2026-11-28. Nothing archives here any more
+# (see objectstore-radarr-db-pg18.yaml), so retention no longer prunes it: delete
+# old backups by hand when they're no longer wanted. Restoring from here
+# lands on Postgres 17. Original header:
 # Where radarr-db's WAL archive and base backups go: RustFS, under s3://cnpg/radarr-db/.
 # The key in radarr-db-backup-s3 can only touch that prefix and cannot delete object
 # versions (versioned bucket). See

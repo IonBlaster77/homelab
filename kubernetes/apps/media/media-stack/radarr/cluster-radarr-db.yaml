@@ -12,12 +12,11 @@ metadata:
   namespace: media
 spec:
   instances: 2
-  # Postgres 17, not 18 like the other clusters, on purpose: the Servarr
-  # wiki says its SQLite-to-Postgres steps are not for Postgres 18 or later.
-  # Move to 18 later with the CNPG major-upgrade runbook
-  # (docs/runbooks/cnpg-major-upgrade.md); that is Postgres-to-Postgres and
-  # keeps the data. Renovate offers majors as draft needs-planning PRs.
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.12-standard-trixie
+  # Pinned here so Renovate tracks it (same group as the other clusters).
+  # Upgraded in place from 17.12 on 2026-11-28 (pg_upgrade, CNPG major
+  # upgrade, docs/runbooks/cnpg-major-upgrade.md); 17 was only for the
+  # SQLite -> Postgres migration, which the Servarr wiki documents for <18.
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
   # OOM protection (docs/projects/oom-protection.md): memory request = limit,
   # a CPU request, no CPU limit, like the other clusters.
   priorityClassName: homelab-critical
@@ -43,13 +42,14 @@ spec:
       database: radarr-main
       owner: radarr
   # Point-in-time recovery from day one: WAL archive + base backups in RustFS
-  # (s3://cnpg/radarr-db/, see objectstore-radarr-db.yaml).
+  # (s3://cnpg/radarr-db/pg18/ since the Postgres 18 upgrade, see
+  # objectstore-radarr-db-pg18.yaml; the 17 history is in objectstore-radarr-db.yaml).
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
       parameters:
-        barmanObjectName: radarr-db-backup
-        serverName: radarr-db
+        barmanObjectName: radarr-db-backup-pg18
+        serverName: pg18
 ---
 # Second database for the same app user (created by CNPG, owned by radarr).
 apiVersion: postgresql.cnpg.io/v1
