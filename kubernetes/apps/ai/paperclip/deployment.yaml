@@ -48,7 +48,7 @@ spec:
           env:
             - name: PI_VERSION
               # renovate: datasource=npm depName=@earendil-works/pi-coding-agent
-              value: "1.6.1"
+              value: "1.7.0"
             - name: HOME
               value: /paperclip
             - name: npm_config_cache
