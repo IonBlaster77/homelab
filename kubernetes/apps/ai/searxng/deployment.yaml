@@ -27,7 +27,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: searxng
-          image: searxng/searxng:2026.11.21-c6ee3e9fd
+          image: searxng/searxng:2026.11.26-b5605b8f2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
