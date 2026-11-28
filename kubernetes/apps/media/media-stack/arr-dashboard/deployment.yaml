@@ -6,7 +6,7 @@ metadata:
   labels:
     app: arr-dashboard
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -37,6 +37,16 @@ spec:
             # origin" against whatever internal default the app falls back to.
             - name: APP_URL
               value: https://arrdashboard.jupitertech.net
+            # Postgres on CNPG (arr-dashboard-db) instead of /config/prod.db.
+            # The app creates its schema on start. /config stays: it holds
+            # secrets.json (encryption keys for the stored API keys) and
+            # backups/. One instance per database only (upstream rule), so
+            # never raise replicas.
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: arr-dashboard-db-app
+                  key: uri
           volumeMounts:
             - name: config
               mountPath: /config
