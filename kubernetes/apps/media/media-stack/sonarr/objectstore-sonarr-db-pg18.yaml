@@ -1,0 +1,34 @@
+# Where sonarr-db's WAL archive and base backups go since the Postgres 17 -> 18
+# upgrade (2026-11-28): s3://cnpg/sonarr-db/pg18/. pg_upgrade gives the database
+# a new system identifier, so the archive needs a new, empty path
+# (docs/runbooks/cnpg-major-upgrade.md); it stays inside the cluster's
+# RustFS key prefix (s3://cnpg/sonarr-db/). The 17 history is in objectstore-sonarr-db.yaml.
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: sonarr-db-backup-pg18
+  namespace: media
+spec:
+  retentionPolicy: "14d"
+  configuration:
+    destinationPath: s3://cnpg/sonarr-db/
+    endpointURL: http://rustfs.rustfs.svc.cluster.local:9000
+    s3Credentials:
+      accessKeyId:
+        name: sonarr-db-backup-s3
+        key: ACCESS_KEY_ID
+      secretAccessKey:
+        name: sonarr-db-backup-s3
+        key: ACCESS_SECRET_KEY
+    wal:
+      compression: gzip
+    data:
+      compression: gzip
+  instanceSidecarConfiguration:
+    env:
+      # Newer boto3 data-integrity checks break S3-compatible stores like
+      # RustFS (x-amz-content-sha256 errors, plugin issue #393).
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required

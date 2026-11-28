@@ -6,6 +6,7 @@ resources:
   - podmonitor-sonarr-db.yaml
   - secret-sonarr-db-backup.sops.yaml
   - objectstore-sonarr-db.yaml
+  - objectstore-sonarr-db-pg18.yaml
   - scheduledbackup-sonarr-db.yaml
   - pvc.yaml
   - deployment.yaml
