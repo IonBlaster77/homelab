@@ -20,7 +20,7 @@ Seerr (requests) → Sonarr / Radarr → Prowlarr (indexers, via FlareSolverr)
 | Radarr (movies) | `radarr/` | `linuxserver/radarr` | radarr.jupitertech.net | 2Gi |
 | Prowlarr (indexers) | `prowlarr/` | `linuxserver/prowlarr` | prowlarr.jupitertech.net | 2Gi |
 | Bazarr (subtitles) | `bazarr/` | `linuxserver/bazarr` | bazarr.jupitertech.net | 2Gi |
-| Recyclarr | `recyclarr/` | `recyclarr/recyclarr` | none (CronJob, daily 03:00) | none |
+| Recyclarr | `recyclarr/` | `recyclarr/recyclarr` | none (v9 server + CronJob calling its API, daily 03:00) | 1Gi (state) |
 | arr-dashboard | `arr-dashboard/` | `khak1s/arr-dashboard` | arrdashboard.jupitertech.net | 2Gi |
 | qBittorrent + Gluetun | `qbittorrent/` | `linuxserver/qbittorrent`, `qmcgaw/gluetun` | qbittorrent.jupitertech.net | 2Gi |
 | NZBGet | `nzbget/` | `linuxserver/nzbget` | nzbget.jupitertech.net | 2Gi |

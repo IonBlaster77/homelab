@@ -1,0 +1,18 @@
+# Recyclarr 9 server metrics (management port, no API key): sync job duration
+# and status (recyclarr_sync_job_duration_*), plus HTTP client metrics for the
+# Sonarr/Radarr calls.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: recyclarr
+  namespace: media
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: recyclarr
+  endpoints:
+    - port: management
+      path: /metrics
+      interval: 60s

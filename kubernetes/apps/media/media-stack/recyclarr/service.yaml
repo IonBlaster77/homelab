@@ -1,0 +1,20 @@
+# In-cluster only: the API port for the nightly sync CronJob (bearer
+# RECYCLARR_API_KEY). The management port (7983: /livez, /readyz, /metrics)
+# needs no key and is exposed for Prometheus scraping only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: recyclarr
+  namespace: media
+  labels:
+    app: recyclarr
+spec:
+  selector:
+    app: recyclarr
+  ports:
+    - name: api
+      port: 7982
+      targetPort: api
+    - name: management
+      port: 7983
+      targetPort: management
