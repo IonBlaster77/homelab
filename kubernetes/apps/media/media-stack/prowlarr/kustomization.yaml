@@ -1,6 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
+  # Postgres (CloudNativePG) with point-in-time recovery to RustFS
+  - cluster-prowlarr-db.yaml
+  - podmonitor-prowlarr-db.yaml
+  - secret-prowlarr-db-backup.sops.yaml
+  - objectstore-prowlarr-db.yaml
+  - scheduledbackup-prowlarr-db.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
