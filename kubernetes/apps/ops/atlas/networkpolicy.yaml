@@ -29,6 +29,9 @@ spec:
     - toEndpoints:
         - {}
 ---
+# DNS. The `rules: dns` block sends lookups through Cilium's DNS proxy, which
+# is what lets atlas-collector-internet-feeds below allow hosts by name
+# (toFQDNs). It allows every lookup; only the connections are restricted.
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
@@ -46,6 +49,34 @@ spec:
             - port: "53"
               protocol: UDP
             - port: "53"
+              protocol: TCP
+          rules:
+            dns:
+              - matchPattern: "*"
+---
+# The collector's only internet access, HTTPS to exactly these hosts
+# (services/atlas/src/collector/intel.ts and exposure.ts):
+#   www.cisa.gov                 CISA KEV catalog (every 6 h)
+#   epss.empiricalsecurity.com   FIRST EPSS scores (every 6 h)
+#   cloudflare-dns.com           public DNS check of our own hostnames
+#                                (DNS-over-HTTPS; hourly per hostname)
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-collector-internet-feeds
+  namespace: atlas
+spec:
+  endpointSelector:
+    matchLabels:
+      app: atlas-collector
+  egress:
+    - toFQDNs:
+        - matchName: www.cisa.gov
+        - matchName: epss.empiricalsecurity.com
+        - matchName: cloudflare-dns.com
+      toPorts:
+        - ports:
+            - port: "443"
               protocol: TCP
 ---
 # The collector reads Trivy's VulnerabilityReports and the ReplicaSets from

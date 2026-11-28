@@ -3,7 +3,10 @@
 # Deployment); Kyverno's PolicyReports and ClusterPolicyReports, plus Pods
 # and Jobs to fold each report up to its owning workload. Pods and Jobs are
 # only ever requested as metadata (PartialObjectMetadataList, k8s.ts), never
-# their specs, although `list` would allow it. Read-only; nothing else.
+# their specs, although `list` would allow it. For exposure (which workloads
+# are reachable from outside): Services (type and selector) and Gateway API
+# HTTPRoutes, plus the one cloudflared ConfigMap holding the tunnel's ingress
+# rules (a Role in that namespace, by resourceName). Read-only; nothing else.
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -30,6 +33,37 @@ rules:
   - apiGroups: ["batch"]
     resources: ["jobs"]
     verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["list"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: atlas-collector-tunnel-config
+  namespace: cloudflared
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["cloudflared-config"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: atlas-collector-tunnel-config
+  namespace: cloudflared
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: atlas-collector-tunnel-config
+subjects:
+  - kind: ServiceAccount
+    name: atlas-collector
+    namespace: atlas
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

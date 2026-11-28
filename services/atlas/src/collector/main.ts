@@ -11,6 +11,10 @@
 // Env: DATABASE_URL (required), INTERVAL_SECONDS (600), PORT (8080),
 // BACKFILL (true), KUBE_API, PROM_URL (see k8s.ts / prom.ts).
 //
+// Then, for ranking findings by risk (priority.ts), each also on its own:
+// which workloads are reachable from outside (exposure.ts, every run), and
+// CISA KEV + EPSS threat intel (intel.ts, every INTEL_HOURS).
+//
 // HTTP: /healthz (503 once three intervals pass without a good run) and
 // /metrics (Prometheus).
 import { createServer } from "node:http";
@@ -19,22 +23,29 @@ import { connect } from "../db/client.ts";
 import { collectorRuns, findings, policyViolations } from "../db/schema.ts";
 import { applySnapshot, type DB } from "./apply.ts";
 import { backfillFromPrometheus } from "./backfill.ts";
+import { applyExposure, buildExposure, hostnamesOf, parseTunnelIngress, publicHostnames } from "./exposure.ts";
+import { lastIntelAt, refreshIntel } from "./intel.ts";
 import {
+  getTunnelConfig,
   listClusterPolicyReports,
+  listHTTPRoutes,
   listJobMetadata,
   listPodMetadata,
   listPolicyReports,
   listReplicaSets,
+  listServices,
   listVulnerabilityReports,
   type ReplicaSet,
 } from "./k8s.ts";
 import { applyPolicySnapshot } from "./policy-apply.ts";
-import { buildPolicySnapshot, type PolicyResultCount } from "./policy-snapshot.ts";
+import { buildPolicySnapshot, workloadResolver, type PolicyResultCount } from "./policy-snapshot.ts";
+import { openByPriority, type PriorityCount } from "./priority.ts";
 import { imagesWithUpdate } from "./prom.ts";
 import { buildSnapshot } from "./snapshot.ts";
 
 const INTERVAL = Number(process.env.INTERVAL_SECONDS ?? 600) * 1000;
 const PORT = Number(process.env.PORT ?? 8080);
+const INTEL_INTERVAL = Number(process.env.INTEL_HOURS ?? 6) * 3_600_000;
 
 const log = (msg: string, extra: Record<string, unknown> = {}) =>
   console.log(JSON.stringify({ time: new Date().toISOString(), msg, ...extra }));
@@ -55,7 +66,35 @@ const metrics = {
     new7d: 0,
     resolved7d: {} as Record<string, number>,
   },
+  exposure: { lastSuccess: 0, runsOk: 0, runsFailed: 0, workloads: { internet: 0, lan: 0 } },
+  intel: { lastSuccess: 0, runsOk: 0, runsFailed: 0, kevMatched: 0, epssMatched: 0, kevOk: false, epssOk: false },
+  priority: [] as PriorityCount[],
 };
+
+/** The exposure part of a run. Throws on failure; the caller records it. */
+async function collectExposure(db: DB, now: Date, replicaSets: ReplicaSet[]) {
+  const [routes, services, pods, jobs, tunnelCm] = await Promise.all([
+    listHTTPRoutes(),
+    listServices(),
+    listPodMetadata(),
+    listJobMetadata(),
+    getTunnelConfig(),
+  ]);
+  const tunnel = parseTunnelIngress(tunnelCm.data?.["config.yaml"] ?? "");
+  if (tunnel.length === 0) throw new Error("tunnel config has no ingress rules");
+  const dns = await publicHostnames(hostnamesOf(routes, tunnel));
+  const current = buildExposure({
+    routes,
+    services,
+    pods,
+    tunnel,
+    publicHosts: dns.hosts,
+    resolve: workloadResolver(pods, replicaSets, jobs),
+  });
+  const stats = await applyExposure(db, current, now);
+  metrics.exposure.workloads = { internet: stats.internet, lan: stats.lan };
+  return { ...stats, routes: routes.length, publicHosts: dns.hosts.size, dnsFailed: dns.failed };
+}
 
 /** Report count of the last good collect run: `stats.reports`, or `stats.policy.reports` with policy=true. */
 async function previousReportCount(db: DB, policy = false): Promise<number | undefined> {
@@ -162,12 +201,58 @@ async function runOnce(db: DB) {
     log("policy run failed", { error: String(e) });
   }
 
+  // Exposure. Own try, like the policy part.
+  let exposure: Record<string, unknown>;
+  try {
+    const stats = await collectExposure(db, started, replicaSets ?? (await listReplicaSets()));
+    exposure = { ...stats };
+    metrics.exposure.lastSuccess = Date.now();
+    metrics.exposure.runsOk++;
+    log("exposure run ok", stats);
+  } catch (e) {
+    exposure = { error: String(e) };
+    metrics.exposure.runsFailed++;
+    log("exposure run failed", { error: String(e) });
+  }
+
+  // Threat intel, every INTEL_INTERVAL (checked against the database, so a
+  // restart doesn't refetch). Own try.
+  let intel: Record<string, unknown> | undefined;
+  try {
+    const last = metrics.intel.lastSuccess ? new Date(metrics.intel.lastSuccess) : await lastIntelAt(db);
+    if (!last || started.getTime() - last.getTime() >= INTEL_INTERVAL) {
+      const stats = await refreshIntel(db, started);
+      intel = { ...stats };
+      Object.assign(metrics.intel, {
+        lastSuccess: Date.now(),
+        kevMatched: stats.kevMatched,
+        epssMatched: stats.epssMatched,
+        kevOk: stats.kevOk,
+        epssOk: stats.epssOk,
+      });
+      metrics.intel.runsOk++;
+      log(stats.errors.length ? "intel run partly ok" : "intel run ok", { ...stats });
+    } else if (!metrics.intel.lastSuccess) {
+      metrics.intel.lastSuccess = last.getTime(); // after a restart, so the staleness alert stays quiet
+    }
+  } catch (e) {
+    intel = { error: String(e) };
+    metrics.intel.runsFailed++;
+    log("intel run failed", { error: String(e) });
+  }
+
+  try {
+    metrics.priority = await openByPriority(db);
+  } catch (e) {
+    log("priority counts failed", { error: String(e) });
+  }
+
   await db
     .update(collectorRuns)
     .set({
       finishedAt: new Date(),
       ok: vulnError === undefined,
-      stats: { ...vulnStats, policy },
+      stats: { ...vulnStats, policy, exposure, ...(intel ? { intel } : {}) },
       ...(vulnError === undefined ? {} : { error: vulnError }),
     })
     .where(eq(collectorRuns.id, run!.id))
@@ -230,6 +315,37 @@ function serve() {
         "# HELP atlas_policy_violations_resolved_7d Violations resolved in the last 7 days, by resolution (fixed, removed).",
         "# TYPE atlas_policy_violations_resolved_7d gauge",
         ...["fixed", "removed"].map((r) => `atlas_policy_violations_resolved_7d{resolution="${r}"} ${metrics.policy.resolved7d[r] ?? 0}`),
+        // Risk ranking (priority.ts): exposure + threat intel.
+        "# HELP atlas_findings_open_priority Open findings by risk priority (P1 = known exploited), severity, exposure of the most exposed workload, and KEV.",
+        "# TYPE atlas_findings_open_priority gauge",
+        ...metrics.priority.map(
+          (p) => `atlas_findings_open_priority{priority="${p.priority}",severity="${p.severity}",exposure="${p.exposure}",kev="${p.kev}"} ${p.n}`,
+        ),
+        "# HELP atlas_exposure_last_success_timestamp_seconds Unix time of the last successful exposure run.",
+        "# TYPE atlas_exposure_last_success_timestamp_seconds gauge",
+        `atlas_exposure_last_success_timestamp_seconds ${Math.floor(metrics.exposure.lastSuccess / 1000)}`,
+        "# HELP atlas_exposure_runs_total Exposure runs since start.",
+        "# TYPE atlas_exposure_runs_total counter",
+        `atlas_exposure_runs_total{result="ok"} ${metrics.exposure.runsOk}`,
+        `atlas_exposure_runs_total{result="failed"} ${metrics.exposure.runsFailed}`,
+        "# HELP atlas_workloads_exposed Workloads reachable from outside the cluster, by exposure (internet, lan).",
+        "# TYPE atlas_workloads_exposed gauge",
+        ...(["internet", "lan"] as const).map((x) => `atlas_workloads_exposed{exposure="${x}"} ${metrics.exposure.workloads[x]}`),
+        "# HELP atlas_intel_last_success_timestamp_seconds Unix time threat intel (KEV/EPSS) was last written.",
+        "# TYPE atlas_intel_last_success_timestamp_seconds gauge",
+        `atlas_intel_last_success_timestamp_seconds ${Math.floor(metrics.intel.lastSuccess / 1000)}`,
+        "# HELP atlas_intel_runs_total Threat intel refreshes since start.",
+        "# TYPE atlas_intel_runs_total counter",
+        `atlas_intel_runs_total{result="ok"} ${metrics.intel.runsOk}`,
+        `atlas_intel_runs_total{result="failed"} ${metrics.intel.runsFailed}`,
+        "# HELP atlas_intel_feed_ok Whether each feed downloaded on the last refresh (1) or kept its previous values (0).",
+        "# TYPE atlas_intel_feed_ok gauge",
+        `atlas_intel_feed_ok{feed="kev"} ${metrics.intel.kevOk ? 1 : 0}`,
+        `atlas_intel_feed_ok{feed="epss"} ${metrics.intel.epssOk ? 1 : 0}`,
+        "# HELP atlas_intel_matched CVE IDs in Atlas with KEV / EPSS data.",
+        "# TYPE atlas_intel_matched gauge",
+        `atlas_intel_matched{feed="kev"} ${metrics.intel.kevMatched}`,
+        `atlas_intel_matched{feed="epss"} ${metrics.intel.epssMatched}`,
       ];
       res.writeHead(200, { "Content-Type": "text/plain; version=0.0.4" }).end(lines.join("\n") + "\n");
       return;
