@@ -7,6 +7,11 @@ resources:
   - secret-arr-dashboard-db-backup.sops.yaml
   - objectstore-arr-dashboard-db.yaml
   - scheduledbackup-arr-dashboard-db.yaml
+  # Postgres 17 cluster for 2.25 (see cluster-arr-dashboard-pg17.yaml)
+  - cluster-arr-dashboard-pg17.yaml
+  - podmonitor-arr-dashboard-pg17.yaml
+  - objectstore-arr-dashboard-db-pg17.yaml
+  - scheduledbackup-arr-dashboard-pg17.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml
