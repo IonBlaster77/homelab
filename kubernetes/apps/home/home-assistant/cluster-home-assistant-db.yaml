@@ -20,7 +20,7 @@ spec:
   # Pinned here so Renovate tracks it (same group as the other clusters).
   # `standard` like streamystats-db; `system` (the older clusters) is
   # deprecated upstream.
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-standard-trixie
   # OOM protection (docs/projects/oom-protection.md): new, so sized like the
   # other small clusters. Memory request = limit, CPU request, no CPU limit.
   # Revisit from Prometheus once HA has real devices.

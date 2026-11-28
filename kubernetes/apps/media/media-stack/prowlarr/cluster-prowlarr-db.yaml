@@ -16,7 +16,7 @@ spec:
   # Upgraded in place from 17.12 on 2026-11-28 (pg_upgrade, CNPG major
   # upgrade, docs/runbooks/cnpg-major-upgrade.md); 17 was only for the
   # SQLite -> Postgres migration, which the Servarr wiki documents for <18.
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-standard-trixie
   # OOM protection (docs/projects/oom-protection.md): memory request = limit,
   # a CPU request, no CPU limit, like the other clusters.
   priorityClassName: homelab-critical
