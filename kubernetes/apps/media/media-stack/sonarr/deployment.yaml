@@ -6,7 +6,8 @@ metadata:
   labels:
     app: sonarr
 spec:
-  replicas: 1
+  # 0 while the database moves from SQLite to CNPG (no writes during the copy).
+  replicas: 0
   strategy:
     type: Recreate
   selector:
