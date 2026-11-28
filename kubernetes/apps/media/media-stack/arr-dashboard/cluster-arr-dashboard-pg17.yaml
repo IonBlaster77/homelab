@@ -21,7 +21,7 @@ metadata:
 spec:
   instances: 2
   # Pinned here so Renovate tracks 17.x minors (it never offers majors).
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.12-standard-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-standard-trixie
   # OOM protection (docs/projects/oom-protection.md): memory request = limit,
   # a CPU request, no CPU limit, like the other clusters.
   priorityClassName: homelab-critical
