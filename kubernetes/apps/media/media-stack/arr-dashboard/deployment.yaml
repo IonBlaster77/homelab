@@ -6,7 +6,7 @@ metadata:
   labels:
     app: arr-dashboard
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: arr-dashboard
-          image: khak1s/arr-dashboard:2.24.1
+          image: khak1s/arr-dashboard:2.25.3
           ports:
             - name: web
               containerPort: 3000
@@ -37,7 +37,8 @@ spec:
             # origin" against whatever internal default the app falls back to.
             - name: APP_URL
               value: https://arrdashboard.jupitertech.net
-            # Postgres on CNPG (arr-dashboard-db) instead of /config/prod.db.
+            # Postgres 17 on CNPG (arr-dashboard-pg17; 2.25 rejects Postgres 18,
+            # see cluster-arr-dashboard-pg17.yaml) instead of /config/prod.db.
             # The app creates its schema on start. /config stays: it holds
             # secrets.json (encryption keys for the stored API keys) and
             # backups/. One instance per database only (upstream rule), so
@@ -45,7 +46,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: arr-dashboard-db-app
+                  name: arr-dashboard-pg17-app
                   key: uri
           volumeMounts:
             - name: config
