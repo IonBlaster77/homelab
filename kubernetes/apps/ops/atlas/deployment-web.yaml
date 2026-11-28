@@ -39,7 +39,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: web
-          image: registry.jupitertech.net/homelab/atlas:IMAGE_TAG@IMAGE_DIGEST
+          image: registry.jupitertech.net/homelab/atlas:0411baad9445@sha256:3864e5916becff0b4b842e95382c30bfc46bdfe604e99e23ba2ce7be09fd63d4
           command: ["node", "src/api/main.ts"]
           env:
             - name: HOST
