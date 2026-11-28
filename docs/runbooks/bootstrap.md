@@ -10,9 +10,10 @@ Estimated time: **45–60 minutes** from powered-off nodes to fully synced ArgoC
 | Component | Version |
 |---|---|
 | Talos OS | v1.14.6 |
-| Kubernetes | v1.36.6 |
+| Kubernetes | v1.36.7 |
 | Cilium | v1.20.4 |
-| ArgoCD | v3.6.1 (Helm chart argo-cd-10.17.2, image tag pinned) |
+| etcd | v3.6.17 (pinned in the control-plane configs; Talos 1.14 would default to 3.7) |
+| ArgoCD | v3.6.3 (Helm chart argo-cd-10.20.0, image tag pinned) |
 
 6 nodes: talos1–3 (control-plane), talos4–6 (workers)  
 Storage: Longhorn on SSD (`/var/lib/longhorn`) + NVMe (`/var/lib/longhorn-nvme`) per node
