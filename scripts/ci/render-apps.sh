@@ -23,13 +23,13 @@
 #
 # Needs: helm, kustomize, yq (mikefarah v4), git.
 #
-# KUBE_VERSION (default 1.36.7, the cluster's version) is passed to helm
+# KUBE_VERSION (default 1.37.3, the cluster's version) is passed to helm
 # template as Argo CD passes the real one; charts gate on it. The cluster's
 # API-version list is not, so charts that check .Capabilities.APIVersions
 # may render a little less here than in the cluster.
 
 set -uo pipefail
-KUBE_VERSION=${KUBE_VERSION:-1.36.7}
+KUBE_VERSION=${KUBE_VERSION:-1.37.3}
 
 OUT=${1:?usage: render-apps.sh <out-dir> [repo-root]}
 ROOT=$(cd "${2:-.}" && pwd)
