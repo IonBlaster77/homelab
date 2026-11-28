@@ -1,0 +1,66 @@
+# Sonarr's Postgres: sonarr-main (series, episodes, files, history,
+# blocklist, profiles, settings) and sonarr-log (log entries), both owned by
+# sonarr. SONARR__POSTGRES__* env selects it (overrides config.xml).
+# CloudNativePG generates the credentials into sonarr-db-app (username,
+# password, host, uri); the Deployment reads them.
+#
+# One cluster per app (decided 2026-11-26), but bigger than the other media
+# clusters: Sonarr's SQLite database was 124 MB (vs 8-26 MB for the rest),
+# so 512Mi and 5Gi instead of 256Mi and 2Gi.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: sonarr-db
+  namespace: media
+spec:
+  instances: 2
+  # Postgres 17, not 18 like the other clusters, on purpose: the Servarr
+  # wiki says its SQLite-to-Postgres steps are not for Postgres 18 or later.
+  # Move to 18 later with the CNPG major-upgrade runbook
+  # (docs/runbooks/cnpg-major-upgrade.md); that is Postgres-to-Postgres and
+  # keeps the data. Renovate offers majors as draft needs-planning PRs.
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.12-standard-trixie
+  # OOM protection (docs/projects/oom-protection.md): memory request = limit,
+  # a CPU request, no CPU limit, like the other clusters.
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 25m
+      memory: 512Mi
+    limits:
+      memory: 512Mi
+  primaryUpdateMethod: switchover
+  # Synchronous replication, same as every other cluster (see
+  # paperclip-db): "preferred", never "required" with two instances.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    storageClass: longhorn-nvme
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: sonarr-main
+      owner: sonarr
+  # Point-in-time recovery from day one: WAL archive + base backups in RustFS
+  # (s3://cnpg/sonarr-db/, see objectstore-sonarr-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: sonarr-db-backup
+        serverName: sonarr-db
+---
+# Second database for the same app user (created by CNPG, owned by sonarr).
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: sonarr-db-sonarr-log
+  namespace: media
+spec:
+  name: sonarr-log
+  owner: sonarr
+  cluster:
+    name: sonarr-db
