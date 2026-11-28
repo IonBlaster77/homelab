@@ -1,13 +1,13 @@
 # Atlas
 
-Homelab ops, security and governance in one place. **Phase 1:** only the
-collector and its database, so the vulnerability and policy-violation
-history builds up before there's a UI. Its metrics feed the Homepage
-Patch Ops → Compliance cards. Code: [`services/atlas/`](../../../../services/atlas/README.md).
+Homelab ops, security and governance in one place: the collector and its
+database (vulnerability and policy-violation history, risk ranking), and
+since 2026-11-28 the web UI (`atlas-web`, Security tab first). The
+collector's metrics also feed the Homepage Patch Ops → Compliance cards. Code: [`services/atlas/`](../../../../services/atlas/README.md).
 
 | | |
 |---|---|
-| **URL** | None yet (no UI) |
+| **URL** | https://atlas.jupitertech.net (Security tab; read-only). Public through the Cloudflare tunnel behind Cloudflare Access (Authentik + passkey), **no AdGuard rewrite on purpose**: the API rejects requests without a valid Access token, so a LAN rewrite to the Gateway VIP would only ever get 401 |
 | **Image** | `registry.jupitertech.net/homelab/atlas:<git sha>`, built from `services/atlas` by the `build-image` WorkflowTemplate |
 | **Namespace** | `atlas` (PSA `restricted`) |
 | **Database** | CNPG `atlas-db` (2 instances), point-in-time recovery to RustFS `s3://cnpg/atlas-db/` |
