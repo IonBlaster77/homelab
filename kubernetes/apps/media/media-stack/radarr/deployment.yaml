@@ -6,8 +6,7 @@ metadata:
   labels:
     app: radarr
 spec:
-  # 0 while the database moves from SQLite to CNPG (no writes during the copy).
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -31,6 +30,35 @@ spec:
               value: "100"
             - name: TZ
               value: Australia/Adelaide
+            # Database: Postgres 17 in the CNPG cluster radarr-db
+            # (cluster-radarr-db.yaml), databases radarr-main and radarr-log.
+            # These env vars override config.xml. Moved off SQLite on
+            # 2026-11-28 with pgloader (Servarr wiki recipe); /config/radarr.db
+            # and logs.db are unused.
+            - name: RADARR__POSTGRES__HOST
+              valueFrom:
+                secretKeyRef:
+                  name: radarr-db-app
+                  key: host
+            - name: RADARR__POSTGRES__PORT
+              valueFrom:
+                secretKeyRef:
+                  name: radarr-db-app
+                  key: port
+            - name: RADARR__POSTGRES__USER
+              valueFrom:
+                secretKeyRef:
+                  name: radarr-db-app
+                  key: username
+            - name: RADARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: radarr-db-app
+                  key: password
+            - name: RADARR__POSTGRES__MAINDB
+              value: radarr-main
+            - name: RADARR__POSTGRES__LOGDB
+              value: radarr-log
           volumeMounts:
             - name: config
               mountPath: /config
