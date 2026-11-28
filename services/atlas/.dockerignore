@@ -2,3 +2,5 @@ node_modules
 test
 local
 *.md
+web/node_modules
+web/dist
