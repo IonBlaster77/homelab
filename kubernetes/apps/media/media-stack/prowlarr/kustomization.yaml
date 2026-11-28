@@ -6,6 +6,7 @@ resources:
   - podmonitor-prowlarr-db.yaml
   - secret-prowlarr-db-backup.sops.yaml
   - objectstore-prowlarr-db.yaml
+  - objectstore-prowlarr-db-pg18.yaml
   - scheduledbackup-prowlarr-db.yaml
   - pvc.yaml
   - deployment.yaml
