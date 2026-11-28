@@ -1,0 +1,64 @@
+# Radarr's Postgres: radarr-main (movies, files, history, blocklist, profiles, settings) and radarr-log (log entries), both owned by radarr. RADARR__POSTGRES__* env selects it (overrides config.xml).
+# CloudNativePG generates the credentials into radarr-db-app (username, password,
+# host, uri); the Deployment reads them.
+#
+# Right-sized for a small app database (decided 2026-11-26: one cluster per
+# app, not a shared media cluster): 2 instances, 256Mi, 2Gi. The existing
+# small clusters use 45-90 MiB per pod on average.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: radarr-db
+  namespace: media
+spec:
+  instances: 2
+  # Postgres 17, not 18 like the other clusters, on purpose: the Servarr
+  # wiki says its SQLite-to-Postgres steps are not for Postgres 18 or later.
+  # Move to 18 later with the CNPG major-upgrade runbook
+  # (docs/runbooks/cnpg-major-upgrade.md); that is Postgres-to-Postgres and
+  # keeps the data. Renovate offers majors as draft needs-planning PRs.
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.12-standard-trixie
+  # OOM protection (docs/projects/oom-protection.md): memory request = limit,
+  # a CPU request, no CPU limit, like the other clusters.
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 256Mi
+  primaryUpdateMethod: switchover
+  # Synchronous replication, same as every other cluster (see
+  # paperclip-db): "preferred", never "required" with two instances.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    storageClass: longhorn-nvme
+    size: 2Gi
+  bootstrap:
+    initdb:
+      database: radarr-main
+      owner: radarr
+  # Point-in-time recovery from day one: WAL archive + base backups in RustFS
+  # (s3://cnpg/radarr-db/, see objectstore-radarr-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: radarr-db-backup
+        serverName: radarr-db
+---
+# Second database for the same app user (created by CNPG, owned by radarr).
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: radarr-db-radarr-log
+  namespace: media
+spec:
+  name: radarr-log
+  owner: radarr
+  cluster:
+    name: radarr-db
