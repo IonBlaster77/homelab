@@ -6,8 +6,7 @@ metadata:
   labels:
     app: radarr
 spec:
-  # 0 during the Postgres 17 -> 18 upgrade of radarr-db.
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
