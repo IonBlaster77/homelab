@@ -6,8 +6,7 @@ metadata:
   labels:
     app: sonarr
 spec:
-  # 0 while the database moves from SQLite to CNPG (no writes during the copy).
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -31,6 +30,35 @@ spec:
               value: "100"
             - name: TZ
               value: Australia/Adelaide
+            # Database: Postgres 17 in the CNPG cluster sonarr-db
+            # (cluster-sonarr-db.yaml), databases sonarr-main and sonarr-log.
+            # These env vars override config.xml. Moved off SQLite on
+            # 2026-11-28 with pgloader (Servarr wiki recipe); /config/sonarr.db
+            # and logs.db are unused.
+            - name: SONARR__POSTGRES__HOST
+              valueFrom:
+                secretKeyRef:
+                  name: sonarr-db-app
+                  key: host
+            - name: SONARR__POSTGRES__PORT
+              valueFrom:
+                secretKeyRef:
+                  name: sonarr-db-app
+                  key: port
+            - name: SONARR__POSTGRES__USER
+              valueFrom:
+                secretKeyRef:
+                  name: sonarr-db-app
+                  key: username
+            - name: SONARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonarr-db-app
+                  key: password
+            - name: SONARR__POSTGRES__MAINDB
+              value: sonarr-main
+            - name: SONARR__POSTGRES__LOGDB
+              value: sonarr-log
           volumeMounts:
             - name: config
               mountPath: /config
