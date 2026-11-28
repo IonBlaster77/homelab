@@ -6,6 +6,7 @@ resources:
   - podmonitor-radarr-db.yaml
   - secret-radarr-db-backup.sops.yaml
   - objectstore-radarr-db.yaml
+  - objectstore-radarr-db-pg18.yaml
   - scheduledbackup-radarr-db.yaml
   - pvc.yaml
   - deployment.yaml
