@@ -1,3 +1,8 @@
+# Nightly Recyclarr sync. Since v9 this is a client only: `recyclarr sync`
+# sends the sync to the server in deployment.yaml over its HTTP API
+# (RECYCLARR_SERVER_URL), waits for the result and exits non-zero if the sync
+# fails. The server's own schedule is off (settings.yml), so this CronJob stays
+# the single place that decides when syncs run.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -10,46 +15,58 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
+      backoffLimit: 2
       template:
         spec:
           restartPolicy: OnFailure
-          # Recyclarr writes migration/state data into RECYCLARR_CONFIG_DIR, but a
-          # ConfigMap volume is always read-only — so recyclarr.yml is copied from
-          # the ConfigMap into a writable emptyDir before the real run.
-          initContainers:
-            - name: copy-config
-              image: ghcr.io/recyclarr/recyclarr:8.8.1
-              command:
-                - sh
-                - -c
-                - cp /input/recyclarr.yml /config/recyclarr.yml
-              volumeMounts:
-                - name: config-input
-                  mountPath: /input
-                - name: config
-                  mountPath: /config
+          # See deployment.yaml: keep service env vars out of RECYCLARR_*.
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
           containers:
             - name: recyclarr
-              image: ghcr.io/recyclarr/recyclarr:8.8.1
-              args:
+              image: ghcr.io/recyclarr/recyclarr:9.0.0
+              # Run the CLI directly instead of the image's entrypoint (which
+              # starts the server).
+              command:
+                - recyclarr
                 - sync
               env:
                 - name: TZ
                   value: Australia/Adelaide
+                - name: NO_COLOR
+                  value: "1"
+                - name: RECYCLARR_SERVER_URL
+                  value: http://recyclarr.media.svc.cluster.local:7982
+                # Only the server API key; the Sonarr/Radarr keys stay with the
+                # server.
+                - name: RECYCLARR_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: recyclarr-secret
+                      key: RECYCLARR_API_KEY
+                # The CLI's own (unused) config/data dirs, in a scratch emptyDir.
                 - name: RECYCLARR_CONFIG_DIR
-                  value: /config
-              envFrom:
-                - secretRef:
-                    name: recyclarr-secret
+                  value: /tmp/recyclarr
               volumeMounts:
-                - name: config
-                  mountPath: /config
+                - name: tmp
+                  mountPath: /tmp
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
           volumes:
-            - name: config-input
-              configMap:
-                name: recyclarr-config
-                items:
-                  - key: recyclarr.yml
-                    path: recyclarr.yml
-            - name: config
-              emptyDir: {}
+            - name: tmp
+              emptyDir:
+                sizeLimit: 100Mi

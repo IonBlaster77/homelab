@@ -286,3 +286,17 @@ data:
                 score: 10
               - name: WEB-2160p
                 score: 50
+
+  # Recyclarr 9 server settings, read once at startup: restart the
+  # recyclarr Deployment after changing them.
+  settings.yml: |
+    server:
+      # Syncs are started by cronjob.yaml through the API, not by the
+      # server's built-in schedule.
+      schedule:
+        enabled: false
+      logging:
+        # One JSON object per line on stdout (Alloy ships it to Loki); no log
+        # files on the emptyDir.
+        format: json
+        files: false

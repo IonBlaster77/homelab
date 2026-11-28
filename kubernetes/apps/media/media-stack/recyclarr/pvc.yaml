@@ -1,0 +1,14 @@
+# Recyclarr 9 state directory (sync state + server.db). Must persist: losing it
+# makes Recyclarr forget which Sonarr/Radarr resources it manages.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: recyclarr-state
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-ssd
+  resources:
+    requests:
+      storage: 1Gi

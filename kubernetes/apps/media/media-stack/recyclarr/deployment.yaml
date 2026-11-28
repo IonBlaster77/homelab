@@ -1,0 +1,119 @@
+# Recyclarr 9 server. Since v9 the image runs a long-lived server with an
+# HTTP API instead of a one-shot sync, and the CLI is a client of it. Its
+# built-in schedule is switched off (settings.yml in configmap.yaml); the
+# nightly sync is started by cronjob.yaml, which runs `recyclarr sync` against
+# this server's API. Both sides authenticate with RECYCLARR_API_KEY from
+# recyclarr-secret (secret.sops.yaml).
+#
+# Directories (v9 lets the config dir be read-only once data and state move
+# out of it):
+#   /config  ConfigMap recyclarr-config (recyclarr.yml + settings.yml), read-only.
+#            Edits to recyclarr.yml are picked up live (checked once a minute);
+#            settings.yml changes need a pod restart.
+#   /state   PVC recyclarr-state: sync state + server.db job history. Recyclarr
+#            uses it to know which Sonarr/Radarr objects it manages, so it must
+#            persist.
+#   /data    emptyDir: TRaSH guide cache and logs, re-downloaded on start.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recyclarr
+  namespace: media
+  labels:
+    app: recyclarr
+spec:
+  replicas: 1
+  # RWO state volume, and a second server on the same state dir refuses to start.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: recyclarr
+  template:
+    metadata:
+      labels:
+        app: recyclarr
+        app.kubernetes.io/name: recyclarr
+    spec:
+      # A Service named "recyclarr" would otherwise inject RECYCLARR_PORT,
+      # RECYCLARR_SERVICE_HOST, ... into the pod, colliding with Recyclarr's own
+      # RECYCLARR_* settings variables.
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: recyclarr
+          image: ghcr.io/recyclarr/recyclarr:9.0.0
+          ports:
+            - name: api
+              containerPort: 7982
+            - name: management
+              containerPort: 7983
+          env:
+            - name: TZ
+              value: Australia/Adelaide
+            - name: RECYCLARR_CONFIG_DIR
+              value: /config
+            - name: RECYCLARR_STATE_DIR
+              value: /state
+            - name: RECYCLARR_DATA_DIR
+              value: /data
+          # RADARR_API_KEY / SONARR_API_KEY (read by recyclarr.yml via
+          # !env_var) and RECYCLARR_API_KEY (the server's own API key).
+          envFrom:
+            - secretRef:
+                name: recyclarr-secret
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: state
+              mountPath: /state
+            - name: data
+              mountPath: /data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          # The server opens no port until startup finishes, and startup
+          # includes the first TRaSH guide download (can take minutes).
+          startupProbe:
+            httpGet:
+              path: /livez
+              port: management
+            periodSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: management
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: management
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+      volumes:
+        - name: config
+          configMap:
+            name: recyclarr-config
+        - name: state
+          persistentVolumeClaim:
+            claimName: recyclarr-state
+        - name: data
+          emptyDir:
+            sizeLimit: 1Gi
