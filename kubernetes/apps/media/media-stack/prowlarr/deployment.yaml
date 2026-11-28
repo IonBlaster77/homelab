@@ -6,8 +6,7 @@ metadata:
   labels:
     app: prowlarr
 spec:
-  # 0 during the Postgres 17 -> 18 upgrade of prowlarr-db.
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
