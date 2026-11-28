@@ -6,7 +6,8 @@ metadata:
   labels:
     app: sonarr
 spec:
-  replicas: 1
+  # 0 during the Postgres 17 -> 18 upgrade of sonarr-db.
+  replicas: 0
   strategy:
     type: Recreate
   selector:
