@@ -6,8 +6,7 @@ metadata:
   labels:
     app: prowlarr
 spec:
-  # 0 while the database moves from SQLite to CNPG (no writes during the copy).
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
@@ -31,6 +30,35 @@ spec:
               value: "1000"
             - name: TZ
               value: Australia/Adelaide
+            # Database: Postgres 17 in the CNPG cluster prowlarr-db
+            # (cluster-prowlarr-db.yaml), databases prowlarr-main and
+            # prowlarr-log. These env vars override config.xml. Moved off
+            # SQLite on 2026-11-28 with pgloader (Servarr wiki recipe);
+            # /config/prowlarr.db and logs.db are unused.
+            - name: PROWLARR__POSTGRES__HOST
+              valueFrom:
+                secretKeyRef:
+                  name: prowlarr-db-app
+                  key: host
+            - name: PROWLARR__POSTGRES__PORT
+              valueFrom:
+                secretKeyRef:
+                  name: prowlarr-db-app
+                  key: port
+            - name: PROWLARR__POSTGRES__USER
+              valueFrom:
+                secretKeyRef:
+                  name: prowlarr-db-app
+                  key: username
+            - name: PROWLARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: prowlarr-db-app
+                  key: password
+            - name: PROWLARR__POSTGRES__MAINDB
+              value: prowlarr-main
+            - name: PROWLARR__POSTGRES__LOGDB
+              value: prowlarr-log
           volumeMounts:
             - name: config
               mountPath: /config
