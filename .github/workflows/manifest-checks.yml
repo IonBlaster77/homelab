@@ -177,6 +177,14 @@ jobs:
           curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" | tar xz -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint"
 
+      # Renovate >= 45 needs Node >= 24.22.3. Pin it instead of relying on
+      # whatever the ubuntu-latest image ships (24.04 had Node 22; 26.04 has
+      # exactly 24.22.3). Node 24 LTS, not 26: Renovate on Node 26 outside its
+      # own images also needs libatomic.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
       - name: Renovate config
         id: renovate
         continue-on-error: true
@@ -193,6 +201,13 @@ jobs:
             echo "| actionlint | ${{ steps.actionlint.outcome }} |"
             echo "| renovate config | ${{ steps.renovate.outcome }} |"
           } >> "$GITHUB_STEP_SUMMARY"
+          # continue-on-error makes these steps report "success" to the
+          # checks API whatever happened, and job summaries need a sign-in.
+          # Annotations are public, so surface the real outcomes there too.
+          echo "::notice title=Lint (advisory)::yamllint=${{ steps.yamllint.outcome }} actionlint=${{ steps.actionlint.outcome }} renovate-config=${{ steps.renovate.outcome }}"
+          for pair in "yamllint=${{ steps.yamllint.outcome }}" "actionlint=${{ steps.actionlint.outcome }}" "renovate-config=${{ steps.renovate.outcome }}"; do
+            [ "${pair#*=}" = success ] || echo "::warning title=Lint (advisory) failed::${pair%%=*} outcome: ${pair#*=}"
+          done
 
       - name: Enforce
         if: env.ENFORCE == 'true'
