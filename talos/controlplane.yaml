@@ -22,7 +22,7 @@ machine:
     # Used to provide additional options to the kubelet.
     kubelet:
         # The `image` field is an optional reference to an alternative kubelet image.
-        image: ghcr.io/siderolabs/kubelet:v1.36.6
+        image: ghcr.io/siderolabs/kubelet:v1.36.7
         # Enable container runtime default Seccomp profile.
         defaultRuntimeSeccompProfileEnabled: true
         # OOM protection layer 4 (docs/projects/oom-protection.md): reserve
@@ -281,7 +281,7 @@ cluster:
     # API server specific configuration options.
     apiServer:
         # The container image used in the API server manifest.
-        image: registry.k8s.io/kube-apiserver:v1.36.6
+        image: registry.k8s.io/kube-apiserver:v1.36.7
         # OOM protection batch 5 (docs/projects/oom-protection.md): request
         # only, no limit. Memory 2Gi is below real use (7-day average
         # 3.1-3.7 GiB) on purpose while talos3 is ~84% requested; raise it
@@ -344,17 +344,17 @@ cluster:
     # Controller manager server specific configuration options.
     controllerManager:
         # The container image used in the controller manager manifest.
-        image: registry.k8s.io/kube-controller-manager:v1.36.6
+        image: registry.k8s.io/kube-controller-manager:v1.36.7
     # Kube-proxy server-specific configuration options
     proxy:
         # The container image used in the kube-proxy manifest.
-        image: registry.k8s.io/kube-proxy:v1.36.6
+        image: registry.k8s.io/kube-proxy:v1.36.7
         # # Disable kube-proxy deployment on cluster bootstrap.
         # disabled: false
     # Scheduler server specific configuration options.
     scheduler:
         # The container image used in the scheduler manifest.
-        image: registry.k8s.io/kube-scheduler:v1.36.6
+        image: registry.k8s.io/kube-scheduler:v1.36.7
     # Configures cluster member discovery.
     discovery:
         # Enable the cluster membership discovery feature.
@@ -372,7 +372,7 @@ cluster:
     # Etcd specific configuration options.
     etcd:
         # Pinned: Talos 1.14 defaults to etcd 3.7. Move to 3.7 as its own step.
-        image: registry.k8s.io/etcd:v3.6.14
+        image: registry.k8s.io/etcd:v3.6.17
         # The `ca` is the root certificate authority of the PKI.
         ca:
             crt: ENC[AES256_GCM,data:p/Lhr6Q3ku2SVwZ5GU7MMbzuZ1s2PWNT4/DqgELWMasl91HbHjGA0S7Vu82isuTAO4uL/xThORI9FvhFYzQqWRObyU8GYdjGsAs+LkjESOVZ6/gbZF2ls3fbWJ4HoALiJ7vtw7IMjYHG57tgKcyPgjHXuad62TctosajQoj16RenFo/z/5tOu2ez7QMMGSjA+2/6vEHPlqEnCaEi3t49Wq9yXft04Nz73S9fm94zn6qM5wBBWzCigOjlJKLQZu4cLn+GRHx6f1l3a9KvyxeGDYfw2sqMuKurjy+loqq3mjMWFmAJwvlyMd7mYIE5TcigMKCtZKbcLJd6l6GXSyrukmLSgTJWIqZkD3ikjveqSEld3M5NmzSe/1nsS5JmrUZnw9Viw3e3NGAv5Xy6T164Jpp8y2wwLm71rV6/sHRnxx8Gs1bzwTwxyXJjg33j95xK/X9sE5wrBiBZHsDrYVLfq04MJ+0K1+SfTZ/doYCfWyrqBLMybmhyX2lH63w04Knvhh28cekjYs5P5o+lZGzAPNTAwzIbepAQ5/LmHmqiZwKOm0lJpilEnxyldOIyeZJprBZedUGgob2n1FjoG8llVIcYDvLtCZsYA+lWSkc557n4PG8vH6vE/C/3tyuB+PXTwTyE90dT/jxr+tRFtH5DSzbW49j7fSs+AW4iHT/07o/bP/gzxzba6n+drSFm2KFJHKyUJzlfxs+mLawDXQ1cNmTtsDkC4Z3VnAcL5IjPjcRKpy8qjCJcdhqhS0UKGFAIcxWhFPI+Tv2DUqSiTZ72s3GGmu27Gy0eWQjbd5QD+Dmy1PP8MBqbYNhuyDTQJfPKFBZPKX1y+HaDU6oKMsoifkwax7QU0l3zjPxB6zCRW2aCWyUN5sBUKh4l/iVIy/AUOUab1bjIOSXWkL4dntwwE05QfkMqK6acDLDL1p7XC8QlFd1fnZoTwjOCZWgoV17+fS1Nw6CxQw2nq/bXM4vhA0n3tVy0gsaLaYrtd/i+u2TWm6GmNdwOwmQ//3hrCByUjjo39w==,iv:XUNlwlq+BF+LDziulvP9YmBtp3385BqPdY18/tbmHG4=,tag:COULabL0XTdCLP+E4DsnqQ==,type:str]
@@ -427,8 +427,8 @@ sops:
             T3NPbThWSnQveDljQ3k3cFkzZ00xOE0KT6G0jdtR0wFQn1eabpNRgDv/dy03A0Uu
             w90ZlsUFvVt78iAa8iMqHX5JWrcTu7dz8OIaUIENHj94UdRSUDXDVg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-22T08:26:08Z"
-    mac: ENC[AES256_GCM,data:oHNnapDp9fAznE/vIYaAQNm1SXlk/E4k/IZ4xEbIbktLu3BD8TBNpE62db1h5YtoOpTmmeJDKYky1q/F+7nN50GTRSzKpZbQVV+PyHl6KJpjnS9teATRsE2RT8dtYHH6JAkAB8n5Jyyix9ElrordFPbAR5mZqegQ+mRib6+twrE=,iv:FugJ9RKP1Md8eiY3KuOTk+O1qw3IKCTW5D+MkQ7BtzA=,tag:8Kxl6INLRbG9wIJI+4WYKQ==,type:str]
+    lastmodified: "2026-11-28T04:12:49Z"
+    mac: ENC[AES256_GCM,data:ALHUYJhj5NAnmUgqD8tC2rLlX0P6dy9otylpKfBhgYDTLrZBcVVsfMkH9aNJvMpb7o4dcJFKVtogiPwSS0MO/reRuufX3RvBV7lJNs6EjcmfmI0NKDstqjkPoQrukcowsKGfk14yzxH6ypUvr34Wli0eIPwI+kidqyDoP8wgbjk=,iv:Cqm/Qh+WHU0R9Ay+M4JdP9tVC2Y+PlTE7rdpZ296DEs=,tag:fb+34mT3En8NgwnpXYW2Nw==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
 ---
@@ -450,7 +450,7 @@ sops:
             T3NPbThWSnQveDljQ3k3cFkzZ00xOE0KT6G0jdtR0wFQn1eabpNRgDv/dy03A0Uu
             w90ZlsUFvVt78iAa8iMqHX5JWrcTu7dz8OIaUIENHj94UdRSUDXDVg==
             -----END AGE ENCRYPTED FILE-----
-    lastmodified: "2026-11-22T08:26:08Z"
-    mac: ENC[AES256_GCM,data:oHNnapDp9fAznE/vIYaAQNm1SXlk/E4k/IZ4xEbIbktLu3BD8TBNpE62db1h5YtoOpTmmeJDKYky1q/F+7nN50GTRSzKpZbQVV+PyHl6KJpjnS9teATRsE2RT8dtYHH6JAkAB8n5Jyyix9ElrordFPbAR5mZqegQ+mRib6+twrE=,iv:FugJ9RKP1Md8eiY3KuOTk+O1qw3IKCTW5D+MkQ7BtzA=,tag:8Kxl6INLRbG9wIJI+4WYKQ==,type:str]
+    lastmodified: "2026-11-28T04:12:49Z"
+    mac: ENC[AES256_GCM,data:ALHUYJhj5NAnmUgqD8tC2rLlX0P6dy9otylpKfBhgYDTLrZBcVVsfMkH9aNJvMpb7o4dcJFKVtogiPwSS0MO/reRuufX3RvBV7lJNs6EjcmfmI0NKDstqjkPoQrukcowsKGfk14yzxH6ypUvr34Wli0eIPwI+kidqyDoP8wgbjk=,iv:Cqm/Qh+WHU0R9Ay+M4JdP9tVC2Y+PlTE7rdpZ296DEs=,tag:fb+34mT3En8NgwnpXYW2Nw==,type:str]
     encrypted_regex: ^(token|key|crt|secret|bootstrapToken|secretboxEncryptionSecret)$
     version: 3.12.1
