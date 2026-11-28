@@ -14,7 +14,7 @@ n=$1 max=${2:-30}
 want=$(kubectl get nodes --no-headers | wc -l)
 for i in $(seq 1 $((max * 4))); do
   vols=$(kubectl -n longhorn-system get volumes.longhorn.io \
-    -o jsonpath='{range .items[*]}{.status.robustness}{"\n"}{end}' | sort | uniq -c | tr -s ' ' | tr '\n' ' ')
+    -o jsonpath='{range .items[*]}{.status.state} {.status.robustness}{"\n"}{end}' | awk '$1=="attached"{print $2}' | sort | uniq -c | tr -s ' ' | tr '\n' ' ')
   P=$(kubectl -n kube-system get pod -l k8s-app=cilium --field-selector spec.nodeName="$n" -o name)
   ch=$(kubectl -n kube-system exec "$P" -c cilium-agent -- cilium-dbg status 2>/dev/null \
     | grep -E '^Cluster health' | awk '{print $3}')

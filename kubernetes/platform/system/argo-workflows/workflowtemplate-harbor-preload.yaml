@@ -39,7 +39,7 @@ spec:
       - name: extra-images
         value: >-
           ghcr.io/siderolabs/kubelet:v1.36.7
-          factory.talos.dev/metal-installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.14.6
+          factory.talos.dev/metal-installer/203464d7568ceebc8d7d6f16811629d1722c3e1a4d4f2979c85587f19367f17b:v1.14.7
   templates:
     - name: main
       steps:
