@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "@tanstack/react-router";
 import { Boxes, Database, LayoutDashboard, ListChecks, Network, Server, ShieldExclamationPoint, TriangleExclamationPoint } from "lucide-react";
 import type { ComponentType } from "react";
@@ -15,6 +16,7 @@ const NAV: { to: string; label: string; icon: ComponentType<{ className?: string
 ];
 
 export function Shell() {
+  const me = useQuery({ queryKey: ["me"], queryFn: () => fetch("/api/me").then((r) => (r.ok ? (r.json() as Promise<{ email: string | null }>) : { email: null })), staleTime: Infinity });
   return (
     <div className="flex h-full">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-panel md:flex">
@@ -41,7 +43,8 @@ export function Shell() {
           ))}
         </nav>
         <div className="mt-auto border-t border-line px-4 py-3 text-[11px] text-faint">
-          Prototype · read-only replica
+          {me.data?.email && <div className="truncate text-muted" title="Signed in through Cloudflare Access">{me.data.email}</div>}
+          Read-only · prototype
         </div>
       </aside>
       <main className="min-w-0 flex-1 overflow-y-auto">

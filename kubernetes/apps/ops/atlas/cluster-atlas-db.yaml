@@ -43,6 +43,21 @@ spec:
     initdb:
       database: atlas
       owner: atlas
+  # atlas_web: the web/API's own login, read-only (decided 2026-11-28: no
+  # component gets more than it needs). pg_read_all_data = SELECT on every
+  # table, including ones added by later migrations; no writes. The API also
+  # opens every session with default_transaction_read_only and connects to the
+  # replica service (atlas-db-ro). Password in secret-atlas-db-web.sops.yaml.
+  managed:
+    roles:
+      - name: atlas_web
+        ensure: present
+        login: true
+        inRoles:
+          - pg_read_all_data
+        connectionLimit: 10
+        passwordSecret:
+          name: atlas-db-web
   # Point-in-time recovery from day one: the Barman Cloud plugin archives every
   # WAL segment and stores base backups in RustFS (s3://cnpg/atlas-db/, see
   # objectstore-atlas-db.yaml).

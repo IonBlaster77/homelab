@@ -180,6 +180,15 @@ spec:
         - ports:
             - port: "5055"
               protocol: TCP
+    # atlas.jupitertech.net: Atlas web/API (also checks the Access token itself)
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: atlas
+            app: atlas-web
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
 ---
 # Prometheus scraping the :2000 metrics endpoint (see service-metrics.yaml).
 apiVersion: cilium.io/v2

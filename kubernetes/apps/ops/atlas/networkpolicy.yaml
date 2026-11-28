@@ -114,6 +114,33 @@ spec:
             - port: "8080"
               protocol: TCP
 ---
+# The web/API: in from the Cilium Gateway only (reserved `ingress` identity,
+# container port), out to atlas-db (atlas-allow-intra-namespace) and to
+# Cloudflare Access for its token-signing keys. Nothing else.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: atlas-web
+  namespace: atlas
+spec:
+  endpointSelector:
+    matchLabels:
+      app: atlas-web
+  ingress:
+    - fromEntities:
+        - ingress
+      toPorts:
+        - ports:
+            - port: "8081"
+              protocol: TCP
+  egress:
+    - toFQDNs:
+        - matchName: jupitertech7.cloudflareaccess.com
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+---
 # atlas-db: the CloudNativePG operator manages it; its instance manager talks
 # to the Kubernetes API; the Barman Cloud sidecar uploads to RustFS;
 # Prometheus scrapes CNPG metrics.

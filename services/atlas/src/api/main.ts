@@ -5,14 +5,16 @@
 // opened with default_transaction_read_only=on (so even a bug can't write).
 // Point it at the replica service (atlas-db-ro) where possible.
 //
-// No login yet: in the cluster this sits behind Cloudflare Access, and gets
-// Authentik OIDC with group -> role mapping before it gets a hostname
-// (docs/projects/atlas.md, "Access" and "Users and permissions"). Until then
-// it binds to 127.0.0.1 only.
+// Login: Cloudflare Access (Authentik + passkey) in front, and every request
+// must carry a valid Access token (access.ts), because the Gateway is also
+// reachable on the LAN without Access. Without CF_ACCESS_* it only runs on
+// loopback (local development). Authentik OIDC with group -> role mapping
+// comes later (docs/projects/atlas.md, "Users and permissions").
 //
 // Env: DATABASE_URL (required; no password in it if DB_PASSWORD_FILE is set),
-// DB_PASSWORD_FILE, DB_SSL (require|disable, default require), HOST
-// (127.0.0.1), PORT (8081), WEB_DIR (web/dist).
+// DB_PASSWORD_FILE, DB_SSL (require|disable, default require), DB_SSL_CA_FILE
+// (verify the server against this CA), HOST (127.0.0.1), PORT (8081),
+// WEB_DIR (web/dist), CF_ACCESS_TEAM_DOMAIN + CF_ACCESS_AUD.
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { serve } from "@hono/node-server";
@@ -21,6 +23,7 @@ import { Hono } from "hono";
 import { compress } from "hono/compress";
 import { secureHeaders } from "hono/secure-headers";
 import pg from "pg";
+import { AccessVerifier, tokenFrom, type AccessIdentity } from "./access.ts";
 import { findingDetail, freshness, liveSince, openFindings, policySummary, trend, type OpenFinding } from "./security.ts";
 
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not set");
@@ -29,9 +32,15 @@ const url = new URL(process.env.DATABASE_URL);
 if (process.env.DB_PASSWORD_FILE) url.password = encodeURIComponent(readFileSync(process.env.DB_PASSWORD_FILE, "utf8").trim());
 const pool = new pg.Pool({
   connectionString: url.toString(),
-  // CNPG serves TLS with its own CA; the API only reads, and in-cluster
-  // traffic is also policed by Cilium. Verify the CA once this is deployed.
-  ssl: process.env.DB_SSL === "disable" ? false : { rejectUnauthorized: false },
+  // CNPG serves TLS with its own CA (secret atlas-db-ca). Without the CA
+  // file (local runs through a port-forward, where the hostname can't
+  // match anyway) the connection is encrypted but not verified.
+  ssl:
+    process.env.DB_SSL === "disable"
+      ? false
+      : process.env.DB_SSL_CA_FILE
+        ? { ca: readFileSync(process.env.DB_SSL_CA_FILE, "utf8"), rejectUnauthorized: true }
+        : { rejectUnauthorized: false },
   options: "-c default_transaction_read_only=on -c statement_timeout=15000",
   max: 4,
 });
@@ -55,8 +64,20 @@ async function cachedFindings(): Promise<OpenFinding[]> {
   return rows;
 }
 
-const app = new Hono();
+const host = process.env.HOST ?? "127.0.0.1";
+const port = Number(process.env.PORT ?? 8081);
+const loopback = host === "127.0.0.1" || host === "::1" || host === "localhost";
+const access =
+  process.env.CF_ACCESS_TEAM_DOMAIN && process.env.CF_ACCESS_AUD
+    ? new AccessVerifier(process.env.CF_ACCESS_TEAM_DOMAIN, process.env.CF_ACCESS_AUD)
+    : undefined;
+if (!access && !loopback) throw new Error("refusing to listen beyond loopback without CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD");
 
+const app = new Hono<{ Variables: { identity: AccessIdentity | undefined } }>();
+
+// Middleware runs in registration order: security headers on everything
+// (401s included), then the health check (no token, no data, for the
+// kubelet), then the Access check in front of everything else.
 app.use(
   "*",
   secureHeaders({
@@ -76,9 +97,30 @@ app.use(
     crossOriginResourcePolicy: "same-origin",
   }),
 );
-app.use("/api/*", compress());
 
 app.get("/api/healthz", (c) => c.text("ok\n"));
+
+if (access) {
+  app.use("*", async (c, next) => {
+    let r: Awaited<ReturnType<AccessVerifier["verify"]>>;
+    try {
+      r = await access.verify(tokenFrom(c.req));
+    } catch (e) {
+      log("access check failed", { error: String(e) });
+      return c.text("Access check unavailable\n", 503);
+    }
+    if (!r.ok) {
+      log("access denied", { path: c.req.path, reason: r.reason, ip: c.req.header("x-forwarded-for") ?? "" });
+      return c.text("Sign in through https://atlas.jupitertech.net (Cloudflare Access).\n", 401);
+    }
+    c.set("identity", r.id);
+    await next();
+  });
+}
+
+app.use("/api/*", compress());
+
+app.get("/api/me", (c) => c.json({ email: c.get("identity")?.email ?? null }));
 
 // The table's columns only (titles, sightings etc. come from the detail
 // endpoint): keeps 17k rows at a few MB before gzip.
@@ -159,6 +201,4 @@ if (existsSync(webDir)) {
   app.get("*", serveStatic({ path: `${webDir}/index.html` }));
 }
 
-const host = process.env.HOST ?? "127.0.0.1";
-const port = Number(process.env.PORT ?? 8081);
-serve({ fetch: app.fetch, hostname: host, port }, () => log("api listening", { host, port, web: existsSync(webDir) }));
+serve({ fetch: app.fetch, hostname: host, port }, () => log("api listening", { host, port, web: existsSync(webDir), access: !!access }));
