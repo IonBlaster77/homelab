@@ -26,7 +26,7 @@ argo-cd:
     # bumps all three in one PR.
     image:
       repository: quay.io/argoproj/argocd
-      tag: v3.6.2
+      tag: v3.6.3
     # Chart 10's default, set explicitly. Ingress-only NetworkPolicies per
     # component: repo-server (8081) only from server/controller/notifications/
     # applicationset, redis only from server/repo-server/controller, dex only from
@@ -175,7 +175,7 @@ argo-cd:
             memory: 96Mi
           limits:
             memory: 512Mi
-        image: quay.io/argoproj/argocd:v3.6.2
+        image: quay.io/argoproj/argocd:v3.6.3
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
@@ -214,7 +214,7 @@ argo-cd:
             memory: 128Mi
           limits:
             memory: 512Mi
-        image: quay.io/argoproj/argocd:v3.6.2
+        image: quay.io/argoproj/argocd:v3.6.3
         command: [/var/run/argocd/argocd-cmp-server]
         securityContext:
           runAsNonRoot: true
