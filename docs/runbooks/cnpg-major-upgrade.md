@@ -4,7 +4,8 @@ Upgrade a CloudNativePG cluster to a new PostgreSQL major version in place.
 CNPG (1.26+) does it when `imageName` asks for a higher major: it stops the
 cluster, runs `pg_upgrade` in a Job against the primary's volume, starts the
 primary on the new major, and builds the replicas again from scratch.
-**Piloted on kea-db, 18.7 → 19.0, 2026-11-21** (timeline at the bottom).
+**Piloted on kea-db, 18.7 → 19.0, 2026-11-21**; also used for prowlarr-db,
+radarr-db and sonarr-db, 17.12 → 18.7, 2026-11-28 (both at the bottom).
 
 Related: [`cnpg-point-in-time-restore.md`](cnpg-point-in-time-restore.md),
 [`cnpg-barman-cloud`](../../kubernetes/platform/databases/cnpg-barman-cloud/README.md),
@@ -12,8 +13,8 @@ CNPG docs: [PostgreSQL upgrades](https://cloudnative-pg.io/docs/1.30/postgres_up
 
 | | |
 |---|---|
-| Downtime | ~3.5 min on kea-db (11 MB): 3 min shutdown wait + ~40 s `pg_upgrade`. Less if the app is stopped first (step 3) |
-| Total until 2/2 ready | ~5 min (replica rebuilt from scratch afterwards; it grows with database size) |
+| Downtime | ~3.5 min on kea-db (11 MB): 3 min shutdown wait + ~40 s `pg_upgrade`. With the app stopped first (step 3) the primary is back in ~1.5 min (Servarr clusters, 2026-11-28) |
+| Total until 2/2 ready | 2.5–5 min (replica rebuilt from scratch afterwards; it grows with database size) |
 | Rollback | Before the new major starts: revert `imageName`. After: restore the pre-upgrade backup into a new cluster on the old major |
 | Point-in-time recovery | **Never across the upgrade.** Backups from before can only restore to before |
 
@@ -155,3 +156,29 @@ Results: `PostgreSQL 19.0`; Kea schema 34.0 untouched; `grafana_ro` grants
 intact (the PostSync grants Job re-ran fine); Kea restarted once while the
 database was down and reconnected on its own, no errors since; archiving
 `True` into the new store.
+
+## Servarr clusters: prowlarr-db, radarr-db, sonarr-db, 17.12 → 18.7 (2026-11-28)
+
+They went onto Postgres 17 for the SQLite → Postgres migration (the Servarr
+wiki documents that only for Postgres < 18) and were moved to 18 the same
+day. Each holds two databases (`<app>-main`, `<app>-log`); `pg_upgrade`
+moves both at once. Only `plpgsql` installed. Done one at a time, each with
+the app stopped through Git first (step 3) and the 18.7 image pre-pulled.
+
+| Cluster | Size | Sync → `pg_upgrade` done | Primary up | 2/2 healthy |
+|---|---|---|---|---|
+| prowlarr-db | 44 MB | 79 s | 118 s | 197 s |
+| radarr-db | 26 MB | 79 s | 96 s | 174 s |
+| sonarr-db | 63 MB | 69 s | 81 s | 142 s |
+
+No smart-shutdown wait this time (the app was already stopped), so the
+first ~12 s is just CNPG stopping the instances; `pg_upgrade` itself took
+~40 s each. Pre and post backups (`<app>-db-pre-pg18`, `-post-pg18`) took
+seconds; the new store is `s3://cnpg/<app>-db/pg18/`. After: `vacuumdb
+--all --analyze-only`, both databases still owned by the app user, replica
+streaming as the quorum member, each app reported `Postgres 18.7` and wrote
+new rows within minutes.
+
+Events seen and harmless: a `FailedAttachVolume ... waiting for the volume
+to fully detach` retry while the primary's volume moved to the upgrade Job,
+and Kyverno audit `PolicyViolation` events for the Barman sidecar.
