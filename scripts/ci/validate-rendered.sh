@@ -7,7 +7,7 @@
 #   writes <rendered-dir>/_kubeconform.json. Exits 1 if any object is invalid
 #   or failed to parse, 0 otherwise; the workflow decides whether that fails CI.
 #
-# Schemas: upstream Kubernetes (KUBE_VERSION, default 1.36.7) plus the
+# Schemas: upstream Kubernetes (KUBE_VERSION, default 1.37.3) plus the
 # datreeio CRDs-catalog for Cilium, CNPG, Gateway API, Longhorn, Prometheus
 # Operator, cert-manager, Argo and friends. Objects with no schema anywhere are
 # counted as skipped, not failed. -strict rejects unknown fields (typos) and
@@ -17,7 +17,7 @@
 
 set -uo pipefail
 DIR=${1:?usage: validate-rendered.sh <rendered-dir>}
-KUBE_VERSION=${KUBE_VERSION:-1.36.7}
+KUBE_VERSION=${KUBE_VERSION:-1.37.3}
 CATALOG='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 REPORT="$DIR/_kubeconform.json"
 

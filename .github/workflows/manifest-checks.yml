@@ -38,7 +38,7 @@ env:
   # The cluster's Kubernetes minor (schemas only, so the .0 patch is fine).
   # Part of Renovate's Kubernetes tracking PR (with scripts/ci/*.sh): bump
   # it with the cluster's Kubernetes upgrade and that PR closes itself.
-  KUBE_VERSION: "1.36.7"
+  KUBE_VERSION: "1.37.3"
   # Tool pins below are tracked by the `# renovate:` annotation manager
   # in renovate.json.
   # renovate: datasource=github-releases depName=helm/helm
