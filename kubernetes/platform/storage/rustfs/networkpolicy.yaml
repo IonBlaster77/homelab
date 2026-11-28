@@ -101,6 +101,9 @@ spec:
         - matchLabels:
             io.kubernetes.pod.namespace: media
             cnpg.io/cluster: sonarr-db
+        - matchLabels:
+            io.kubernetes.pod.namespace: media
+            cnpg.io/cluster: arr-dashboard-db
       toPorts:
         - ports:
             - port: "9000"

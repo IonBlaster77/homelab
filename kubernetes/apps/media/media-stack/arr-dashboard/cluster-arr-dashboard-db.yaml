@@ -1,0 +1,53 @@
+# arr-dashboard's Postgres (users, settings, service connections). The app
+# reads DATABASE_URL and creates/migrates its own schema (Prisma) on start.
+# CloudNativePG generates the credentials into arr-dashboard-db-app (username,
+# password, host, uri); the Deployment reads the uri.
+#
+# Why: from 2.25 the app refuses to start on SQLite when the volume's device
+# number changes, which a Longhorn volume does every time it attaches on
+# another node (upstream Kha-kis/arr-dashboard#934). That storage check is
+# SQLite-only. Data moves over with the app's own Backup -> Restore.
+#
+# Right-sized like the other per-app media clusters (decided 2026-11-26):
+# 2 instances, 256Mi, 2Gi.
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: arr-dashboard-db
+  namespace: media
+spec:
+  instances: 2
+  # Pinned here so Renovate tracks it (same group as the other clusters).
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
+  # OOM protection (docs/projects/oom-protection.md): memory request = limit,
+  # a CPU request, no CPU limit, like the other clusters.
+  priorityClassName: homelab-critical
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 256Mi
+  primaryUpdateMethod: switchover
+  # Synchronous replication, same as every other cluster (see
+  # paperclip-db): "preferred", never "required" with two instances.
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
+  storage:
+    storageClass: longhorn-nvme
+    size: 2Gi
+  bootstrap:
+    initdb:
+      database: arr_dashboard
+      owner: arr_dashboard
+  # Point-in-time recovery from day one: WAL archive + base backups in RustFS
+  # (s3://cnpg/arr-dashboard-db/, see objectstore-arr-dashboard-db.yaml).
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: arr-dashboard-db-backup
+        serverName: arr-dashboard-db

@@ -1,0 +1,17 @@
+# Daily base backup of arr-dashboard-db to RustFS. 17:40 UTC = 04:10 Adelaide
+# (ACDT), a free slot after the other clusters. CNPG cron has a seconds
+# field. No `immediate` (it fires before the sidecar exists); the first base
+# backup is taken by hand.
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: arr-dashboard-db-daily
+  namespace: media
+spec:
+  schedule: "0 40 17 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: arr-dashboard-db
+  method: plugin
+  pluginConfiguration:
+    name: barman-cloud.cloudnative-pg.io

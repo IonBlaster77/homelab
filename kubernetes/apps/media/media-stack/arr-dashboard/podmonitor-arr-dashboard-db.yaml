@@ -1,0 +1,16 @@
+# CNPG metrics for arr-dashboard-db, so the CNPG alerts and Grafana dashboard
+# cover it. (The media namespace has no network policies, so no scrape rule
+# is needed.)
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: arr-dashboard-db
+  namespace: media
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      cnpg.io/cluster: arr-dashboard-db
+  podMetricsEndpoints:
+    - port: metrics
