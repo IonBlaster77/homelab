@@ -42,7 +42,7 @@ spec:
           # release: Renovate only offers LTS releases (.3 and .8) for this
           # image. Langfuse v4 needs >= 25.12. ClickHouse can't be downgraded
           # once it has run a newer version; the way back is a volume restore.
-          image: docker.io/clickhouse/clickhouse-server:26.8.47.5@sha256:13f4949b03320e04fe1d2f75ed38734530e78b55469168cc6d5062f198563269
+          image: docker.io/clickhouse/clickhouse-server:26.8.49.6@sha256:0cf7c7f1d66943f0ca17062dd6e6a0f459eb58770e16d6957823837f3fe1bf66
           env:
             - name: CLICKHOUSE_DO_NOT_CHOWN
               value: "1"
